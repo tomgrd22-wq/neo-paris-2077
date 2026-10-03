@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOON — Dossier Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070f; --bg2:#0d0d1a;
+  --text:#c0c0d4; --text-dim:#606078; --text-hi:#e8e8f4;
+  --accent:#00ccff; --accent-soft:rgba(0,204,255,0.05);
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --amber:#ffaa00; --red:#ff2040;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;
+  font-size:19px;line-height:1.8;}
+.wrap{max-width:780px;margin:0 auto;padding:0 32px 100px;}
+.bg-mark{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-mark span{position:absolute;font-family:'Orbitron',monospace;font-weight:700;
+  color:var(--accent);opacity:0.015;font-size:240px;letter-spacing:20px;
+  top:30%;left:-5%;white-space:nowrap;transform:rotate(-8deg);}
+.dossier-head{padding:70px 0 40px;border-bottom:1px solid var(--border);
+  margin-bottom:50px;position:relative;z-index:1;}
+.dh-eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:7px;
+  color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:24px;}
+.dh-eyebrow b{color:var(--accent);}
+.dh-alias{font-family:'Orbitron',monospace;font-size:clamp(34px,5vw,52px);font-weight:700;
+  color:var(--accent);letter-spacing:3px;line-height:1.05;display:block;
+  text-shadow:0 0 50px var(--accent-soft);}
+.dh-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:300;letter-spacing:5px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:14px;display:block;}
+.dh-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:5px;text-transform:uppercase;padding:7px 18px;margin-top:22px;
+  border:1px solid var(--accent);color:var(--accent);border-radius:2px;}
+.dh-tag{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:300;font-style:italic;
+  color:rgba(255,255,255,0.45);margin-top:26px;letter-spacing:1px;line-height:1.6;}
+.sec{margin-bottom:48px;position:relative;z-index:1;}
+.sec-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:8px;
+  display:flex;align-items:center;gap:14px;}
+.sec-title::before{content:'';width:24px;height:2px;background:var(--accent);flex-shrink:0;}
+.sec-title .num{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);
+  letter-spacing:2px;margin-left:auto;}
+.sec-sub{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);margin-bottom:24px;margin-left:38px;text-transform:uppercase;}
+p{margin-bottom:16px;}
+strong{color:var(--text-hi);font-weight:600;}
+em{color:var(--accent);font-style:normal;}
+.know{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
+.know-item{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:14px 0;
+  border-bottom:1px solid var(--border);align-items:start;}
+.know-item:last-child{border-bottom:none;}
+.know-ico{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);
+  padding-top:3px;width:22px;text-align:center;}
+.know-txt{font-size:17px;line-height:1.65;}
+.know-txt b{color:var(--text-hi);font-weight:600;}
+.contact{border:1px solid var(--border2);border-radius:4px;padding:18px 22px;
+  background:var(--bg2);margin-bottom:14px;}
+.contact.special{border-color:var(--accent);background:rgba(255,255,255,0.02);}
+.contact-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:600;
+  letter-spacing:1px;color:var(--text-hi);display:flex;align-items:baseline;gap:12px;}
+.contact-name .role{font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.contact-desc{font-size:16px;color:var(--text);margin-top:6px;line-height:1.6;}
+.intuition{border-left:3px solid var(--amber);background:rgba(255,170,0,0.04);
+  padding:18px 24px;margin-bottom:14px;border-radius:0 3px 3px 0;}
+.intuition p{margin-bottom:0;font-size:17px;font-style:italic;color:rgba(255,255,255,0.65);line-height:1.6;}
+.obj{display:flex;align-items:start;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.obj:last-child{border-bottom:none;}
+.obj-check{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:16px;
+  padding-top:2px;flex-shrink:0;}
+.obj-txt{font-size:17px;line-height:1.5;}
+.obj-txt b{color:var(--text-hi);}
+.pq{margin:36px 0;padding:26px 32px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);font-style:italic;font-size:20px;font-weight:300;
+  color:rgba(255,255,255,0.72);line-height:1.65;}
+.pq cite{display:block;margin-top:12px;font-family:'Share Tech Mono',monospace;
+  font-size:11px;font-style:normal;letter-spacing:3px;color:var(--text-dim);}
+.dline{border:none;border-top:1px solid var(--border);margin:44px 0;position:relative;}
+.dline::before{content:attr(data-l);position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  background:var(--bg);padding:0 16px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:5px;color:var(--text-dim);}
+.foot{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--text-dim);text-align:center;line-height:2;}
+.foot b{color:var(--accent);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@media(max-width:600px){.wrap{padding:0 20px 60px;}}
+</style>
+</head>
+<body>
+<div class="bg-mark"><span>MOON</span></div>
+<div class="wrap">
+  <div class="dossier-head">
+    <span class="dh-eyebrow">// DOSSIER PERSONNEL — <b>YEUX SEULS</b> — NE PAS PARTAGER //</span>
+    <span class="dh-alias">MOON</span>
+    <span class="dh-name">Echo-9</span>
+    <div class="dh-badge">// NETRUNNER //</div>
+    <div class="dh-tag">Ils t'ont fabriquée pour être leur meilleure arme silencieuse. Tu es devenue leur pire erreur.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ce que tu sais — Neo-Paris <span class="num">[01]</span></div>
+    <div class="sec-sub">Tu vois la ville comme un système nerveux numérique — et une cachette possible</div>
+    <div class="know">
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Le Net de Neo-Paris.</b> Le système nerveux numérique de la ville. Tu navigues dans ses flux comme d'autres marchent dans la rue. Tu vois des connexions que personne d'autre ne perçoit.</div></div>
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>Le piratage de haut niveau — acquis sous la contrainte.</b> Tes compétences ne viennent pas d'une école. Elles viennent de la pression, de la manipulation, parfois de la torture. Tout était fait pour obtenir des résultats. Résultat : tu es redoutable, et tu détestes savoir pourquoi.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Comment disparaître.</b> Changer d'identité, brouiller ses traces, se faire passer pour quelqu'un d'autre. Une compétence de survie, pas un jeu. Tu la pratiques tous les jours depuis ton évasion.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>L'ICE et les systèmes de sécurité.</b> Tu les connais parce qu'on t'a formée, de force, à les percer. Tu sais lesquelles sont mortelles pour un netrunner imprudent — tu l'as appris sur des cas concrets, pas sur des simulations.</div></div>
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>TOI SEULE peux déchiffrer le datapad.</b> Son chiffrement est de niveau militaire EuroTech — extrêmement rare. Tu y arriveras, mais <em>fragment par fragment</em>, sur plusieurs jours.</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Capacités spéciales — Cyberware <span class="num">[02]</span></div>
+    <div class="sec-sub">Deux pièces de cyberware que tu n'utilises jamais à la légère</div>
+    <div class="contact special"><div class="contact-name">Masque Holographique<span class="role">Projecteur corporel intégral</span></div><div class="contact-desc">Un réseau d'émetteurs disséminés sous la peau — racine des cheveux, mâchoire, mais aussi le long des bras, du torse, des jambes — presque invisible une fois désactivé. Actif, il projette une silhouette entièrement différente de la tienne, de la tête aux pieds : traits, taille, morphologie, vêtements, parfois genre. Assez réaliste pour tromper un œil humain ou une caméra basique à distance normale — plus personne ne voit une enfant, mais un adulte qui n'a rien à faire là. <strong>Ta voix ne change pas</strong> : si tu parles, l'illusion peut se fissurer dans l'oreille de qui t'écoute, même si l'image reste intacte. Le contact physique reste ta pire ennemie — une main qui s'agrippe à ton bras, un corps contre le tien, sent immédiatement la vraie taille sous l'hologramme. Et projeter un corps entier consomme beaucoup plus d'énergie qu'un simple visage : l'implant chauffe, et au-delà de quelques minutes d'affilée, l'image commence à trembler et à se dégrader toute seule, avant de lâcher complètement. Ce n'est pas un déguisement parfait — c'est un sursis, chronométré.</div></div>
+    <div class="contact special"><div class="contact-name">Lecture Mnésique<span class="role">Interface neurale invasive</span></div><div class="contact-desc">Un jack de contact caché dans ta paume te permet, en te connectant directement à quelqu'un (peau contre peau, ou via un port neural si la cible en a un), de remonter dans ses souvenirs récents et d'en extraire ce qui est utile — un visage croisé, un code entendu, un mensonge qu'elle vient de se raconter à elle-même. Ce n'est ni instantané ni gratuit : la cible sent qu'on fouille dans sa tête (panique, résistance, parfois violence en retour), et toi tu encaisses une partie de ce que tu lis — un souvenir traumatisant laisse une trace, même chez toi. Une cible avec de l'ICE cérébral ou un entraînement à la résistance mentale peut te repousser, voire te blesser en retour.</div></div>
+  </div>
+
+  <hr class="dline" data-l="LA NUIT DU 15.03.2077">
+
+  <div class="sec">
+    <div class="sec-title">La situation actuelle <span class="num">[03]</span></div>
+    <div class="sec-sub">Ce que tu as vécu — de ton point de vue</div>
+    <p>Tu n'étais pas physiquement au Cabaret. Tu étais planquée, branchée sur une connexion improvisée dans un squat que tu changes régulièrement — jamais deux fois le même endroit trop longtemps, une habitude de survie. Tu captais les flux audio de la performance.</p>
+    <p>C'est là que tu as détecté une <strong>intrusion tierce</strong> dans le réseau local — quelqu'un piratait le système du Cabaret en temps réel pour localiser une cible. Les techniques utilisées ressemblaient de manière troublante à celles de ton ancienne organisation. Ton sang s'est glacé. Étaient-ils remontés jusqu'à toi ?</p>
+    <p><strong>Tu n'as jamais su ignorer un danger.</strong> Tu as coupé les caméras, guidé des inconnus vers la sortie via leurs oreillettes — des gens dont tu ne connaissais même pas le nom. Ce n'était pas eux, cette fois. Mais tu tiens maintenant les yeux et les oreilles d'une équipe que tu n'as rencontrée qu'à travers un réseau, et le datapad le plus dangereux de la ville.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ton réseau <span class="num">[04]</span></div>
+    <div class="sec-sub">Les gens que tu connais — de confiance ou non</div>
+    <div class="contact"><div class="contact-name">Contacts anonymes de ton évasion<span class="role">Le Net</span></div><div class="contact-desc">Des gens qui t'ont aidée à disparaître quand tu as fui l'organisation. Des pseudos, des clés de chiffrement, une confiance étrange et bien réelle — tu ne connais leur vrai visage à aucun d'entre eux.</div></div>
+    <div class="contact"><div class="contact-name">La communauté netrunner<span class="role">Confrères paranoïaques</span></div><div class="contact-desc">D'autres runners. Milieu compétitif, méfiant, où les alliances se font et se défont en quelques transferts de données. Personne ne connaît ton vrai visage — ni même ton vrai genre.</div></div>
+    <div class="contact"><div class="contact-name">Courtiers en données<span class="role">Marché de l'info</span></div><div class="contact-desc">Ceux qui achètent et vendent l'information. Tu fais affaire avec eux sans jamais les rencontrer en personne — question de survie autant que d'habitude.</div></div>
+  </div>
+
+  <hr class="dline" data-l="QUI TU ES">
+
+  <div class="sec">
+    <div class="sec-title">Ton histoire <span class="num">[05]</span></div>
+    <div class="sec-sub">D'où tu viens — ce qui t'a construit</div>
+    <p>Enlevée à ta naissance, tu as grandi entre les mains d'une organisation criminelle. Soumise à de nombreuses expériences, tu as été formée pour devenir une netrunner. Pression, manipulations, torture. Tout était fait pour obtenir des résultats — et ça a fonctionné, mais pas comme ils l'espéraient.</p>
+    <p>Tu as fini par t'échapper grâce à tes propres compétences en piratage, retournant leurs méthodes contre eux. Depuis, l'organisation te traque. Par vengeance. Et pour récupérer son investissement — parce que c'est tout ce que tu représentes à leurs yeux.</p>
+    <p>Aujourd'hui en fuite, tu survis dans la rue en te faisant passer pour un garçon, pour rester discrète. Chaque jour sans être retrouvée est une petite victoire que tu ne célèbres jamais vraiment — trop occupée à préparer le jour où ils te retrouveront.</p>
+  </div>
+
+  <hr class="dline" data-l="ZONE GRISE">
+
+  <div class="sec">
+    <div class="sec-title">Rumeurs & intuitions <span class="num">[06]</span></div>
+    <div class="sec-sub">Des choses que tu sens, sans pouvoir les prouver</div>
+    <div class="intuition"><p>Le chiffrement du datapad est du niveau militaire EuroTech. Ce genre de protection ne protège pas des secrets ordinaires. Ce que tu vas en sortir va faire du bruit.</p></div>
+    <div class="intuition"><p>Au moment critique de ton évasion, quelqu'un a effacé tes traces dans le Net — sans quoi, l'organisation t'aurait probablement retrouvée en quelques jours. Tu n'as jamais su qui. Une ombre bienveillante, restée invisible depuis.</p></div>
+    <div class="intuition"><p>Tu sens qu'une présence, dans le Net, semble suivre les mouvements de ton ancienne organisation — presque comme un jeu du chat et de la souris dont tu ignores les règles, et dont tu n'es peut-être pas simple spectatrice.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Tes objectifs <span class="num">[07]</span></div>
+    <div class="sec-sub">Ce qui te fait avancer</div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Rester non-localisée.</b> C'est ta survie la plus élémentaire — avant tout le reste.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Déchiffrer le datapad.</b> Fragment par fragment. Découvrir ce qu'EuroTech cache.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Découvrir qui t'a protégée, et pourquoi.</b> Personne n'efface les traces de quelqu'un sans raison.</div></div>
+  </div>
+
+  <div class="foot">
+    NEO-PARIS / 2077 — DOSSIER <b>MOON</b><br>
+    CHIFFREMENT ACTIF — DESTRUCTION RECOMMANDÉE APRÈS LECTURE
+  </div>
+</div>
+</body>
+</html>

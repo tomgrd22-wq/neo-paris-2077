@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DILEMME COLLECTIF — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,32,64,.25);border-radius:6px;background:rgba(20,5,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#ff2040;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,32,64,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:block;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+#lgo{border-color:#ff2040;color:#ff2040;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(15,5,5,.9);border-bottom:1px solid rgba(255,32,64,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ff2040;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.content{flex:1;padding:30px 20px 60px;max-width:600px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;}
+
+.dq{font-family:'Orbitron',monospace;font-size:17px;font-weight:700;text-align:center;line-height:1.5;color:#fff;max-width:520px;}
+.dopt{width:100%;max-width:420px;padding:16px 20px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.02);cursor:pointer;font-size:14px;color:rgba(255,255,255,.8);text-align:left;transition:all .15s;}
+.dopt:hover{background:rgba(255,255,255,.06);}
+.dopt.mine{border-color:#00ff88;background:rgba(0,255,136,.08);}
+.dopt-bar-wrap{width:100%;max-width:420px;}
+.dopt-bar-lbl{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:rgba(255,255,255,.5);}
+.dopt-bar{height:16px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:10px;}
+.dopt-bar-fill{height:100%;background:#00ccff;transition:width .4s;}
+.dopt-voters{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:14px;}
+
+.mj-setup{width:100%;max-width:480px;display:flex;flex-direction:column;gap:10px;}
+.mj-setup textarea,.mj-setup input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:10px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;}
+.mj-setup textarea{min-height:60px;resize:vertical;}
+.mg-btn{padding:12px 26px;border:2px solid #ff2040;border-radius:8px;background:rgba(255,32,64,.08);color:#ff2040;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+.waiting{text-align:center;color:rgba(255,255,255,.3);font-size:12px;padding:40px 0;}
+.voted-note{font-size:11px;color:#00ff88;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">⚖ DILEMME COLLECTIF</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">⚖ DILEMME COLLECTIF</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var LAYER_ORDER=['tamuro','kiki','fury','hunter','keiyo'];
+var state={phase:'idle',question:'',options:[],votes:{},revealed:false};
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_dilemme_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  render();
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'dl'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';});
+    mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());if(d.type==='state'){state=d.state;render();}}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});}
+
+function render(){
+  var c=document.getElementById('content');
+  if(role==='mj'){renderMJ(c);return;}
+  if(state.phase!=='running'){c.innerHTML='<div class="waiting">En attente que le MJ lance un dilemme...</div>';return;}
+  var myVote=state.votes[role];
+  var html='<div class="dq">'+esc(state.question)+'</div>';
+  if(state.revealed){
+    var total=Object.keys(state.votes).length||1;
+    state.options.forEach(function(opt,i){
+      var count=Object.values(state.votes).filter(function(v){return v===i;}).length;
+      var pct=Math.round((count/total)*100);
+      var voters=Object.keys(state.votes).filter(function(k){return state.votes[k]===i;}).map(function(k){return ROLE_LABELS[k];}).join(', ');
+      html+='<div class="dopt-bar-wrap"><div class="dopt-bar-lbl"><span>'+esc(opt)+'</span><span>'+pct+'%</span></div><div class="dopt-bar"><div class="dopt-bar-fill" style="width:'+pct+'%;"></div></div>'+(voters?'<div class="dopt-voters">'+voters+'</div>':'')+'</div>';
+    });
+  } else {
+    state.options.forEach(function(opt,i){
+      html+='<button class="dopt'+(myVote===i?' mine':'')+'" onclick="castVote('+i+')">'+esc(opt)+'</button>';
+    });
+    if(myVote!==undefined)html+='<div class="voted-note">✓ Vote enregistré — tu peux changer d\'avis tant que le MJ n\'a pas révélé.</div>';
+  }
+  c.innerHTML=html;
+}
+function castVote(i){
+  state.votes[role]=i;
+  pushState();render();
+}
+function renderMJ(c){
+  if(state.phase!=='running'){
+    c.innerHTML='<div class="mj-setup">'
+      +'<div class="llabel">QUESTION / DILEMME</div><textarea id="mj-q" placeholder="Ex: Sacrifier le contrat ou risquer de vous faire tous repérer ?"></textarea>'
+      +'<div class="llabel">OPTIONS (une par ligne, 2 à 4)</div><textarea id="mj-opts" placeholder="On y va tous ensemble&#10;On se sépare en deux groupes&#10;On abandonne pour ce soir"></textarea>'
+      +'<button class="mg-btn" onclick="startDilemme()">▶ LANCER LE DILEMME</button>'
+      +'</div>';
+    return;
+  }
+  var total=Object.keys(state.votes).length;
+  var html='<div class="dq">'+esc(state.question)+'</div><div class="dopt-voters" style="margin-bottom:10px;">'+total+'/'+LAYER_ORDER.length+' ont voté</div>';
+  state.options.forEach(function(opt,i){
+    var count=Object.values(state.votes).filter(function(v){return v===i;}).length;
+    var pct=total>0?Math.round((count/total)*100):0;
+    var voters=Object.keys(state.votes).filter(function(k){return state.votes[k]===i;}).map(function(k){return ROLE_LABELS[k];}).join(', ');
+    html+='<div class="dopt-bar-wrap"><div class="dopt-bar-lbl"><span>'+esc(opt)+'</span><span>'+(state.revealed?pct+'%':(count>0?count+' vote(s)':''))+'</span></div>'
+      +(state.revealed?'<div class="dopt-bar"><div class="dopt-bar-fill" style="width:'+pct+'%;"></div></div>':'')
+      +(state.revealed&&voters?'<div class="dopt-voters">'+voters+'</div>':'')+'</div>';
+  });
+  html+='<button class="mg-btn" onclick="revealVotes()" style="margin-top:10px;">'+(state.revealed?'↺ NOUVEAU DILEMME':'🎯 RÉVÉLER LES VOTES')+'</button>';
+  c.innerHTML=html;
+}
+function startDilemme(){
+  var q=document.getElementById('mj-q').value.trim();
+  var opts=document.getElementById('mj-opts').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  if(!q||opts.length<2)return;
+  state={phase:'running',question:q,options:opts,votes:{},revealed:false};
+  pushState();render();
+}
+function revealVotes(){
+  if(!state.revealed){state.revealed=true;pushState();render();}
+  else{state={phase:'idle',question:'',options:[],votes:{},revealed:false};pushState();render();}
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

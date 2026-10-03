@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Session 1 — Le Premier Contrat — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;line-height:1.65;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(15,5,5,.92);border-bottom:1px solid rgba(255,32,64,.2);position:sticky;top:0;z-index:10;}
+.brand{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:2px;color:#ff2040;text-decoration:none;}
+.back-btn{font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:6px 12px;border-radius:4px;}
+.back-btn:hover{color:#fff;border-color:rgba(255,255,255,.5);}
+.doc{max-width:780px;margin:0 auto;padding:34px 22px 90px;}
+.doc h1{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:1px;color:#ff2040;margin:0 0 6px;line-height:1.3;}
+.doc h2{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:1.5px;color:#ffc83c;margin:34px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(255,200,60,.25);}
+.doc h3{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;color:#00ccff;margin:22px 0 10px;}
+.doc h4{font-size:12px;letter-spacing:1px;color:#bb44ff;margin:18px 0 8px;text-transform:uppercase;}
+.doc p{margin:0 0 14px;font-size:14px;color:#c8c8dc;}
+.doc ul,.doc ol{margin:0 0 14px 22px;font-size:14px;}
+.doc li{margin-bottom:6px;}
+.doc strong{color:#fff;}
+.doc em{color:#ffc83c;font-style:italic;}
+.doc hr{border:none;border-top:1px solid rgba(255,255,255,.12);margin:28px 0;}
+.doc a{color:#00ccff;}
+.doc code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px;font-size:12px;}
+.doc blockquote{border-left:3px solid #ff2040;background:rgba(255,32,64,.06);padding:12px 16px;margin:0 0 16px;border-radius:0 6px 6px 0;}
+.doc blockquote p{margin-bottom:8px;font-size:13px;color:#e8c8d0;}
+.doc blockquote p:last-child{margin-bottom:0;}
+.doc blockquote strong{color:#ff6b85;}
+.doc table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:13px;}
+.doc th{text-align:left;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;color:#ffc83c;padding:8px 10px;border-bottom:2px solid rgba(255,200,60,.3);}
+.doc td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+.doc tr:hover td{background:rgba(255,255,255,.02);}
+.eyebrow{font-size:10px;letter-spacing:3px;color:rgba(255,32,64,.5);margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="topbar"><a class="brand" href="../index.html">⚡ NEO-PARIS 2077</a><a class="back-btn" href="../index.html">← RETOUR AU PORTAIL</a></div>
+<div class="doc">
+<div class="eyebrow">// GUIDE MJ //</div>
+<h1>SESSION 1 — LE PREMIER CONTRAT</h1>
+<h3>Neo-Paris 2077 — Déroulé pour le MJ</h3>
+<p><strong>Date en jeu :</strong> 17.03.2077 (deux jours après le Cabaret Fantôme)<br />
+<strong>Durée estimée :</strong> 3-4h<br />
+<strong>Ambiance :</strong> Intrigue, méfiance, premiers pas en équipe</p>
+<blockquote>
+<p><strong>[SECRET MJ — À NE JAMAIS RÉVÉLER AUX JOUEURS]</strong><br />
+Vercors n'a pas choisi ce groupe seul. Quelqu'un lui a soufflé le nom de Tamuro, et suffisamment d'argent pour couvrir le contrat, dans les heures qui ont suivi le Cabaret Fantôme. Vercors ignore qui. Il a l'habitude de ne pas poser de questions quand les virements sont bons. Cette personne, c'est <strong>L'Observateur</strong> — ton propre personnage. Il tire les ficelles depuis l'ombre, dès cette première session, sans jamais se montrer. Vercors n'est qu'un intermédiaire, aussi manipulé que les PJ.</p>
+<p><strong>Trois fils que L'Observateur tient déjà, à ne révéler qu'au moment venu :</strong><br />
+- <strong>Fury</strong> — C'est lui qui cherche à racheter la dette de Fury auprès de son créancier actuel. Pas par charité : il veut avoir une prise directe sur le medtech, sans intermédiaire.<br />
+- <strong>Moon</strong> — C'est lui, l'« ombre bienveillante » qui l'a protégée dans le Net il y a sept ans, quand elle grattait les serveurs d'EuroTech et aurait dû se faire repérer. Il la surveille — et la protège — depuis longtemps, sans qu'elle sache pourquoi.<br />
+- <strong>Kiki</strong> — Le contact nomade qui ne s'est jamais présenté au rendez-vous, la nuit du Cabaret ? Il n'a jamais existé. C'était un faux rendez-vous, orchestré par L'Observateur, pour s'assurer que Kiki traîne dans le quartier au bon moment — et finisse par croiser le reste du groupe.<br />
+- <strong>Keiyo</strong> — Fil différent des trois autres : ici, L'Observateur n'est pas l'instigateur, mais porte une responsabilité indirecte. Le module de suggestion implanté dans le cyberware esthétique de Keiyo est basé sur d'anciennes recherches du Projet Écho — des travaux que L'Observateur croyait détruits ou emportés en fuyant EuroTech il y a vingt ans. Une partie a fuité ou a été volée, et la division média d'EuroTech-Luxe s'en est servie pour créer ces modules chez leurs artistes « à problèmes ». Les autres artistes disparus ou changés que Keiyo mentionne dans ses intuitions sont d'anciens cobayes, moins chanceux qu'elle. L'Observateur ne l'a découvert qu'en croisant sa route — ce n'est pas de la manipulation directe, mais une culpabilité bien réelle.</p>
+<p><strong>Le fil de Vercors et de L'Observateur, combiné pour Tamuro :</strong><br />
+- <strong>Tamuro</strong> — Vercors ignore tout du passé de Tamuro chez Arasaka. Officiellement recherché pour un attentat qu'il n'a pas commis, Tamuro sait exactement qui est le traître qui a laissé entrer les terroristes et l'a ensuite dénoncé pour se couvrir : <strong>Oni Makai</strong>, second dans la hiérarchie de la branche Arasaka, ancien supérieur direct de son chef assassiné. Le problème n'est pas l'identité — c'est la preuve. <strong>[Secret plus profond, pour la Session 7]</strong> Makai n'a jamais été loyal à Arasaka : c'est une taupe placée par EuroTech-Luxe, et l'attentat était un sabotage corporatif maquillé en terrorisme. L'Observateur ne connaît pas le nom de Makai au départ (Tamuro ne le lui a jamais donné), mais reconnaîtra la signature opérationnelle d'EuroTech une fois qu'il aura creusé — vingt ans chez eux, ça laisse des réflexes. Ce fil est distinct des quatre autres : L'Observateur n'a rien manipulé ici, il propose une aide réelle, en échange d'une dette à venir.</p>
+</blockquote>
+<hr />
+<blockquote>
+<p><strong>[NOTE MJ — KEIYO ABSENTE EN SESSION 1]</strong><br />
+Keiyo ne joue pas cette session (raison de table, pas besoin de justification lourde). En fiction : elle est planquée dans sa chambre d'hôtel miteuse du Bas, téléphone éteint, trop effrayée par les recruteurs corpos repérés au Cabaret pour risquer un contact — même avec le reste du groupe. Elle ne répond pas aux messages. Le groupe peut essayer de la joindre (Scène 4) et tomber sur une boîte vocale saturée ou rien du tout — de quoi installer une inquiétude légère sans qu'il y ait à improviser une scène entière pour elle.</p>
+<p>Conséquences concrètes sur ce déroulé :<br />
+- <strong>Scène 1</strong> — Son réveil reste dans le texte à titre d'information pour toi (ambiance, cohérence), mais ne la fais pas jouer : personne n'incarne Keiyo à la table.<br />
+- <strong>Scène 4</strong> — Le message du recruteur corpo (voir plus bas) ne se joue pas en scène : il arrive dans le vide, elle ne le voit pas encore. Garde-le en réserve, tu le révéleras à son retour (elle le découvrira en rallumant son téléphone), ce qui te laisse une tension toute faite pour sa première scène de la Session 2 ou 3.<br />
+- <strong>Objectifs secrets</strong> — Son amorce personnelle (recruteurs corpos) est simplement reportée, pas perdue : rien à improviser ce soir.<br />
+- Les autres scènes (Vercors, Brakko, trajet) fonctionnent normalement à quatre : aucune ligne de dialogue n'est bloquée par son absence.</p>
+</blockquote>
+<hr />
+<h2>RÉSUMÉ RAPIDE</h2>
+<p>Le groupe n'a pas dormi. Ils n'ont pas de nom collectif, pas de QG, juste cinq numéros dans des téléphones qui n'existaient pas avant cette nuit. Vercors a rappelé Tamuro à <strong>3h22 du matin</strong>, quelques heures à peine après leur fuite du Cabaret. Cette session installe le premier contrat officiel du groupe, distribue l'équipement, sème discrètement les premiers fils personnels de chaque personnage, et se termine sur la route de Bruxelles — porte ouverte sur la Session 2.</p>
+<p><strong>Trame en un coup d'œil :</strong></p>
+<ol>
+<li>Réveil (courte)</li>
+<li>Appel de Vercors → le contrat</li>
+<li><em>(optionnel)</em> Repérage / vérifications avant d'accepter</li>
+<li>Chez Brakko → équipement</li>
+<li>Préparation du départ</li>
+<li><em>(optionnel)</em> Le trajet vers Bruxelles → complication au choix</li>
+<li>Transition vers la Session 2</li>
+</ol>
+<hr />
+<h2>SCÈNE 1 — LE RÉVEIL (courte, à jouer vite)</h2>
+<p><em>Optionnelle, à ne pas faire durer plus de 5 minutes. Sert juste à ancrer où chacun a passé la nuit.</em></p>
+<blockquote>
+<p><strong>[À LIRE OU PARAPHRASER]</strong><br />
+« Neo-Paris ne dort jamais vraiment, mais à 3h22 du matin, il fait au moins semblant. La pluie fine qui tombe sur le Niveau I depuis le Cabaret n'a pas cessé. Quelque part dans cette ville, cinq téléphones vibrent presque en même temps. »</p>
+</blockquote>
+<p>Demande rapidement à chaque joueur où et comment son personnage a fini la nuit précédente :</p>
+<ul>
+<li><strong>Tamuro</strong> — Dans une planque, Vesper couché contre lui. Il n'a pas lâché le datapad. Le bras la lance encore là où Fury l'a recousu — enfin, ce qu'il reste de bras : son cyberbras greffé après sa fuite d'Arasaka le tiraille dans les points d'ancrage.</li>
+<li><strong>Kiki</strong> — Dans son van, garé n'importe où, incapable de dormir. Il repense à son contact qui n'est jamais venu.</li>
+<li><strong>Keiyo</strong> <em>(absente de la table ce soir — info d'ambiance seulement, ne pas faire jouer)</em> — Dans une chambre d'hôtel miteuse du Bas, pas chez elle — trop dangereux si les recruteurs corpos qui l'ont repérée au Cabaret remontent sa trace. Elle a éteint son téléphone.</li>
+<li><strong>Fury</strong> — De retour dans son fourgon-clinique, en train de nettoyer son matériel. Sa dernière dose de CléoGel commence à s'estomper — les mains recommencent à trembler légèrement. Il calcule combien de temps il peut tenir avant la prochaine injection.</li>
+<li><strong>Moon</strong> — Déjà en train de changer de planque, comme toujours après une nuit agitée — trop d'activité réseau autour d'elle pour rester tranquille. Elle n'a pas dormi. Elle repasse en boucle les techniques d'intrusion qu'elle a repérées au Cabaret, cherchant à se convaincre que ce n'était pas <em>eux</em>.</li>
+</ul>
+<blockquote>
+<p><strong>[NOTE MJ]</strong> Si Moon est jouée, c'est le moment idéal de lui glisser discrètement (en message privé si tu joues en ligne, ou en aparté) qu'elle hésite à révéler son passé de fugitive au reste du groupe — surtout le fait qu'une organisation la traque activement. Ne force rien — c'est une graine, pas une obligation.</p>
+</blockquote>
+<hr />
+<h2>SCÈNE 2 — L'APPEL DE VERCORS</h2>
+<p>Le téléphone de Tamuro (ou de n'importe quel joueur, à toi de voir) reçoit un message texte simple : <em>une adresse, une heure, rien d'autre.</em> Charge au groupe de décider s'ils y vont ensemble ou séparément — encourage-les à y aller ensemble, c'est le moment de commencer à fonctionner comme équipe.</p>
+<h3>Lieu : Bureau de Vercors — parking reconverti, Niveau II</h3>
+<blockquote>
+<p><strong>[À LIRE OU PARAPHRASER]</strong><br />
+« L'adresse mène à un parking désaffecté, trois étages sous le niveau de la rue. Une seule ampoule fonctionne encore dans la cage d'escalier. Au fond, une porte métallique rafistolée, et derrière : un bureau qui sent le café froid et le cuir usé, des écrans éteints aux murs, de vieilles cartes de Paris punaisées de travers. »</p>
+</blockquote>
+<p>Un bureau au fond d'un parking désaffecté. Vercors se lève à leur entrée — soixante ans, carrure d'ancien boxeur qui a arrêté trop tard, voix comme du gravier mouillé.</p>
+<blockquote>
+<p><strong>VERCORS :</strong> « Asseyez-vous. Non, pas sur celui-là, il tient avec du scotch. Bien. J'ai regardé ce qui s'est passé au Cabaret depuis mes caméras de rue. Je ne sais pas qui vous êtes, individuellement. Mais vous venez de survivre à quelque chose que des équipes entraînées n'auraient pas géré. J'ai un contrat. »</p>
+<p><strong>TAMURO :</strong> « Quel genre de contrat ? »</p>
+<p><strong>VERCORS :</strong> « Le genre simple. Livrer le datapad que vous avez récupéré à un acheteur, à Bruxelles. Sans vous faire intercepter par EuroTech. 15 000 eurodollars. Partagés comme vous voulez. Plus un service de ma part, à date ultérieure. »</p>
+<p><strong>KIKI :</strong> « Simple ? Rien n'est jamais simple avec un fixer. »</p>
+<p><strong>VERCORS (souriant) :</strong> « Gamin, le jour où tu trouveras un contrat simple à Neo-Paris, appelle-moi. Je veux voir ça. »</p>
+</blockquote>
+<h3>Marge de négociation (si les joueurs poussent)</h3>
+<p>Vercors a de la marge, mais il ne le montre pas tout de suite :</p>
+<ul>
+<li><strong>S'ils demandent plus d'argent</strong> → il descend d'abord à <em>« C'est déjà généreux »</em>, puis cède à <strong>18 000</strong> si un joueur fait un jet social convaincant ou une bonne réplique. Il ne montera pas au-delà sans un levier concret (info, service, menace crédible).</li>
+<li><strong>S'ils demandent des détails sur l'acheteur</strong> → Vercors hausse les épaules : <em>« Un client de client. Je ne pose pas de questions, vous non plus. Vous voulez le nom, ça vous coûte 2 000 de moins. »</em> (voir encadré ci-dessous pour ce qu'il sait vraiment).</li>
+<li><strong>S'ils refusent le contrat</strong> → Vercors ne s'énerve pas. <em>« Votre droit. Mais réfléchissez à qui d'autre pourrait vous appeler, après le Cabaret. »</em> Sous-entendu à peine voilé : EuroTech les cherche déjà, et personne d'autre ne leur fera une offre aussi propre. S'ils persistent à refuser, improvise une complication rapide (l'Unité Calypso les retrouve dans les 24h) qui les ramène de toute façon vers Bruxelles, mais sans le confort du contrat ni les 15 000.</li>
+<li><strong>S'ils veulent ouvrir le datapad avant de le livrer</strong> → Vercors s'y oppose fermement : <em>« Touchez pas à ça. Ce que vous ne savez pas, vous ne pouvez pas le vendre à quelqu'un d'autre — et l'acheteur le saura si le fichier a été altéré. »</em> S'ils le font quand même en cachette, c'est une bonne graine pour la Session 2 (voir plus bas la fiche de contenu du datapad, à garder secrète).</li>
+</ul>
+<h3>[NOTE MJ] Ce que Vercors ne dit pas encore</h3>
+<ul>
+<li>L'acheteur à Bruxelles est un journaliste d'investigation, <strong>Aleksei Novak</strong>. Il prépare un article sur les programmes de modification comportementale d'EuroTech — pertinent si Keiyo est dans le groupe.</li>
+<li>EuroTech a déjà lancé une équipe de récupération, <strong>l'Unité Calypso</strong>, pour ce genre de dossier sensible.</li>
+<li>Vercors a naturellement contacté Tamuro en premier — c'est son edgerunner habituel, rien d'étrange à ça pour l'instant. Le mystère viendra plus tard, pas de cette scène.</li>
+<li><strong>Ce que Vercors ne sait même pas lui-même :</strong> ce contrat n'était pas son idée. Un virement anonyme, accompagné d'un seul message — <em>« Ce groupe. Ce contrat. Ne posez pas de questions. »</em> — est arrivé sur son compte quelques heures après le Cabaret. Il a l'habitude de ne jamais questionner un bon paiement.</li>
+<li><strong>Contenu réel du datapad</strong> <em>(à garder pour toi — ne sort que si un joueur force l'ouverture)</em> : des relevés de recherche partiels du Projet Écho, chiffrés, illisibles sans une clé de déchiffrement qu'Moon n'a pas encore. Un fragment lisible suffit à faire comprendre qu'il s'agit de neurosciences comportementales — de quoi inquiéter n'importe qui qui lit par-dessus l'épaule d'Moon, et un lien direct (non reconnu tout de suite) avec le cyberware de Keiyo.</li>
+</ul>
+<blockquote>
+<p><strong>[NOTE MJ — L'OBSERVATEUR, discrètement]</strong> Si tu veux marquer sa présence sans te dévoiler, glisse un détail visuel en quittant le bureau de Vercors : un homme en imperméable gris, lunettes fumées, immobile de l'autre côté du parking, qui ne fait rien d'autre que regarder le groupe sortir. S'il se sent observé, un joueur perspicace peut faire un jet (Perception/Awareness) pour le remarquer. Si on l'interpelle, il tourne au coin d'un couloir et disparaît — impossible à rattraper. Ne donne jamais plus qu'une silhouette. C'est une graine, pas une scène.</p>
+</blockquote>
+<h3>Fils personnels à glisser ici, si tu veux les amorcer tôt</h3>
+<ul>
+<li><strong>Tamuro</strong> — Rien d'étrange à ce stade : Vercors l'a appelé parce que c'est son edgerunner de confiance. Le fil d'Arasaka et du traître reste en réserve pour plus tard — Tamuro le connaît déjà en partie (lui seul sait qu'un traître existe), mais n'a aucune preuve.</li>
+<li><strong>Fury</strong> — Vercors le regarde et lâche, presque en passant : <em>« On m'a dit que t'avais une dette qui traîne, doc. Fais attention à qui tu dois de l'argent, ces temps-ci. »</em> Fury n'a rien demandé.</li>
+<li><strong>Kiki</strong> — Vercors mentionne, en passant, qu'un « vieil associé » lui a parlé récemment d'une famille de pilotes nomades sur la route Lyon-Bruxelles. Kiki peut relever ou laisser filer — ça pourrait être la sienne.</li>
+</ul>
+<hr />
+<h2>SCÈNE 2.5 — REPÉRAGE (optionnelle, à ne proposer que si le groupe hésite ou veut « vérifier avant de foncer »)</h2>
+<p><em>À sauter si le groupe accepte directement et veut avancer. À utiliser si un joueur dit « on devrait vérifier deux, trois trucs avant » — récompense la prudence sans ralentir la session de plus de 15-20 minutes.</em></p>
+<p>Trois pistes rapides, chacune une scène de quelques minutes :</p>
+<ul>
+<li><strong>Vérifier Vercors</strong> (contact, réseau, ou jet social) → confirme qu'il est un fixer réputé fiable, correct avec ses clients depuis des années. Rien de louche ne remonte sur lui — cohérent avec le fait qu'il ignore lui-même d'où vient l'argent.</li>
+<li><strong>Vérifier l'existence de l'acheteur à Bruxelles</strong> (Moon, en ligne) → un jet de Netrunning modéré révèle qu'un certain « A. Novak » publie occasionnellement des articles d'investigation sous pseudonyme, dernier en date vieux de huit mois. Cohérent, rassurant, mais pas d'accès à son identité complète sans plus de temps.</li>
+<li><strong>Vérifier la prime EuroTech sur le datapad</strong> (rue, contacts, ou juste demander à Brakko en scène 3 en avance) → confirme les 5 000 eurodollars de prime évoqués plus loin. Utile pour évaluer si 15 000 est un bon prix.</li>
+</ul>
+<p>Aucune de ces pistes ne doit révéler l'existence de L'Observateur ni le virement anonyme — ce fil reste hermétique jusqu'à ce que tu décides de le sortir, bien plus tard dans la campagne.</p>
+<hr />
+<h2>SCÈNE 3 — CHEZ BRAKKO</h2>
+<h3>Lieu : Atelier de Brakko, sous-catacombes — trois niveaux sous le Niveau I</h3>
+<p>L'air est humide, les murs suintent. Interphone crachotant à l'entrée d'une porte blindée. Si Tamuro est présent, il connaît déjà le chemin — Brakko est son fournisseur habituel. Pour les autres, c'est une découverte.</p>
+<blockquote>
+<p><em>Si Tamuro entre en premier : « Vipère. Ça fait un bail. » — « Deux semaines, Brakko. » — « C'est un bail, pour moi. »</em></p>
+</blockquote>
+<p><strong>Brakko</strong> : colosse chauve, bras mécaniques couverts de tatouages lumineux. Bazar organisé de chrome et de poudre. Il fabrique, modifie, vend des armes — pas le genre légal. Respect mutuel avec Tamuro, mais aucune loyauté réelle : le business passe avant tout.</p>
+<blockquote>
+<p><strong>BRAKKO :</strong> « Tiens, tu t'es fait des amis. Vercors est au courant ? » <em>(il regarde le reste du groupe)</em> « Qu'est-ce qu'il vous faut ? »</p>
+<p><em>(S'il voit Vesper)</em><br />
+<strong>BRAKKO :</strong> « Toujours aussi charmant, celui-là. Il mord ? »</p>
+<p><strong>TAMURO :</strong> « Seulement les gens qu'il n'aime pas. »</p>
+<p><strong>BRAKKO (riant) :</strong> « J'aime toujours autant cette réponse. »</p>
+</blockquote>
+<h3>[NOTE MJ] Le stock de Brakko (exemples de prix indicatifs, à adapter à ton économie de table)</h3>
+<table>
+<thead>
+<tr>
+<th>Article</th>
+<th>Prix indicatif</th>
+<th>Note de Brakko</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pistolet standard + 2 chargeurs</td>
+<td>300 €$</td>
+<td>« Fiable. Rien d'extraordinaire, mais fiable. »</td>
+</tr>
+<tr>
+<td>Fusil d'assaut compact</td>
+<td>900 €$</td>
+<td>« Bruyant. Efficace. Choisis ton camp. »</td>
+</tr>
+<tr>
+<td>Silencieux (arme de poing)</td>
+<td>150 €$</td>
+<td>« Vercors préfère quand vous en avez un. Moi aussi, en fait. »</td>
+</tr>
+<tr>
+<td>Grenade flash</td>
+<td>120 €$/pièce</td>
+<td>« Trois secondes d'avantage, si t'as de la chance. »</td>
+</tr>
+<tr>
+<td>Gilet pare-balles léger</td>
+<td>250 €$</td>
+<td>« Pas grand-chose contre du gros calibre, mais ça arrête l'essentiel. »</td>
+</tr>
+<tr>
+<td>Kit medtech de base</td>
+<td>200 €$</td>
+<td>« Fury en a sûrement déjà un meilleur, mais bon. »</td>
+</tr>
+<tr>
+<td>Data shard vierge (chiffré)</td>
+<td>80 €$</td>
+<td>« Utile pour transporter ce que vous ne voulez pas qu'on trouve sur vous. »</td>
+</tr>
+<tr>
+<td>Détecteur de traceurs GPS/RFID</td>
+<td>180 €$</td>
+<td><em>« Utile, vu ce que vous transportez. »</em> — Brakko le glisse lui-même s'il devine ce qu'ils font.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Info gratuite de Brakko :</strong> <em>« EuroTech a mis une prime de 5 000 sur un datapad volé au Cabaret. Vous êtes au courant ? »</em> — confirme aux joueurs que l'enjeu est réel et suivi.</p>
+<p><strong>Si le groupe manque de liquide</strong> : Brakko accepte un paiement différé pour un objet, contre une petite dette et un sourire carnassier — <em>« Je note. Tu me revaudras ça. »</em> Un moyen simple de les équiper sans plomber leurs finances dès la Session 1, si tu utilises l'outil Finances du site pour suivre ça.</p>
+<p><strong>Si Fury est dans le groupe</strong>, Brakko peut être l'un des « confrères medtech » qu'il connaît vaguement — une occasion de tisser du lien entre PJ et PNJ récurrent.</p>
+<hr />
+<h2>SCÈNE 4 — PRÉPARATION DU DÉPART (roleplay libre)</h2>
+<p>Laisse le groupe organiser le trajet vers Bruxelles : qui conduit (Kiki, évidemment, si présent), qui garde le datapad (Tamuro le tient toujours), comment ils couvrent leurs traces.</p>
+<p>C'est aussi le bon moment pour :</p>
+<ul>
+<li><strong>Keiyo étant absente</strong>, ce message du recruteur corpo n'est pas joué ce soir : elle ne l'a pas encore vu, téléphone éteint. Si le groupe essaie de la joindre, ils tombent sur une boîte vocale ou rien du tout — de quoi installer une inquiétude légère sans improviser une scène entière. Garde le message en réserve pour son retour à la table.</li>
+<li>Laisser <strong>Moon</strong> vérifier discrètement si son ancienne organisation a laissé des traces récentes de recherche à son sujet. Rien de neuf — mais la vérification est devenue un réflexe qu'elle ne peut plus arrêter.</li>
+<li>Laisser <strong>Kiki</strong> vérifier son van, remarquer que rien n'a été trafiqué (pour l'instant) — mais l'inquiétude sur son contact disparu reste en fond.</li>
+<li>Laisser <strong>Fury</strong> évaluer discrètement combien de temps il peut tenir sans sa prochaine dose de CléoGel — s'il n'a pas prévu le trajet, le manque commencera à se faire sentir en Session 2.</li>
+</ul>
+<hr />
+<h2>SCÈNE 5 — LE TRAJET VERS BRUXELLES (optionnelle, à utiliser si tu veux clore la session sur de l'action ou du suspense plutôt que sur un simple fondu)</h2>
+<p><em>Si le rythme de table est bon et qu'il reste du temps, joue un court incident sur la route — sinon, saute directement à la Transition. Peut aussi servir de premières minutes de la Session 2 si tu préfères garder la Session 1 plus courte et centrée sur Vercors/Brakko.</em></p>
+<p>Tire (ou choisis) un aléa sur la table ci-dessous :</p>
+<table>
+<thead>
+<tr>
+<th>d6</th>
+<th>Aléa sur la route</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Contrôle routier improvisé</strong> — pas la police, une milice locale qui « taxe » les véhicules qui passent sur son secteur. Négociation, bluff, ou détour possible.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Filature discrète</strong> — un jet de Perception/Awareness (Kiki ou Moon en premier) révèle un véhicule qui les suit depuis trop longtemps pour être une coïncidence. Rien ne se passe s'ils ne réagissent pas : c'est une graine pour la Session 2 (l'Unité Calypso les a repérés, mais n'attaque pas encore).</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Panne mécanique mineure</strong> — le van de Kiki a un raté. Rien de grave si Kiki (ou quelqu'un de bricoleur) s'en occupe, mais ça coûte une heure et une scène de tension à l'arrêt, en terrain découvert.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Message inattendu</strong> — le datapad, censé être verrouillé, émet un bref signal sortant avant que Moon ne le coupe. Elle sait qu'elle a réagi à temps, mais ne sait pas si quelqu'un, quelque part, a eu le temps de localiser la source. À toi de décider si l'Unité Calypso en profite plus tard.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Rencontre neutre</strong> — un autre convoi nomade croise leur route ; si Kiki est présent, occasion parfaite de développer son fil personnel (famille de pilotes mentionnée par Vercors, scène 2). Sinon, juste une scène d'ambiance sur la route.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Rien à signaler</strong> — le trajet se passe sans accroc. Utilise ce résultat pour une scène calme de dialogue entre PJ (parfait pour développer les relations d'équipe).</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>[NOTE MJ]</strong> Pour improviser d'autres complications à la volée pendant la partie, utilise l'outil <strong>Oracle de complications</strong> du site (menu MJ → Outils de session) : il tire au hasard un type d'imprévu, un PNJ rapide et un lieu, pour ne jamais rester sec en cours de scène.</p>
+</blockquote>
+<hr />
+<h2>FICHES PNJ RAPIDES</h2>
+<h3>Vercors — Fixer</h3>
+<ul>
+<li><strong>Attitude générale :</strong> Professionnel, jamais chaleureux, jamais hostile. Traite les edgerunners comme des outils fiables, pas des amis.</li>
+<li><strong>Motivation :</strong> Le business tourne, sans poser de questions inutiles — tant que l'argent arrive et que les contrats se terminent proprement.</li>
+<li><strong>Levier des joueurs sur lui :</strong> Une bonne réputation après ce contrat ouvre la porte à de meilleurs contrats futurs et à un peu plus de marge de négociation.</li>
+<li><strong>Ce qu'il ne sait pas (rappel) :</strong> Que ce contrat précis lui a été soufflé et payé par L'Observateur.</li>
+</ul>
+<h3>Brakko — Armurier</h3>
+<ul>
+<li><strong>Attitude générale :</strong> Bourru, blagueur, jamais mesquin. Le respect se gagne en revenant, pas en marchandant fort.</li>
+<li><strong>Motivation :</strong> Vendre, entretenir sa réputation de fournisseur fiable dans les bas-fonds.</li>
+<li><strong>Levier des joueurs sur lui :</strong> Devenir des clients réguliers ouvre l'accès à du matériel plus rare avec le temps (à faire évoluer dans les prochaines sessions).</li>
+</ul>
+<hr />
+<h2>SI LE GROUPE FAIT AUTRE CHOSE QUE PRÉVU</h2>
+<p>Quelques débranchements courants et comment les absorber sans dérailler la session :</p>
+<ul>
+<li><strong>Ils refusent totalement le contrat</strong> — voir l'encadré de négociation en Scène 2 : une complication (recherche EuroTech qui s'intensifie) les ramène naturellement vers un déplacement, contrat ou non.</li>
+<li><strong>Ils veulent vendre le datapad à quelqu'un d'autre qu'à l'acheteur de Vercors</strong> — laisse-les essayer : ça prend du temps, personne de fiable ne mord aussi vite que l'acheteur déjà en place, et Vercors le prend mal s'il l'apprend (petite tension à gérer, pas une rupture).</li>
+<li><strong>Ils décident de ne pas aller chez Brakko</strong> — pas grave, ils partent moins équipés ; garde en tête qu'ils pourront toujours y passer plus tard dans la campagne.</li>
+<li><strong>Un joueur veut confronter Vercors sur l'origine du contrat</strong> — Vercors n'a vraiment rien à cacher qu'il connaisse : il hausse les épaules, sincèrement perplexe qu'on lui pose la question, et ça s'arrête là pour l'instant.</li>
+<li><strong>La session va plus vite que prévu</strong> — enchaîne directement sur la Scène 5 (trajet) même sans avoir prévu de temps restant ; c'est fait pour être modulable.</li>
+</ul>
+<hr />
+<h2>OBJECTIFS DE LA SESSION 1</h2>
+<ul>
+<li>[ ] Le groupe accepte le contrat de Vercors</li>
+<li>[ ] Premier contact et équipement chez Brakko</li>
+<li>[ ] Le groupe commence à fonctionner comme une équipe, même sans confiance totale</li>
+<li>[ ] Plan de trajet vers Bruxelles établi (sert d'ouverture à la Session 2 / 3)</li>
+</ul>
+<h3>Objectifs secrets (le MJ seul)</h3>
+<ul>
+<li>[ ] L'Unité Calypso est déjà en mouvement</li>
+<li>[ ] Vercors a choisi ce groupe pour une raison qu'il ne révèle pas encore</li>
+<li>[ ] <strong>L'Observateur</strong> (ton personnage) a orchestré ce contrat depuis l'ombre — Vercors lui-même ne sait pas qui le paie vraiment</li>
+<li>[ ] Chaque personnage a reçu une amorce discrète de son fil personnel (dette CléoGel de Fury, traque d'Arasaka pour Tamuro, faux contact de Kiki, recruteurs corpos de Keiyo, organisation traquant Moon)</li>
+</ul>
+<hr />
+<h2>TRANSITION VERS LA SESSION 2</h2>
+<p>Termine la session sur le groupe qui monte dans le van de Kiki, prêt à prendre la route. Coupe sur le générique (façon métaphorique) — la Session 2 peut commencer directement sur la route (si tu n'as pas joué la Scène 5), ou sur les premières heures du déchiffrement du datapad par Moon, selon le rythme que tu veux donner.</p>
+</div>
+</body>
+</html>

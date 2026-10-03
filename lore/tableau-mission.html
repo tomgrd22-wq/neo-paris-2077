@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de Mission</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:#07070f;font-family:'Share Tech Mono',monospace;color:#c0c0d4;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);}
+#login{position:fixed;inset:0;background:#07070f;display:flex;align-items:center;justify-content:center;z-index:100;}
+.lw{width:340px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px;}
+.lorb{width:50px;height:50px;border-radius:50%;border:2px solid #d0d0d0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:20px;color:#d0d0d0;animation:orb 2.5s infinite;}
+@keyframes orb{0%,100%{box-shadow:0 0 0 0 rgba(208,208,208,.35);}50%{box-shadow:0 0 0 10px rgba(208,208,208,0);}}
+.lt{font-family:'Orbitron',monospace;font-size:17px;font-weight:700;color:#d0d0d0;letter-spacing:5px;}
+.ls{font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.3);}
+#lcode{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:14px;color:rgba(255,255,255,.8);outline:none;text-align:center;letter-spacing:3px;}
+#lcode:focus{border-color:rgba(255,255,255,.35);}
+.lbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.lbtn{padding:13px;border-radius:3px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;transition:all .2s;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;display:block;margin-bottom:4px;}
+.lbtn small{font-size:9px;letter-spacing:3px;display:block;opacity:.4;}
+.lbtn-e{border-color:rgba(208,208,208,.25);color:#d0d0d0;} .lbtn-e:hover{background:rgba(208,208,208,.06);}
+.lbtn-m{border-color:rgba(255,170,0,.3);color:#ffaa00;} .lbtn-m:hover{background:rgba(255,170,0,.06);}
+#lerr{font-size:11px;color:rgba(255,32,64,.6);letter-spacing:3px;min-height:16px;text-align:center;}
+#app{display:none;height:100vh;flex-direction:column;}
+.topbar{flex-shrink:0;height:46px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(7,7,15,.97);}
+.tb-t{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:4px;color:#d0d0d0;}
+.tb-r{display:flex;align-items:center;gap:10px;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#ffaa00;animation:bk 1s infinite;}
+.cdot.ok{background:#00ff88;animation:none;} .cdot.err{background:#ff2040;animation:none;}
+@keyframes bk{0%,100%{opacity:1;}50%{opacity:.3;}}
+.mbadge{font-size:9px;letter-spacing:3px;color:#ffaa00;border:1px solid rgba(255,170,0,.3);padding:3px 9px;border-radius:2px;background:rgba(255,170,0,.05);}
+.layout{flex:1;display:flex;overflow:hidden;}
+.main{flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;}
+.main::-webkit-scrollbar{width:4px;} .main::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+.sb{width:260px;flex-shrink:0;border-left:1px solid rgba(255,255,255,.07);padding:15px;overflow-y:auto;background:#07070f;display:none;flex-direction:column;gap:12px;}
+.sb::-webkit-scrollbar{width:3px;} .sb::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+.card{border:1px solid rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+.card.full{grid-column:span 2;}
+.ch{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07);font-size:9px;letter-spacing:5px;color:rgba(255,255,255,.28);}
+.cb{padding:13px 14px;}
+.m-title{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:#d0d0d0;letter-spacing:3px;margin-bottom:8px;}
+.m-sbadge{font-size:10px;letter-spacing:4px;padding:4px 13px;border-radius:2px;display:inline-block;border:1px solid;}
+.abars{display:flex;gap:5px;align-items:flex-end;height:34px;margin-bottom:6px;}
+.abar{flex:1;border-radius:2px;transition:all .5s;}
+.albl{font-size:10px;letter-spacing:4px;text-align:center;}
+.obj-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.obj-row:last-child{border-bottom:none;}
+.ochk{width:17px;height:17px;border-radius:2px;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all .2s;}
+.ochk.done{background:#00ff88;border-color:#00ff88;color:#07070f;}
+.otxt{flex:1;font-size:13px;color:rgba(255,255,255,.75);}
+.otxt.done{color:rgba(255,255,255,.3);text-decoration:line-through;}
+.mj-mode .ochk{cursor:pointer;} .mj-mode .ochk:hover{background:rgba(0,255,136,.15);}
+.tmrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.tmrow:last-child{border-bottom:none;}
+.tmnm{flex:1;font-size:12px;letter-spacing:2px;}
+.tmbadge{font-size:9px;letter-spacing:3px;padding:3px 9px;border-radius:2px;border:1px solid;}
+.tmsel{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:3px 8px;border-radius:2px;outline:none;appearance:none;cursor:pointer;}
+.intel-row{font-size:13px;color:rgba(255,255,255,.65);line-height:1.75;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);display:flex;gap:10px;}
+.intel-row:last-child{border-bottom:none;} .intel-row::before{content:"▸";color:rgba(255,255,255,.28);flex-shrink:0;}
+.cd{font-family:'Orbitron',monospace;font-size:36px;font-weight:700;text-align:center;letter-spacing:8px;color:#00ccff;}
+.cd.urgent{color:#ff2040;animation:urg .7s infinite;}
+@keyframes urg{0%,100%{opacity:1;}50%{opacity:.35;}}
+.ntxt{font-size:13px;color:rgba(255,255,255,.6);line-height:1.85;white-space:pre-wrap;}
+.slbl{font-size:9px;letter-spacing:5px;color:rgba(255,255,255,.25);display:block;margin-bottom:8px;}
+.sinp,.ssel,.sta{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.75);outline:none;transition:border-color .2s;}
+.sinp:focus,.ssel:focus,.sta:focus{border-color:rgba(255,255,255,.28);}
+.ssel{appearance:none;cursor:pointer;} .ssel option{background:#0d0d1a;}
+.sta{resize:vertical;min-height:70px;line-height:1.7;}
+.srow{display:flex;gap:8px;} .srow .sinp{flex:1;}
+.sbtn{width:100%;padding:11px;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.sbtn:hover{border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.9);background:rgba(255,255,255,.04);}
+.sbtn-p{border-color:rgba(208,208,208,.3);color:#d0d0d0;}
+.del-btn{background:transparent;border:none;cursor:pointer;color:rgba(255,32,64,.35);font-size:12px;font-family:monospace;flex-shrink:0;transition:color .2s;padding:0 4px;}
+.del-btn:hover{color:rgba(255,32,64,.8);}
+.ssep{border:none;border-top:1px solid rgba(255,255,255,.07);margin:4px 0;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="lorb">★</div>
+    <div class="lt">MISSION</div>
+    <div class="ls">NEO-PARIS — TABLEAU DE BORD</div>
+    <input id="lcode" type="text" placeholder="Code de session...">
+    <div class="lbtns">
+      <button class="lbtn lbtn-e" id="btn-player"><b>ÉQUIPE</b><small>// LECTURE</small></button>
+      <button class="lbtn lbtn-m" id="btn-mj"><b>MJ</b><small>// CONTRÔLE</small></button>
+    </div>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div id="app" style="flex-direction:column;">
+  <div class="topbar">
+    <span class="tb-t">★ TABLEAU DE MISSION</span>
+    <div class="tb-r">
+      <div class="cdot" id="cdot"></div>
+      <span id="mbadge" class="mbadge" style="display:none;">⚠ MJ</span>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="main" id="main"></div>
+    <div class="sb" id="sb">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;color:#d0d0d0;margin-bottom:6px;">CONTRÔLES MJ</div>
+      <div><span class="slbl">TITRE</span><input class="sinp" id="s-title" placeholder="Nom de la mission..."></div>
+      <div><span class="slbl">STATUT</span>
+        <select class="ssel" id="s-status">
+          <option value="prep">PRÉPARATION</option><option value="active">ACTIVE</option>
+          <option value="critique">CRITIQUE</option><option value="done">TERMINÉE</option>
+        </select>
+      </div>
+      <div><span class="slbl">ALERTE (1-5)</span>
+        <input type="range" id="s-alert" min="1" max="5" value="1" style="width:100%;accent-color:#ff2040;cursor:pointer;background:transparent;border:none;padding:4px 0;" oninput="document.getElementById('av').textContent=this.value">
+        <div id="av" style="text-align:center;font-size:14px;color:#ff2040;margin-top:2px;">1</div>
+      </div>
+      <hr class="ssep">
+      <div><span class="slbl">OBJECTIF</span>
+        <div class="srow"><input class="sinp" id="s-obj" placeholder="Ajouter..."><button class="sbtn" style="width:40px;" onclick="addObj()">+</button></div>
+      </div>
+      <div><span class="slbl">INTEL</span>
+        <div class="srow"><input class="sinp" id="s-intel" placeholder="Information..."><button class="sbtn" style="width:40px;" onclick="addIntel()">+</button></div>
+      </div>
+      <div><span class="slbl">COMPTE À REBOURS (minutes)</span>
+        <div class="srow">
+          <input type="number" class="sinp" id="s-timer" placeholder="min..." min="0" style="flex:1;">
+          <button class="sbtn" style="width:38px;" onclick="startTimer()">▶</button>
+          <button class="sbtn" style="width:38px;" onclick="stopTimer()">■</button>
+        </div>
+      </div>
+      <div><span class="slbl">NOTES</span><textarea class="sta" id="s-notes" placeholder="Notes..."></textarea></div>
+      <button class="sbtn sbtn-p" onclick="push()">▶ METTRE À JOUR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var BROKER = 'wss://broker.emqx.io:8084/mqtt';
+var client = null, role = '', scode = '', topic = '';
+var TEAM = ['TAMURO','KIKI','KEIYO','FURY','MOON'];
+var TCOLORS = {TAMURO:'#ff2040',KIKI:'#ffaa00',KEIYO:'#ff33cc',FURY:'#00ff88',MOON:'#00ccff'};
+var SCOL = {prep:'#00ccff',active:'#00ff88',critique:'#ff2040',done:'#606078'};
+var SLBL = {prep:'PRÉPARATION',active:'ACTIVE',critique:'CRITIQUE',done:'TERMINÉE'};
+var ACOL = ['','#00ff88','#aaff00','#ffaa00','#ff6600','#ff2040'];
+var TSTAT = {ok:{l:'OK',c:'#00ff88'},blesse:{l:'BLESSÉ',c:'#ffaa00'},ko:{l:'KO',c:'#ff2040'}};
+var state = {title:'',status:'prep',alert:1,objectives:[],intel:[],team:{TAMURO:'ok',KIKI:'ok',KEIYO:'ok',FURY:'ok',MOON:'ok'},notes:'',timerEnd:null};
+var timerIv = null;
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pub(){ if(client && client.connected) client.publish(topic, JSON.stringify({type:'mission',state:state})); }
+function save(){ try{ localStorage.setItem('mission_'+scode, JSON.stringify(state)); }catch(e){} }
+
+document.getElementById('btn-player').onclick = function(){ go('player'); };
+document.getElementById('btn-mj').onclick = function(){ go('mj'); };
+document.getElementById('s-obj').onkeydown = function(e){ if(e.key==='Enter') addObj(); };
+document.getElementById('s-intel').onkeydown = function(e){ if(e.key==='Enter') addIntel(); };
+
+function go(r) {
+  var code = document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  document.getElementById('lerr').textContent = '';
+  if(!code || code.length < 3) { document.getElementById('lerr').textContent = 'Code trop court (3 min)'; return; }
+  role = r; scode = code; topic = 'spectre_mission_v3_' + code;
+  document.getElementById('lerr').textContent = 'Connexion en cours...';
+  document.getElementById('btn-player').disabled = true;
+  document.getElementById('btn-mj').disabled = true;
+
+  client = mqtt.connect(BROKER, {clientId:'m'+Date.now(), clean:true, connectTimeout:8000, reconnectPeriod:3000});
+
+  client.on('connect', function() {
+    client.subscribe(topic, function(err) {
+      if(err){ document.getElementById('lerr').textContent = 'Erreur abonnement'; return; }
+      document.getElementById('login').style.display = 'none';
+      var app = document.getElementById('app');
+      app.style.display = 'flex';
+      document.getElementById('cdot').className = 'cdot ok';
+      try{ var s=JSON.parse(localStorage.getItem('mission_'+scode)); if(s) state=s; }catch(e){}
+      if(role === 'mj'){
+        var sb = document.getElementById('sb');
+        sb.style.display = 'flex'; sb.style.flexDirection = 'column';
+        document.getElementById('mbadge').style.display = 'inline';
+      }
+      render();
+      if(state.timerEnd && state.timerEnd > Date.now()) startCountdown(state.timerEnd);
+    });
+  });
+
+  client.on('message', function(t, payload) {
+    try {
+      var d = JSON.parse(payload.toString());
+      if(d.type === 'mission'){ state = d.state; save(); render(); if(state.timerEnd && state.timerEnd > Date.now()) startCountdown(state.timerEnd); else if(!state.timerEnd) stopCountdown(); }
+      else if(d.type === 'tstop') stopCountdown();
+    } catch(ex) {}
+  });
+
+  client.on('error', function(){ document.getElementById('lerr').textContent = 'Réseau inaccessible'; document.getElementById('btn-player').disabled=false; document.getElementById('btn-mj').disabled=false; });
+  client.on('offline', function(){ document.getElementById('cdot').className='cdot err'; });
+  client.on('reconnect', function(){ document.getElementById('cdot').className='cdot'; });
+}
+
+function addObj() { var v=document.getElementById('s-obj').value.trim(); if(!v)return; state.objectives.push({id:'o'+Date.now(),text:v,done:false}); document.getElementById('s-obj').value=''; save(); pub(); render(); }
+function addIntel() { var v=document.getElementById('s-intel').value.trim(); if(!v)return; state.intel.push({id:'i'+Date.now(),text:v}); document.getElementById('s-intel').value=''; save(); pub(); render(); }
+function toggleObj(id) { var o=state.objectives.find(function(x){return x.id===id;}); if(o){o.done=!o.done; save(); pub(); render();} }
+function delObj(id) { state.objectives=state.objectives.filter(function(x){return x.id!==id;}); save(); pub(); render(); }
+function delIntel(id) { state.intel=state.intel.filter(function(x){return x.id!==id;}); save(); pub(); render(); }
+function setTeam(name, s) { state.team[name]=s; save(); pub(); render(); }
+function push() { state.title=document.getElementById('s-title').value.trim()||state.title; state.status=document.getElementById('s-status').value; state.alert=parseInt(document.getElementById('s-alert').value); state.notes=document.getElementById('s-notes').value; save(); pub(); render(); }
+function startTimer() { var m=parseInt(document.getElementById('s-timer').value); if(isNaN(m)||m<0)return; var end=Date.now()+m*60000; state.timerEnd=end; save(); pub(); startCountdown(end); }
+function stopTimer() { state.timerEnd=null; save(); if(client&&client.connected)client.publish(topic,JSON.stringify({type:'tstop'})); stopCountdown(); }
+function startCountdown(end) {
+  stopCountdown();
+  timerIv = setInterval(function(){
+    var left=Math.max(0,end-Date.now());
+    var el=document.getElementById('cd-el'); if(!el)return;
+    var m=Math.floor(left/60000), s=Math.floor((left%60000)/1000);
+    el.className='cd'+(left<300000?' urgent':'');
+    el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if(left===0)clearInterval(timerIv);
+  }, 500);
+}
+function stopCountdown() { if(timerIv){clearInterval(timerIv);timerIv=null;} var el=document.getElementById('cd-el'); if(el){el.className='cd';el.textContent='--:--';} }
+
+function render() {
+  var sc=SCOL[state.status]||'#606078', html='';
+
+  // Mission card
+  html += '<div class="card full"><div class="ch">MISSION</div><div class="cb" style="display:flex;justify-content:space-between;align-items:start;gap:20px;">';
+  html += '<div><div class="m-title">'+(esc(state.title)||'— SANS TITRE —')+'</div>';
+  html += '<span class="m-sbadge" style="color:'+sc+';border-color:'+sc+'66;background:'+sc+'18;">'+SLBL[state.status]+'</span></div>';
+  html += '<div style="text-align:center;flex-shrink:0;"><div class="abars">';
+  for(var i=1;i<=5;i++){ html+='<div class="abar" style="height:'+(i*6)+'px;background:'+(i<=state.alert?ACOL[i]:'rgba(255,255,255,.08)')+'"></div>'; }
+  html += '</div><div class="albl" style="color:'+ACOL[state.alert]+'">ALERTE '+state.alert+'</div></div></div></div>';
+
+  // Team card
+  html += '<div class="card"><div class="ch">ÉQUIPE</div><div class="cb" id="team-cb">';
+  TEAM.forEach(function(m){ var ts=state.team[m]||'ok', tc=TSTAT[ts]||TSTAT.ok;
+    html += '<div class="tmrow"><span class="tmnm" style="color:'+TCOLORS[m]+'">'+m+'</span>';
+    if(role==='mj'){
+      html += '<select class="tmsel" data-member="'+m+'" style="background:'+tc.c+'18;border:1px solid '+tc.c+'44;color:'+tc.c+';">';
+      Object.keys(TSTAT).forEach(function(k){ html+='<option value="'+k+'"'+(ts===k?' selected':'')+'>'+TSTAT[k].l+'</option>'; });
+      html += '</select>';
+    } else { html += '<span class="tmbadge" style="color:'+tc.c+';border-color:'+tc.c+'44;background:'+tc.c+'18;">'+tc.l+'</span>'; }
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Countdown card
+  html += '<div class="card"><div class="ch">COMPTE À REBOURS</div><div class="cb"><div class="cd" id="cd-el">--:--</div></div></div>';
+
+  // Objectives card
+  html += '<div class="card full"><div class="ch">OBJECTIFS</div><div class="cb" id="obj-cb">';
+  if(!state.objectives.length) html += '<div style="font-size:10px;color:rgba(255,255,255,.22);letter-spacing:3px;">Aucun objectif.</div>';
+  state.objectives.forEach(function(o){
+    html += '<div class="obj-row'+(role==='mj'?' mj-mode':'')+'" data-oid="'+o.id+'">';
+    html += '<div class="ochk'+(o.done?' done':'')+'">'+(o.done?'✓':'')+'</div>';
+    html += '<div class="otxt'+(o.done?' done':'')+'">'+esc(o.text)+'</div>';
+    if(role==='mj') html += '<button class="del-btn" data-del-obj="'+o.id+'">✕</button>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Intel card
+  html += '<div class="card full"><div class="ch">INTEL</div><div class="cb" id="intel-cb">';
+  if(!state.intel.length) html += '<div style="font-size:10px;color:rgba(255,255,255,.22);letter-spacing:3px;">Aucune intel.</div>';
+  state.intel.forEach(function(i){
+    html += '<div class="intel-row">'+esc(i.text);
+    if(role==='mj') html += ' <button class="del-btn" style="margin-left:auto;" data-del-intel="'+i.id+'">✕</button>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Notes card
+  html += '<div class="card full"><div class="ch">NOTES</div><div class="cb"><div class="ntxt">'+(esc(state.notes)||'—')+'</div></div></div>';
+
+  document.getElementById('main').innerHTML = html;
+
+  // Event delegation (avoids inline onclick with escaped quotes)
+  document.getElementById('obj-cb').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-del-obj]');
+    if(btn){ delObj(btn.dataset.delObj); return; }
+    if(role==='mj'){ var row=e.target.closest('[data-oid]'); if(row) toggleObj(row.dataset.oid); }
+  });
+  document.getElementById('intel-cb').addEventListener('click', function(e){
+    var btn=e.target.closest('[data-del-intel]'); if(btn) delIntel(btn.dataset.delIntel);
+  });
+  document.getElementById('team-cb').addEventListener('change', function(e){
+    var sel=e.target.closest('[data-member]'); if(sel) setTeam(sel.dataset.member, sel.value);
+  });
+
+  // Update sidebar
+  if(role==='mj'){
+    document.getElementById('s-title').value = state.title;
+    document.getElementById('s-status').value = state.status;
+    document.getElementById('s-alert').value = state.alert;
+    document.getElementById('av').textContent = state.alert;
+    document.getElementById('s-notes').value = state.notes||'';
+  }
+  if(state.timerEnd && state.timerEnd > Date.now()) startCountdown(state.timerEnd);
+}
+</script>
+</body></html>

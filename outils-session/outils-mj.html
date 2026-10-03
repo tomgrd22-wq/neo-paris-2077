@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OUTILS DE TABLE — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:400px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,200,60,.25);border-radius:6px;background:rgba(20,15,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;color:#ffc83c;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,200,60,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lbtn{padding:12px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;text-align:center;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+.lbtn-p{border-color:#00ccff;color:#00ccff;}
+.lbtn-m{border-color:#e8e8f0;color:#e8e8f0;}
+#lgo{border-color:#ffc83c;color:#ffc83c;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(15,12,5,.9);border-bottom:1px solid rgba(255,200,60,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffc83c;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+
+.tabs{display:flex;gap:4px;padding:10px 14px;background:rgba(0,0,0,.3);flex-wrap:wrap;}
+.tab{padding:9px 16px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.tab.on{border-color:#ffc83c;color:#ffc83c;background:rgba(255,200,60,.08);}
+
+.content{flex:1;padding:24px 18px 60px;max-width:640px;margin:0 auto;width:100%;}
+.pane{display:none;}
+.pane.on{display:block;}
+
+/* TENSION */
+.tension-wrap{text-align:center;}
+.tension-val{font-family:'Orbitron',monospace;font-size:52px;font-weight:900;margin-bottom:10px;}
+.tension-bar{width:100%;height:24px;border-radius:12px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.15);margin-bottom:20px;}
+.tension-fill{height:100%;transition:width .4s,background .4s;}
+.tension-lbl{font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:24px;}
+.tension-ctrl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.tbtn{padding:12px 18px;border-radius:8px;border:1px solid;background:transparent;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* JOURNAL */
+.j-add{display:flex;gap:8px;margin-bottom:20px;}
+.j-add textarea{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:10px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:13px;resize:none;min-height:44px;}
+.j-add button{padding:0 18px;border-radius:6px;border:1px solid #00ff88;color:#00ff88;background:rgba(0,255,136,.08);font-family:'Orbitron',monospace;font-size:11px;cursor:pointer;}
+.j-entry{border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px 16px;margin-bottom:10px;background:rgba(255,255,255,.02);}
+.j-meta{font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.35);margin-bottom:6px;display:flex;justify-content:space-between;}
+.j-text{font-size:14px;color:rgba(255,255,255,.8);line-height:1.5;white-space:pre-wrap;}
+.j-del{background:none;border:none;color:rgba(255,32,64,.5);cursor:pointer;font-size:11px;}
+.j-empty{text-align:center;color:rgba(255,255,255,.25);padding:30px 0;font-size:12px;}
+
+/* CALENDRIER */
+.c-add{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;padding:16px;border:1px dashed rgba(255,255,255,.15);border-radius:8px;}
+.c-add input,.c-add textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:9px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;}
+.c-add button{padding:10px;border-radius:6px;border:1px solid #00ccff;color:#00ccff;background:rgba(0,204,255,.08);font-family:'Orbitron',monospace;font-size:11px;cursor:pointer;}
+.c-entry{border-left:3px solid #ffc83c;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px;background:rgba(255,255,255,.02);display:flex;justify-content:space-between;gap:10px;align-items:start;}
+.c-label{font-family:'Orbitron',monospace;font-size:13px;color:#ffc83c;margin-bottom:4px;}
+.c-desc{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;}
+.c-del{background:none;border:none;color:rgba(255,32,64,.5);cursor:pointer;font-size:14px;flex-shrink:0;}
+.c-empty{text-align:center;color:rgba(255,255,255,.25);padding:30px 0;font-size:12px;}
+
+/* PNJ GEN */
+.npc-card{border:1px solid rgba(0,255,136,.3);border-radius:10px;padding:24px;background:rgba(0,255,136,.03);text-align:center;margin-bottom:20px;min-height:180px;display:flex;flex-direction:column;justify-content:center;gap:10px;}
+.npc-name{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00ff88;}
+.npc-role{font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;}
+.npc-trait,.npc-want{font-size:13.5px;color:rgba(255,255,255,.75);line-height:1.5;}
+.npc-lbl{font-size:8px;letter-spacing:2px;color:rgba(0,255,136,.5);margin-top:6px;}
+.npc-gen-btn{width:100%;padding:14px;border-radius:8px;border:2px solid #00ff88;color:#00ff88;background:rgba(0,255,136,.08);font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+
+.mj-only-note{text-align:center;font-size:11px;color:rgba(255,255,255,.3);padding:40px 20px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">🛠 OUTILS DE TABLE</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid">
+      <button class="lbtn lbtn-p" data-r="joueur" onclick="selRole('joueur')">JOUEUR</button>
+      <button class="lbtn lbtn-m" data-r="mj" onclick="selRole('mj')">MJ</button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">🛠 OUTILS DE TABLE</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="content">
+    <div class="pane" id="pane-tension"></div>
+    <div class="pane" id="pane-journal"></div>
+    <div class="pane" id="pane-calendrier"></div>
+    <div class="pane" id="pane-pnj"></div>
+    <div class="pane" id="pane-butin"></div>
+    <div class="pane" id="pane-evenements"></div>
+    <div class="pane" id="pane-sondage"></div>
+  </div>
+</div>
+
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var currentTab='tension';
+var state={tension:0,journal:[],calendar:[],sondageOpen:false,sondageResponses:[]};
+
+/* ═════ LOGIN ═════ */
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_mjtools_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  buildTabs();
+  connectMQTT();
+}
+
+/* ═════ MQTT (état complet retenu) ═════ */
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'mt'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){
+      mc.subscribe(topic);
+      document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';
+    });
+    mc.on('message',function(t,p){
+      try{
+        var d=JSON.parse(p.toString());
+        if(d.type==='state'){state=d.state;renderCurrentTab();}
+      }catch(e){}
+    });
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){
+  if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});
+}
+
+/* ═════ TABS ═════ */
+function buildTabs(){
+  var tabsEl=document.getElementById('tabs');
+  var list=[{k:'tension',lbl:'🌡 TENSION'},{k:'journal',lbl:'📓 JOURNAL'},{k:'calendrier',lbl:'📅 CALENDRIER'}];
+  if(role==='mj')list.push({k:'pnj',lbl:'🎭 PNJ'});
+  if(role==='mj')list.push({k:'butin',lbl:'💰 BUTIN'});
+  if(role==='mj')list.push({k:'evenements',lbl:'🎲 ÉVÉNEMENTS'});
+  list.push({k:'sondage',lbl:'📋 SONDAGE'});
+  tabsEl.innerHTML='';
+  list.forEach(function(t){
+    var b=document.createElement('button');b.className='tab'+(t.k===currentTab?' on':'');b.textContent=t.lbl;
+    b.onclick=function(){switchTab(t.k);};
+    tabsEl.appendChild(b);
+  });
+  renderCurrentTab();
+}
+function switchTab(k){
+  currentTab=k;
+  document.querySelectorAll('.tab').forEach(function(b,i){});
+  buildTabs();
+}
+function renderCurrentTab(){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+  var pane=document.getElementById('pane-'+currentTab);
+  if(pane)pane.classList.add('on');
+  if(currentTab==='tension')renderTension();
+  else if(currentTab==='journal')renderJournal();
+  else if(currentTab==='calendrier')renderCalendrier();
+  else if(currentTab==='pnj')renderPNJ();
+  else if(currentTab==='butin')renderButin();
+  else if(currentTab==='evenements')renderEvenements();
+  else if(currentTab==='sondage')renderSondage();
+}
+
+/* ═════ TENSION ═════ */
+function tensionColor(v){
+  if(v<34)return '#00ff88';
+  if(v<67)return '#ffaa00';
+  return '#ff2040';
+}
+function tensionLabel(v){
+  if(v<20)return 'CALME';
+  if(v<40)return 'VIGILANCE';
+  if(v<60)return 'SUSPICION';
+  if(v<80)return 'ALERTE';
+  return 'DANGER CRITIQUE';
+}
+function renderTension(){
+  var v=state.tension||0;
+  var col=tensionColor(v);
+  var html='<div class="tension-wrap">'
+    +'<div class="tension-val" style="color:'+col+';">'+v+'%</div>'
+    +'<div class="tension-bar"><div class="tension-fill" style="width:'+v+'%;background:'+col+';"></div></div>'
+    +'<div class="tension-lbl" style="color:'+col+';">'+tensionLabel(v)+'</div>';
+  if(role==='mj'){
+    html+='<div class="tension-ctrl">'
+      +'<button class="tbtn" style="border-color:#00ff88;color:#00ff88;" onclick="adjTension(-15)">−15</button>'
+      +'<button class="tbtn" style="border-color:#00ff88;color:#00ff88;" onclick="adjTension(-5)">−5</button>'
+      +'<button class="tbtn" style="border-color:#ff2040;color:#ff2040;" onclick="adjTension(5)">+5</button>'
+      +'<button class="tbtn" style="border-color:#ff2040;color:#ff2040;" onclick="adjTension(15)">+15</button>'
+      +'<button class="tbtn" style="border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.6);" onclick="setTension(0)">RÉINITIALISER</button>'
+      +'</div>';
+  }
+  html+='</div>';
+  document.getElementById('pane-tension').innerHTML=html;
+}
+function adjTension(d){setTension(Math.max(0,Math.min(100,(state.tension||0)+d)));}
+function setTension(v){state.tension=v;pushState();renderTension();}
+
+/* ═════ JOURNAL ═════ */
+function renderJournal(){
+  var html='<div class="j-add"><textarea id="j-input" placeholder="Noter un indice, un événement, une info utile..."></textarea><button onclick="addJournalEntry()">AJOUTER</button></div>';
+  if(!state.journal||state.journal.length===0){
+    html+='<div class="j-empty">Aucune entrée pour l\'instant.</div>';
+  } else {
+    state.journal.slice().reverse().forEach(function(e){
+      html+='<div class="j-entry"><div class="j-meta"><span>'+esc(e.author)+' — '+esc(e.time)+'</span>'+(role==='mj'?'<button class="j-del" onclick="delJournalEntry('+e.id+')">✕ supprimer</button>':'')+'</div><div class="j-text">'+esc(e.text)+'</div></div>';
+    });
+  }
+  document.getElementById('pane-journal').innerHTML=html;
+}
+function addJournalEntry(){
+  var input=document.getElementById('j-input');
+  var text=input.value.trim();
+  if(!text)return;
+  if(!state.journal)state.journal=[];
+  var now=new Date();
+  state.journal.push({id:Date.now(),author:role==='mj'?'MJ':'Joueur',time:(now.getHours()<10?'0':'')+now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes(),text:text});
+  pushState();renderJournal();
+}
+function delJournalEntry(id){
+  state.journal=(state.journal||[]).filter(function(e){return e.id!==id;});
+  pushState();renderJournal();
+}
+
+/* ═════ CALENDRIER ═════ */
+function renderCalendrier(){
+  var html='';
+  if(role==='mj'){
+    html+='<div class="c-add"><input id="c-label" type="text" placeholder="Ex: Échéance dette Fury"><textarea id="c-desc" placeholder="Détail (optionnel)" style="min-height:50px;"></textarea><button onclick="addCalEntry()">+ AJOUTER UNE ÉCHÉANCE</button></div>';
+  }
+  if(!state.calendar||state.calendar.length===0){
+    html+='<div class="c-empty">Aucune échéance enregistrée.</div>';
+  } else {
+    state.calendar.forEach(function(e){
+      html+='<div class="c-entry"><div><div class="c-label">'+esc(e.label)+'</div>'+(e.desc?'<div class="c-desc">'+esc(e.desc)+'</div>':'')+'</div>'+(role==='mj'?'<button class="c-del" onclick="delCalEntry('+e.id+')">✕</button>':'')+'</div>';
+    });
+  }
+  document.getElementById('pane-calendrier').innerHTML=html;
+}
+function addCalEntry(){
+  var label=document.getElementById('c-label').value.trim();
+  var desc=document.getElementById('c-desc').value.trim();
+  if(!label)return;
+  if(!state.calendar)state.calendar=[];
+  state.calendar.push({id:Date.now(),label:label,desc:desc});
+  pushState();renderCalendrier();
+}
+function delCalEntry(id){
+  state.calendar=(state.calendar||[]).filter(function(e){return e.id!==id;});
+  pushState();renderCalendrier();
+}
+
+/* ═════ GÉNÉRATEUR PNJ (local, MJ uniquement) ═════ */
+var NPC_PRENOMS=['Voss','Aeliana','Dray','Nyx','Corbin','Mira','Theo','Sana','Ilan','Freya','Marcus','Yuki','Diego','Anya','Kato','Lior','Nadia','Erik','Soraya','Milo','Camille','Reza','Talia','Owen'];
+var NPC_ROLES=['fixer occasionnel','videur de club','informateur de rue','commerçant du marché noir','ancien flic','netrunner freelance','chauffeur clandestin','médecin de fortune','garde du corps','artiste de rue','mécanicien','dealer d\'implants d\'occasion'];
+var NPC_TRAITS=['parle sans jamais regarder dans les yeux','a un tic nerveux à la main gauche','rit trop fort au mauvais moment','porte des lunettes fumées même en intérieur','mâche quelque chose en permanence','a une cicatrice qu\'il/elle refuse d\'expliquer','parle très bas, oblige à se pencher','collectionne des objets bizarres','a un accent qu\'on ne place jamais','ne s\'assoit jamais dos à une porte','se ronge les ongles sans arrêt','répète la fin de vos phrases'];
+var NPC_ENVIES=['veut quitter la ville avant la fin du mois','cherche à rembourser une dette dangereuse','protège un secret de famille','veut se venger d\'un ancien employeur','cherche un moyen de sortir du crime','veut juste qu\'on le/la laisse tranquille','cherche à percer dans le milieu artistique','protège quelqu\'un qu\'il/elle aime en secret','cherche des informations sur quelqu\'un de disparu','veut prouver sa valeur à quelqu\'un'];
+function renderPNJ(){
+  if(role!=='mj'){document.getElementById('pane-pnj').innerHTML='<div class="mj-only-note">Réservé au MJ.</div>';return;}
+  document.getElementById('pane-pnj').innerHTML='<div class="npc-card" id="npc-card"><div style="color:rgba(255,255,255,.3);font-size:12px;">Clique pour générer un PNJ</div></div><button class="npc-gen-btn" onclick="genNPC()">🎲 GÉNÉRER UN PNJ</button>';
+}
+function genNPC(){
+  var name=NPC_PRENOMS[Math.floor(Math.random()*NPC_PRENOMS.length)];
+  var role_=NPC_ROLES[Math.floor(Math.random()*NPC_ROLES.length)];
+  var trait=NPC_TRAITS[Math.floor(Math.random()*NPC_TRAITS.length)];
+  var envie=NPC_ENVIES[Math.floor(Math.random()*NPC_ENVIES.length)];
+  document.getElementById('npc-card').innerHTML=
+    '<div class="npc-name">'+name+'</div>'
+    +'<div class="npc-role">'+role_+'</div>'
+    +'<div class="npc-lbl">MANIE</div><div class="npc-trait">'+trait+'</div>'
+    +'<div class="npc-lbl">VEUT VRAIMENT</div><div class="npc-want">'+envie+'</div>';
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ═════ ÉVÉNEMENTS DE RUE / MISSIONS EXPRESS (local, MJ uniquement) ═════ */
+var STREET_EVENTS=['Un contrôle de sécurité surgit sans prévenir','Un PNJ perdu demande son chemin, insistant','Un embouteillage suspect bloque la route','Une bagarre éclate non loin, attire l\'attention','Un vendeur de rue insiste pour montrer sa marchandise','Une patrouille de gang passe, méfiante','Un drone de surveillance survole lentement la zone','Quelqu\'un vous reconnaît et chuchote votre nom','Une averse soudaine, tout le monde se met à l\'abri','Un mendiant vous demande un service en échange d\'une info','Une pub holographique agressive vous cible personnellement','Un clochard vous prévient d\'un danger, incohérent mais insistant'];
+var SIDE_MISSIONS=['Récupérer un colis discret pour un contact','Escorter quelqu\'un jusqu\'à un point sûr','Effacer des traces numériques compromettantes pour quelqu\'un','Négocier un accès temporaire à une zone fermée','Retrouver un objet perdu dans Le Bas','Livrer un message oral, rien d\'écrit, à quelqu\'un de méfiant','Surveiller un rendez-vous de loin, sans intervenir','Convaincre un témoin réticent de parler'];
+function renderEvenements(){
+  if(role!=='mj'){document.getElementById('pane-evenements').innerHTML='<div class="mj-only-note">Réservé au MJ.</div>';return;}
+  document.getElementById('pane-evenements').innerHTML=
+    '<div class="npc-card" id="evt-card"><div style="color:rgba(255,255,255,.3);font-size:12px;">Choisis un type à générer</div></div>'
+    +'<button class="npc-gen-btn" onclick="genEvent(\'street\')" style="border-color:#00ccff;color:#00ccff;background:rgba(0,204,255,.08);margin-bottom:8px;">🎲 ÉVÉNEMENT DE RUE</button>'
+    +'<button class="npc-gen-btn" onclick="genEvent(\'mission\')" style="border-color:#ffaa00;color:#ffaa00;background:rgba(255,170,0,.08);">📋 MISSION SECONDAIRE EXPRESS</button>';
+}
+function genEvent(type){
+  var pool=type==='street'?STREET_EVENTS:SIDE_MISSIONS;
+  var txt=pool[Math.floor(Math.random()*pool.length)];
+  var lbl=type==='street'?'ÉVÉNEMENT DE RUE':'MISSION SECONDAIRE';
+  document.getElementById('evt-card').innerHTML='<div class="npc-lbl">'+lbl+'</div><div class="npc-trait" style="font-size:15px;">'+txt+'</div>';
+}
+
+/* ═════ SONDAGE DE FIN DE SÉANCE ═════ */
+function renderSondage(){
+  var html='';
+  if(role==='mj'){
+    html+='<div class="fac-row" style="margin-bottom:20px;"><button class="fac-btn" style="border-color:'+(state.sondageOpen?'#ff2040':'#00ff88')+';color:'+(state.sondageOpen?'#ff2040':'#00ff88')+';padding:10px 18px;" onclick="toggleSondage()">'+(state.sondageOpen?'✕ FERMER LE SONDAGE':'▶ OUVRIR LE SONDAGE')+'</button></div>';
+    if(!state.sondageResponses||state.sondageResponses.length===0){
+      html+='<div class="j-empty">Aucune réponse pour l\'instant.</div>';
+    } else {
+      state.sondageResponses.forEach(function(r){
+        html+='<div class="j-entry"><div class="j-meta"><span>'+esc(r.author)+'</span><span>'+'⭐'.repeat(r.note)+'</span></div>'
+          +'<div class="j-text"><b>Moment préféré :</b> '+esc(r.moment)+'</div>'
+          +'<div class="j-text" style="margin-top:6px;"><b>A manqué :</b> '+esc(r.manque)+'</div></div>';
+      });
+    }
+  } else {
+    if(!state.sondageOpen){
+      html='<div class="j-empty">Le MJ n\'a pas encore ouvert le sondage de fin de séance.</div>';
+    } else {
+      html='<div class="c-add"><input id="s-moment" type="text" placeholder="Ton moment préféré de la session ?">'
+        +'<input id="s-manque" type="text" placeholder="Qu\'est-ce qui t\'a manqué ?">'
+        +'<div class="llabel" style="margin:4px 0;">NOTE GLOBALE</div>'
+        +'<div id="s-stars" style="display:flex;gap:8px;font-size:24px;">'+[1,2,3,4,5].map(function(n){return '<span style="cursor:pointer;opacity:.3;" data-n="'+n+'" onclick="setStar('+n+')">⭐</span>';}).join('')+'</div>'
+        +'<button onclick="submitSondage()">ENVOYER</button></div>';
+    }
+  }
+  document.getElementById('pane-sondage').innerHTML=html;
+}
+function toggleSondage(){state.sondageOpen=!state.sondageOpen;pushState();renderSondage();}
+var sondageStar=0;
+function setStar(n){
+  sondageStar=n;
+  document.querySelectorAll('#s-stars span').forEach(function(s){s.style.opacity=(parseInt(s.dataset.n)<=n)?'1':'.3';});
+}
+function submitSondage(){
+  var moment=document.getElementById('s-moment').value.trim();
+  var manque=document.getElementById('s-manque').value.trim();
+  if(!moment&&!manque){return;}
+  if(!state.sondageResponses)state.sondageResponses=[];
+  state.sondageResponses.push({author:'Joueur '+(state.sondageResponses.length+1),moment:moment,manque:manque,note:sondageStar||3});
+  pushState();
+  document.getElementById('pane-sondage').innerHTML='<div class="j-empty">✓ Merci, ta réponse a été envoyée.</div>';
+}
+
+/* ═════ BUTIN COLLECTIF (local, MJ uniquement) ═════ */
+var LOOT_ARGENT=['150 eb en liquide','420 eb via virement anonyme','800 eb en crypto-monnaie corpo','50 eb, presque rien','2000 eb — un vrai coup'];
+var LOOT_OBJETS=['un implant optique d\'occasion','une puce de données chiffrée','un flingue de collection sans munitions','un badge d\'accès périmé mais recyclable','un flacon de stim non identifié','un bijou visiblement volé ailleurs','une carte-mémoire endommagée','un gadget corpo dernier cri, encore sous garantie'];
+var LOOT_INFOS=['l\'adresse d\'une planque secondaire d\'un gang','une rumeur sur un mouvement Arasaka','un contact utile pour la suite','une info compromettante sur un PNJ croisé','rien d\'exploitable, une impasse'];
+function renderButin(){
+  if(role!=='mj'){document.getElementById('pane-butin').innerHTML='<div class="mj-only-note">Réservé au MJ.</div>';return;}
+  document.getElementById('pane-butin').innerHTML='<div class="npc-card" id="butin-card"><div style="color:rgba(255,255,255,.3);font-size:12px;">Clique pour générer un butin de fin de mission</div></div><button class="npc-gen-btn" onclick="genButin()" style="border-color:#ffc83c;color:#ffc83c;background:rgba(255,200,60,.08);">💰 GÉNÉRER UN BUTIN</button>';
+}
+function genButin(){
+  var argent=LOOT_ARGENT[Math.floor(Math.random()*LOOT_ARGENT.length)];
+  var objet=LOOT_OBJETS[Math.floor(Math.random()*LOOT_OBJETS.length)];
+  var info=LOOT_INFOS[Math.floor(Math.random()*LOOT_INFOS.length)];
+  document.getElementById('butin-card').innerHTML=
+    '<div class="npc-lbl">ARGENT</div><div class="npc-trait">'+argent+'</div>'
+    +'<div class="npc-lbl">OBJET</div><div class="npc-trait">'+objet+'</div>'
+    +'<div class="npc-lbl">INFORMATION</div><div class="npc-want">'+info+'</div>';
+}
+
+/* ===== AUTO-CONNEXION VIA LIEN DU PORTAIL (?code=xxx&role=yyy) ===== */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){
+    var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;
+    var mapped=(roleParam==='mj')?'mj':'joueur';
+    selRole(mapped);
+    setTimeout(function(){go();},50);
+  }
+})();
+</script>
+</body>
+</html>

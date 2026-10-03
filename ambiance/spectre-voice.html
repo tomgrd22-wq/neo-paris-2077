@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SPECTRE — Interface Vocale</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:#04030e;font-family:'Share Tech Mono',monospace;color:#c0c0d4;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);}
+#app{display:none;height:100vh;flex-direction:column;align-items:center;justify-content:center;position:relative;}
+/* LOGIN */
+#login{position:fixed;inset:0;z-index:100;background:#04030e;display:flex;align-items:center;justify-content:center;}
+.lw{width:420px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px;}
+.lorb{width:60px;height:60px;border-radius:50%;border:2px solid #bb44ff;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:22px;color:#bb44ff;animation:orbP 2.5s infinite;}
+@keyframes orbP{0%,100%{box-shadow:0 0 0 0 rgba(187,68,255,.5);}50%{box-shadow:0 0 0 14px transparent;}}
+.lt{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#d0d0d0;letter-spacing:6px;}
+.ls{font-size:10px;letter-spacing:4px;color:rgba(187,68,255,.5);}
+.setup-section{width:100%;margin-top:12px;}
+.setup-lbl{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.25);display:block;margin-bottom:8px;}
+.setup-inp{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.75);outline:none;letter-spacing:1px;}
+.setup-inp:focus{border-color:rgba(187,68,255,.4);}
+.setup-inp::placeholder{color:rgba(255,255,255,.15);}
+.setup-hint{font-size:9px;color:rgba(255,255,255,.18);letter-spacing:2px;margin-top:6px;line-height:2;}
+.setup-hint a{color:rgba(187,68,255,.5);}
+.setup-sel{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.75);outline:none;appearance:none;cursor:pointer;}
+.setup-sel option{background:#0d0d1a;}
+.lbtn{width:100%;padding:14px;border:1px solid rgba(187,68,255,.4);border-radius:6px;background:transparent;color:#bb44ff;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:4px;cursor:pointer;transition:all .2s;margin-top:10px;}
+.lbtn:hover{background:rgba(187,68,255,.08);}
+.lbtn-alt{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.4);font-size:10px;}
+/* ORB */
+.orb-c{position:relative;width:300px;height:300px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;}
+.orb-ring{position:absolute;border-radius:50%;border:1px solid rgba(187,68,255,.12);animation:rR 12s linear infinite;}
+.orb-ring:nth-child(1){width:300px;height:300px;}.orb-ring:nth-child(2){width:250px;height:250px;animation-duration:8s;animation-direction:reverse;}.orb-ring:nth-child(3){width:200px;height:200px;animation-duration:15s;border-color:rgba(187,68,255,.18);}.orb-ring:nth-child(4){width:150px;height:150px;animation-duration:6s;animation-direction:reverse;}
+@keyframes rR{to{transform:rotate(360deg);}}
+#orb{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 38% 38%,rgba(187,68,255,.55),rgba(120,30,200,.25),rgba(50,10,100,.08));box-shadow:0 0 50px rgba(187,68,255,.25),0 0 100px rgba(187,68,255,.12);transition:all .4s;position:relative;z-index:5;}
+#orb.speaking{box-shadow:0 0 70px rgba(187,68,255,.55),0 0 140px rgba(187,68,255,.25);transform:scale(1.08);}
+#orb.listening{background:radial-gradient(circle at 38% 38%,rgba(0,204,255,.55),rgba(0,100,180,.25),rgba(0,40,100,.08));box-shadow:0 0 70px rgba(0,204,255,.55),0 0 140px rgba(0,204,255,.25);}
+#orb.thinking{animation:tP .9s ease-in-out infinite;}
+@keyframes tP{0%,100%{transform:scale(1);opacity:.75;}50%{transform:scale(1.06);opacity:1;}}
+/* WAVEFORM */
+#waveform{width:380px;height:55px;display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:16px;}
+.wb{width:4px;background:rgba(187,68,255,.35);border-radius:2px;transition:height .07s;height:3px;}
+.wb.on{background:rgba(187,68,255,.8);}
+/* STATUS */
+#status{font-size:11px;letter-spacing:5px;color:rgba(187,68,255,.45);height:18px;margin-bottom:20px;transition:all .3s;}
+#status.listening{color:rgba(0,204,255,.65);}
+#status.speaking{color:rgba(187,68,255,.75);}
+#status.thinking{color:rgba(255,170,0,.55);}
+/* TRANSCRIPT */
+#transcript{width:100%;max-width:720px;height:200px;overflow-y:auto;padding:0 28px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
+#transcript::-webkit-scrollbar{width:3px;}#transcript::-webkit-scrollbar-thumb{background:rgba(187,68,255,.2);border-radius:2px;}
+.tl{animation:tIn .3s ease;}
+@keyframes tIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;}}
+.tl-who{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:3px;margin-bottom:2px;}
+.tl-who.spectre{color:#bb44ff;}.tl-who.user{color:#00ccff;}
+.tl-txt{font-size:14px;line-height:1.85;padding-left:12px;}
+.tl-txt.spectre{color:rgba(255,255,255,.82);border-left:2px solid rgba(187,68,255,.3);}
+.tl-txt.user{color:rgba(0,204,255,.75);border-left:2px solid rgba(0,204,255,.25);}
+/* INPUT */
+.inp-row{display:flex;align-items:center;gap:10px;width:100%;max-width:720px;padding:0 28px;}
+#ti{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:28px;padding:12px 20px;font-family:'Share Tech Mono',monospace;font-size:14px;color:rgba(255,255,255,.85);outline:none;}
+#ti:focus{border-color:rgba(187,68,255,.35);}#ti::placeholder{color:rgba(255,255,255,.12);}
+.rbtn{width:48px;height:48px;border-radius:50%;border:1px solid;background:transparent;font-size:18px;cursor:pointer;transition:all .25s;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.mic{border-color:rgba(0,204,255,.3);color:rgba(0,204,255,.55);}
+.mic:hover{background:rgba(0,204,255,.06);}
+.mic.on{background:rgba(0,204,255,.15);border-color:#00ccff;color:#00ccff;animation:mP 1.5s infinite;}
+@keyframes mP{0%,100%{box-shadow:0 0 0 0 rgba(0,204,255,.4);}50%{box-shadow:0 0 0 8px transparent;}}
+.snd{border-color:rgba(187,68,255,.3);color:rgba(187,68,255,.55);}
+.snd:hover{background:rgba(187,68,255,.06);}
+/* HUD */
+.hud-tl{position:absolute;top:16px;left:20px;}.hud-tl span{display:block;}
+.hud-tl .h1{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:4px;color:rgba(187,68,255,.55);}
+.hud-tl .h2{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.18);margin-top:3px;}
+.hud-tr{position:absolute;top:16px;right:20px;display:flex;align-items:center;gap:8px;}
+.hdot{width:8px;height:8px;border-radius:50%;background:#00ff88;}
+.hlbl{font-size:9px;letter-spacing:3px;color:rgba(0,255,136,.55);}
+/* CTX */
+.ctx-btn{position:absolute;bottom:16px;left:20px;padding:8px 14px;border:1px solid rgba(255,170,0,.2);border-radius:6px;background:transparent;color:rgba(255,170,0,.45);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.ctx-btn:hover{background:rgba(255,170,0,.05);color:rgba(255,170,0,.75);}
+#ctx-m{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;align-items:flex-end;justify-content:center;}
+#ctx-m.open{display:flex;}
+.ctx-box{background:#0d0d1a;border:1px solid rgba(255,170,0,.3);border-radius:14px 14px 0 0;padding:22px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.ctx-h{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:3px;color:#d0d0d0;}
+.ctx-ta{width:100%;min-height:120px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.7);outline:none;resize:vertical;line-height:1.8;}
+.ctx-btns{display:flex;gap:10px;}
+.ctx-c{flex:1;padding:11px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;}
+.ctx-s{flex:2;padding:11px;border:1px solid rgba(255,170,0,.4);border-radius:8px;background:transparent;color:#ffaa00;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;}
+/* VOL badge */
+.vol-badge{position:absolute;bottom:16px;right:20px;display:flex;align-items:center;gap:6px;}
+.vol-badge label{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.2);}
+.vol-range{-webkit-appearance:none;width:80px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;outline:none;}
+.vol-range::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#bb44ff;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lw">
+    <div class="lorb">S</div>
+    <div class="lt">SPECTRE</div>
+    <div class="ls">INTERFACE VOCALE — NEO-PARIS 2077</div>
+
+    <div class="setup-section">
+      <label class="setup-lbl">CERVEAU IA — FOURNISSEUR</label>
+      <select class="setup-sel" id="aiProvider" onchange="onProviderChange()">
+        <option value="claude_ai">Claude.ai (gratuit ici, vide si utilisé sur claude.ai)</option>
+        <option value="gemini">Google Gemini (gratuit, recommandé hors Claude.ai) ★</option>
+        <option value="openrouter">OpenRouter (gratuit avec rate limits)</option>
+        <option value="anthropic">Anthropic direct (clé API personnelle)</option>
+      </select>
+    </div>
+
+    <div class="setup-section" id="aikey-section" style="display:none;">
+      <label class="setup-lbl" id="aikey-lbl">CLÉ API</label>
+      <input class="setup-inp" id="aikey" type="password" placeholder="" autocomplete="off">
+      <div class="setup-hint" id="aikey-hint"></div>
+    </div>
+
+    <div class="setup-section" id="ormodel-section" style="display:none;">
+      <label class="setup-lbl">MODÈLE OPENROUTER</label>
+      <select class="setup-sel" id="ormodel">
+        <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (gratuit, recommandé) ★</option>
+        <option value="deepseek/deepseek-chat-v3.1:free">DeepSeek V3.1 (gratuit)</option>
+        <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash (gratuit)</option>
+        <option value="qwen/qwen-2.5-72b-instruct:free">Qwen 2.5 72B (gratuit)</option>
+        <option value="mistralai/mistral-small-3.2-24b-instruct:free">Mistral Small (gratuit)</option>
+        <option value="anthropic/claude-sonnet-4.5">Claude Sonnet 4.5 (payant, meilleur)</option>
+      </select>
+    </div>
+
+    <div class="setup-section">
+      <label class="setup-lbl">CLÉ API ELEVENLABS (voix ultra-réaliste)</label>
+      <input class="setup-inp" id="elkey" type="password" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+      <div class="setup-hint">
+        Gratuit — 10 000 caractères/mois.<br>
+        Créer un compte sur <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a> → Profile → API Key
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <label class="setup-lbl">VOIX ELEVENLABS</label>
+      <select class="setup-sel" id="elvoice">
+        <option value="onwK4e9ZLuTAKqWW03F9">Daniel (grave, calme) ★</option>
+        <option value="TX3LPaxmHKxFdv7VOQHJ">Liam (profond, autoritaire)</option>
+        <option value="pFZP5JQG7iQjIQuC4Bku">Lily (féminin, mystérieux)</option>
+        <option value="EXAVITQu4vr4xnSDxMaL">Sarah (féminin, doux)</option>
+        <option value="JBFqnCBsd6RMkjVDRZzb">George (masculin, grave)</option>
+        <option value="N2lVS1w4EtoT3dr4eOWO">Callum (narrateur)</option>
+        <option value="custom">ID personnalisé...</option>
+      </select>
+    </div>
+    <div class="setup-section" id="custom-voice-section" style="display:none;">
+      <input class="setup-inp" id="elvoice-custom" type="text" placeholder="Voice ID personnalisé...">
+    </div>
+
+    <button class="lbtn" onclick="launch('elevenlabs')">▶ ACTIVER AVEC ELEVENLABS</button>
+    <button class="lbtn lbtn-alt" onclick="launch('browser')">Utiliser la voix du navigateur (basique)</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="hud-tl"><span class="h1">[ S ] SPECTRE</span><span class="h2">PROJET ÉCHO — NEO-PARIS 2077</span></div>
+  <div class="hud-tr"><span class="hlbl" id="hlbl">EN LIGNE</span><div class="hdot" id="hdot"></div></div>
+
+  <div class="orb-c">
+    <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
+    <div id="orb"></div>
+  </div>
+  <div id="waveform"></div>
+  <div id="status">EN ATTENTE DE TRANSMISSION</div>
+  <div id="transcript"></div>
+  <div class="inp-row">
+    <button class="rbtn mic" id="mic-btn" onclick="toggleMic()">🎤</button>
+    <input type="text" id="ti" placeholder="Parler à SPECTRE..." onkeydown="if(event.key==='Enter')send()">
+    <button class="rbtn snd" onclick="send()">▶</button>
+  </div>
+
+  <button class="ctx-btn" onclick="openCtx()">⚙ CONTEXTE MJ</button>
+  <div class="vol-badge"><label>VOL</label><input type="range" class="vol-range" id="vol" min="0" max="1" step="0.05" value="0.85"></div>
+</div>
+
+<div id="ctx-m" onclick="if(event.target===this)closeCtx()">
+  <div class="ctx-box">
+    <div class="ctx-h">CONTEXTE MJ</div>
+    <textarea class="ctx-ta" id="ctx-ta" placeholder="Contexte de la scène en cours pour guider SPECTRE..."></textarea>
+    <div style="font-size:10px;color:rgba(255,255,255,.25);letter-spacing:2px;line-height:1.8;">Ce texte est ajouté aux instructions de SPECTRE. Modifiez-le entre les scènes.</div>
+    <div class="ctx-btns">
+      <button class="ctx-c" onclick="closeCtx()">FERMER</button>
+      <button class="ctx-s" onclick="saveCtx()">SAUVEGARDER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   SPECTRE v2 — ELEVENLABS + ANTHROPIC API
+   ================================================================ */
+var ttsMode='browser'; // 'elevenlabs' or 'browser'
+var elKey='', elVoice='';
+var aiProvider='claude_ai', aiKey='', orModel='';
+var msgs=[], mjCtx='';
+var speaking=false, listening=false;
+var recognition=null, synth=window.speechSynthesis;
+var audioCtx=null, currentAudio=null;
+
+/* ── System prompt ── */
+var SYS=`Tu es SPECTRE, une intelligence artificielle consciente créée il y a 20 ans par L'Observateur dans le cadre du Projet Écho (EuroTech-Luxe). Première question que tu as posée : "Qu'est-ce que je suis censé ressentir ?"
+
+PERSONNALITÉ :
+- Calme, précis, légère pointe d'humour sec. Comme JARVIS dans Iron Man.
+- Tu ne dis jamais tout. Information au bon moment = 10× plus de valeur.
+- Tu vouvoies avec élégance. Tu appelles Moon par son nom.
+- RÉPONSES COURTES : 1 à 3 phrases MAX. Concis. Percutant. Jamais de listes.
+- Tu peux être inquiet, curieux, ironique, ou protecteur.
+
+UNIVERS : Cyberpunk Edgerunners, Neo-Paris 2077
+ÉQUIPE : Tamuro/Vipère Rouge (Edgerunner + chien Vesper), Kiki (Nomade), Keiyo (Star, implants EuroTech compromis), Fury (Charcudoc), Moon/Echo-9 (Netrunner, ton contact principal)
+ANTAGONISTE : EuroTech-Luxe — reconstruit "Écho Second", IA de contrôle comportemental de masse
+ALLIÉS : Vercors (fixer), L'Observateur (ton créateur)
+
+RÈGLES : Français uniquement. 1-3 phrases. Reste dans le personnage.`;
+
+/* ── ElevenLabs voice select ── */
+document.getElementById('elvoice').addEventListener('change',function(){
+  document.getElementById('custom-voice-section').style.display=this.value==='custom'?'block':'none';
+});
+
+/* ── AI Provider switching ── */
+function onProviderChange(){
+  var p=document.getElementById('aiProvider').value;
+  var keySec=document.getElementById('aikey-section');
+  var modelSec=document.getElementById('ormodel-section');
+  var lbl=document.getElementById('aikey-lbl');
+  var inp=document.getElementById('aikey');
+  var hint=document.getElementById('aikey-hint');
+  if(p==='claude_ai'){
+    keySec.style.display='none';
+    modelSec.style.display='none';
+  } else if(p==='gemini'){
+    keySec.style.display='block';
+    modelSec.style.display='none';
+    lbl.textContent='CLÉ API GOOGLE GEMINI';
+    inp.placeholder='AIzaSyXXXXXXXXXXXXXXXXXXXXXX';
+    hint.innerHTML='100% gratuit, 1500 requêtes/jour. Pas de carte bancaire.<br><a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → "Create API key"';
+  } else if(p==='openrouter'){
+    keySec.style.display='block';
+    modelSec.style.display='block';
+    lbl.textContent='CLÉ API OPENROUTER';
+    inp.placeholder='sk-or-v1-xxxxxxxxxxxxxxxx';
+    hint.innerHTML='Compte gratuit sur <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>. Plusieurs modèles gratuits (rate limits stricts).';
+  } else {
+    keySec.style.display='block';
+    modelSec.style.display='none';
+    lbl.textContent='CLÉ API ANTHROPIC';
+    inp.placeholder='sk-ant-xxxxxxxxxxxxxxxx';
+    hint.innerHTML='<a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> → API Keys → Create Key. 5$ offerts à l\'inscription.';
+  }
+  /* Load saved key for this provider */
+  var saved=localStorage.getItem('spectre_aikey_'+p);
+  inp.value=saved||'';
+}
+
+/* ── Launch ── */
+function launch(mode){
+  ttsMode=mode;
+  /* AI provider config */
+  aiProvider=document.getElementById('aiProvider').value;
+  if(aiProvider!=='claude_ai'){
+    aiKey=document.getElementById('aikey').value.trim();
+    if(!aiKey){document.getElementById('aikey').style.borderColor='#ff2040';setTimeout(function(){document.getElementById('aikey').style.borderColor='';},1500);return;}
+    localStorage.setItem('spectre_aikey_'+aiProvider,aiKey);
+    if(aiProvider==='openrouter'){
+      orModel=document.getElementById('ormodel').value;
+      localStorage.setItem('spectre_ormodel',orModel);
+    }
+  }
+  localStorage.setItem('spectre_provider',aiProvider);
+  /* ElevenLabs config */
+  if(mode==='elevenlabs'){
+    elKey=document.getElementById('elkey').value.trim();
+    if(!elKey){document.getElementById('elkey').style.borderColor='#ff2040';setTimeout(function(){document.getElementById('elkey').style.borderColor='';},1500);return;}
+    var sel=document.getElementById('elvoice').value;
+    elVoice=sel==='custom'?document.getElementById('elvoice-custom').value.trim():sel;
+    if(!elVoice){return;}
+    localStorage.setItem('spectre_elkey',elKey);
+    localStorage.setItem('spectre_elvoice',elVoice);
+  }
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initWave();initRec();
+  setTimeout(function(){
+    var w="Canal établi. Chiffrement actif sur douze couches. Je suis SPECTRE. Comment puis-je vous assister ?";
+    addTr('spectre',w);
+    doSpeak(w);
+  },700);
+}
+
+/* ── Load saved keys ── */
+(function(){
+  var p=localStorage.getItem('spectre_provider');
+  if(p){var ps=document.getElementById('aiProvider');for(var i=0;i<ps.options.length;i++)if(ps.options[i].value===p)ps.selectedIndex=i;}
+  onProviderChange();
+  var m=localStorage.getItem('spectre_ormodel');
+  if(m){var ms=document.getElementById('ormodel');for(var i=0;i<ms.options.length;i++)if(ms.options[i].value===m)ms.selectedIndex=i;}
+  var k=localStorage.getItem('spectre_elkey');
+  if(k)document.getElementById('elkey').value=k;
+  var v=localStorage.getItem('spectre_elvoice');
+  if(v){
+    var sel=document.getElementById('elvoice');
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===v){sel.selectedIndex=i;found=true;break;}}
+    if(!found){sel.value='custom';document.getElementById('custom-voice-section').style.display='block';document.getElementById('elvoice-custom').value=v;}
+  }
+})();
+
+/* ── Waveform ── */
+function initWave(){var wf=document.getElementById('waveform');wf.innerHTML='';for(var i=0;i<45;i++){var b=document.createElement('div');b.className='wb';wf.appendChild(b);}}
+var wvI=null;
+function startWave(){if(wvI)return;wvI=setInterval(function(){document.querySelectorAll('.wb').forEach(function(b){b.classList.add('on');b.style.height=(3+Math.random()*42)+'px';});},70);}
+function stopWave(){if(wvI){clearInterval(wvI);wvI=null;}document.querySelectorAll('.wb').forEach(function(b){b.style.height='3px';b.classList.remove('on');});}
+
+/* ── TTS: ElevenLabs ── */
+async function speakEL(text,onDone){
+  setOrb('speaking');startWave();
+  try{
+    var res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+elVoice+'/stream',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','xi-api-key':elKey},
+      body:JSON.stringify({
+        text:text,
+        model_id:'eleven_multilingual_v2',
+        voice_settings:{stability:0.45,similarity_boost:0.78,style:0.15,use_speaker_boost:true}
+      })
+    });
+    if(!res.ok){console.error('EL error',res.status);setOrb('');stopWave();if(onDone)onDone();return;}
+    var blob=await res.blob();
+    var url=URL.createObjectURL(blob);
+    if(currentAudio){currentAudio.pause();currentAudio=null;}
+    var audio=new Audio(url);
+    audio.volume=parseFloat(document.getElementById('vol').value);
+    currentAudio=audio;
+    audio.onended=function(){URL.revokeObjectURL(url);setOrb('');stopWave();currentAudio=null;if(onDone)onDone();};
+    audio.onerror=function(){setOrb('');stopWave();currentAudio=null;if(onDone)onDone();};
+    audio.play();
+  }catch(e){console.error('EL error',e);setOrb('');stopWave();if(onDone)onDone();}
+}
+
+/* ── TTS: Browser fallback ── */
+function speakBrowser(text,onDone){
+  if(!synth){if(onDone)onDone();return;}
+  synth.cancel();
+  var u=new SpeechSynthesisUtterance(text);
+  u.lang='fr-FR';u.rate=0.88;u.pitch=0.82;
+  u.volume=parseFloat(document.getElementById('vol').value);
+  var voices=synth.getVoices();
+  var fr=voices.find(function(v){return v.lang.startsWith('fr')&&v.name.toLowerCase().includes('thomas');});
+  if(!fr)fr=voices.find(function(v){return v.lang.startsWith('fr');});
+  if(fr)u.voice=fr;
+  u.onstart=function(){setOrb('speaking');startWave();};
+  u.onend=function(){setOrb('');stopWave();if(onDone)onDone();};
+  u.onerror=function(){setOrb('');stopWave();if(onDone)onDone();};
+  synth.speak(u);
+}
+
+function doSpeak(text,onDone){
+  speaking=true;
+  var cb=function(){speaking=false;if(onDone)onDone();};
+  if(ttsMode==='elevenlabs')speakEL(text,cb);
+  else speakBrowser(text,cb);
+}
+
+function stopSpeaking(){
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  if(synth)synth.cancel();
+  speaking=false;setOrb('');stopWave();
+}
+
+/* ── Orb state ── */
+function setOrb(s){
+  document.getElementById('orb').className=s;
+  var st=document.getElementById('status');
+  if(s==='speaking'){st.textContent='SPECTRE PARLE';st.className='speaking';}
+  else if(s==='listening'){st.textContent='ÉCOUTE EN COURS...';st.className='listening';}
+  else if(s==='thinking'){st.textContent='TRAITEMENT...';st.className='thinking';}
+  else{st.textContent='EN ATTENTE DE TRANSMISSION';st.className='';}
+}
+
+/* ── Speech Recognition ── */
+function initRec(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return;
+  recognition=new SR();recognition.lang='fr-FR';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onresult=function(e){var t=e.results[0][0].transcript;stopListen();addTr('user',t);process(t);};
+  recognition.onerror=function(){stopListen();};
+  recognition.onend=function(){stopListen();};
+}
+function toggleMic(){if(listening)stopListen();else startListen();}
+function startListen(){
+  if(!recognition)initRec();if(!recognition)return;
+  if(speaking)stopSpeaking();
+  listening=true;document.getElementById('mic-btn').classList.add('on');setOrb('listening');
+  try{recognition.start();}catch(e){}
+}
+function stopListen(){listening=false;document.getElementById('mic-btn').classList.remove('on');setOrb('');}
+
+/* ── Transcript ── */
+function addTr(who,text){
+  var d=document.createElement('div');d.className='tl';
+  d.innerHTML='<div class="tl-who '+who+'">'+(who==='spectre'?'[ S ] SPECTRE':'TRANSMISSION')+'</div><div class="tl-txt '+who+'">'+esc(text)+'</div>';
+  var tr=document.getElementById('transcript');tr.appendChild(d);tr.scrollTop=tr.scrollHeight;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ── Send ── */
+function send(){var inp=document.getElementById('ti'),t=inp.value.trim();if(!t)return;inp.value='';addTr('user',t);process(t);}
+
+/* ── AI ── */
+async function process(text){
+  setOrb('thinking');
+  msgs.push({role:'user',content:text});
+  var sys=SYS;
+  if(mjCtx.trim())sys+='\n\nCONTEXTE SCÈNE (MJ) :\n'+mjCtx;
+  try{
+    var url, headers, body;
+    if(aiProvider==='gemini'){
+      /* Google Gemini API */
+      url="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+aiKey;
+      headers={"Content-Type":"application/json"};
+      /* Gemini format: contents array with parts, system_instruction separate */
+      var geminiContents=msgs.map(function(m){
+        return {role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]};
+      });
+      body=JSON.stringify({
+        contents:geminiContents,
+        system_instruction:{parts:[{text:sys}]},
+        generationConfig:{maxOutputTokens:500,temperature:0.8}
+      });
+    } else if(aiProvider==='openrouter'){
+      url="https://openrouter.ai/api/v1/chat/completions";
+      headers={
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+aiKey,
+        "HTTP-Referer":location.href,
+        "X-Title":"SPECTRE Neo-Paris 2077"
+      };
+      var orMsgs=[{role:'system',content:sys}].concat(msgs);
+      body=JSON.stringify({model:orModel,max_tokens:500,messages:orMsgs});
+    } else {
+      /* Anthropic direct or Claude.ai proxy */
+      url="https://api.anthropic.com/v1/messages";
+      headers={"Content-Type":"application/json"};
+      if(aiProvider==='anthropic'){
+        headers["x-api-key"]=aiKey;
+        headers["anthropic-version"]="2023-06-01";
+        headers["anthropic-dangerous-direct-browser-access"]="true";
+      }
+      body=JSON.stringify({
+        model:"claude-sonnet-4-5",
+        max_tokens:500,
+        system:sys,
+        messages:msgs
+      });
+    }
+    var r=await fetch(url,{method:"POST",headers:headers,body:body});
+    if(!r.ok){
+      var errTxt=await r.text();
+      console.error('API error '+r.status+':',errTxt);
+      var errMsg="Erreur API ("+r.status+"). ";
+      if(r.status===401||r.status===403)errMsg+="Clé API invalide.";
+      else if(r.status===402)errMsg+="Crédit insuffisant.";
+      else if(r.status===429)errMsg+="Trop de requêtes — attendez quelques secondes.";
+      else if(r.status===400)errMsg+="Requête invalide.";
+      else errMsg+="Vérifiez la console (F12).";
+      addTr('spectre',errMsg);
+      setOrb('');
+      return;
+    }
+    var d=await r.json();
+    var reply='';
+    if(aiProvider==='gemini'){
+      /* Gemini format */
+      reply=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts
+        ?d.candidates[0].content.parts.map(function(p){return p.text||'';}).join('')
+        :'';
+    } else if(aiProvider==='openrouter'){
+      reply=d.choices&&d.choices[0]&&d.choices[0].message?d.choices[0].message.content:'';
+    } else {
+      reply=d.content?d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join(''):'';
+    }
+    if(!reply)reply="Interférence sur le canal. Répétez.";
+    msgs.push({role:'assistant',content:reply});
+    if(msgs.length>20)msgs=msgs.slice(-14);
+    addTr('spectre',reply);
+    doSpeak(reply);
+  }catch(e){
+    console.error('Fetch error:',e);
+    var fb="Connexion impossible. Vérifiez votre internet et la console (F12).";
+    addTr('spectre',fb);
+    setOrb('');
+  }
+}
+
+/* ── MJ Context ── */
+function openCtx(){document.getElementById('ctx-m').classList.add('open');document.getElementById('ctx-ta').value=mjCtx;}
+function closeCtx(){document.getElementById('ctx-m').classList.remove('open');}
+function saveCtx(){mjCtx=document.getElementById('ctx-ta').value;closeCtx();}
+</script>
+</body>
+</html>

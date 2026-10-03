@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIKI — Dossier Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070f; --bg2:#0d0d1a;
+  --text:#c0c0d4; --text-dim:#606078; --text-hi:#e8e8f4;
+  --accent:#ffaa00; --accent-soft:rgba(255,170,0,0.05);
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --amber:#ffaa00; --red:#ff2040;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;
+  font-size:19px;line-height:1.8;}
+.wrap{max-width:780px;margin:0 auto;padding:0 32px 100px;}
+.bg-mark{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-mark span{position:absolute;font-family:'Orbitron',monospace;font-weight:700;
+  color:var(--accent);opacity:0.015;font-size:240px;letter-spacing:20px;
+  top:30%;left:-5%;white-space:nowrap;transform:rotate(-8deg);}
+.dossier-head{padding:70px 0 40px;border-bottom:1px solid var(--border);
+  margin-bottom:50px;position:relative;z-index:1;}
+.dh-eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:7px;
+  color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:24px;}
+.dh-eyebrow b{color:var(--accent);}
+.dh-alias{font-family:'Orbitron',monospace;font-size:clamp(34px,5vw,52px);font-weight:700;
+  color:var(--accent);letter-spacing:3px;line-height:1.05;display:block;
+  text-shadow:0 0 50px var(--accent-soft);}
+.dh-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:300;letter-spacing:5px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:14px;display:block;}
+.dh-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:5px;text-transform:uppercase;padding:7px 18px;margin-top:22px;
+  border:1px solid var(--accent);color:var(--accent);border-radius:2px;}
+.dh-tag{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:300;font-style:italic;
+  color:rgba(255,255,255,0.45);margin-top:26px;letter-spacing:1px;line-height:1.6;}
+.sec{margin-bottom:48px;position:relative;z-index:1;}
+.sec-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:8px;
+  display:flex;align-items:center;gap:14px;}
+.sec-title::before{content:'';width:24px;height:2px;background:var(--accent);flex-shrink:0;}
+.sec-title .num{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);
+  letter-spacing:2px;margin-left:auto;}
+.sec-sub{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);margin-bottom:24px;margin-left:38px;text-transform:uppercase;}
+p{margin-bottom:16px;}
+strong{color:var(--text-hi);font-weight:600;}
+em{color:var(--accent);font-style:normal;}
+.know{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
+.know-item{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:14px 0;
+  border-bottom:1px solid var(--border);align-items:start;}
+.know-item:last-child{border-bottom:none;}
+.know-ico{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);
+  padding-top:3px;width:22px;text-align:center;}
+.know-txt{font-size:17px;line-height:1.65;}
+.know-txt b{color:var(--text-hi);font-weight:600;}
+.contact{border:1px solid var(--border2);border-radius:4px;padding:18px 22px;
+  background:var(--bg2);margin-bottom:14px;}
+.contact.special{border-color:var(--accent);background:rgba(255,255,255,0.02);}
+.contact-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:600;
+  letter-spacing:1px;color:var(--text-hi);display:flex;align-items:baseline;gap:12px;}
+.contact-name .role{font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.contact-desc{font-size:16px;color:var(--text);margin-top:6px;line-height:1.6;}
+.intuition{border-left:3px solid var(--amber);background:rgba(255,170,0,0.04);
+  padding:18px 24px;margin-bottom:14px;border-radius:0 3px 3px 0;}
+.intuition p{margin-bottom:0;font-size:17px;font-style:italic;color:rgba(255,255,255,0.65);line-height:1.6;}
+.obj{display:flex;align-items:start;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.obj:last-child{border-bottom:none;}
+.obj-check{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:16px;
+  padding-top:2px;flex-shrink:0;}
+.obj-txt{font-size:17px;line-height:1.5;}
+.obj-txt b{color:var(--text-hi);}
+.pq{margin:36px 0;padding:26px 32px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);font-style:italic;font-size:20px;font-weight:300;
+  color:rgba(255,255,255,0.72);line-height:1.65;}
+.pq cite{display:block;margin-top:12px;font-family:'Share Tech Mono',monospace;
+  font-size:11px;font-style:normal;letter-spacing:3px;color:var(--text-dim);}
+.dline{border:none;border-top:1px solid var(--border);margin:44px 0;position:relative;}
+.dline::before{content:attr(data-l);position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  background:var(--bg);padding:0 16px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:5px;color:var(--text-dim);}
+.foot{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--text-dim);text-align:center;line-height:2;}
+.foot b{color:var(--accent);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@media(max-width:600px){.wrap{padding:0 20px 60px;}}
+</style>
+</head>
+<body>
+<div class="bg-mark"><span>NOMADE</span></div>
+<div class="wrap">
+  <div class="dossier-head">
+    <span class="dh-eyebrow">// DOSSIER PERSONNEL — <b>YEUX SEULS</b> — NE PAS PARTAGER //</span>
+    <span class="dh-alias">KIKI</span>
+    <span class="dh-name">Kirikou</span>
+    <div class="dh-badge">// NOMADE //</div>
+    <div class="dh-tag">Tu es né dans un garage plutôt qu'un berceau. Le bitume, tu le lis comme d'autres lisent un livre — surtout depuis un volant.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ce que tu sais — Neo-Paris <span class="num">[01]</span></div>
+    <div class="sec-sub">Tu vois la ville comme un terrain — et un moteur comme un vieil ami</div>
+    <div class="know">
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>Tout ce qui touche aux véhicules et à la mécanique.</b> Réparer une voiture, redresser la tôle, souder un châssis — un travail dur qui t'a rendu solide et endurant. Aujourd'hui, tu es un pilote expérimenté : sérieux, efficace, taillé pour encaisser et garder le contrôle.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Toutes les routes d'entrée et de sortie.</b> Chaque checkpoint, chaque route de contrebande, chaque faille dans le périmètre d'EuroTech. Si l'équipe doit quitter Neo-Paris, tu es celui qui sait comment.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Le piratage de véhicules.</b> Ton harpon RoadSpike s'ancre dans n'importe quel véhicule connecté et permet une prise de contrôle à distance. Ton AutoKey ouvre et démarre presque tout ce qui roule. Peu de choses avec un moteur te résistent longtemps.</div></div>
+      <div class="know-item"><div class="know-ico">⚠</div><div class="know-txt"><b>Ce que tu ne connais PAS : les codes sociaux de la ville.</b> Tu es un étranger ici. Les règles tacites du Bas t'échappent. Tu peux commettre des faux-pas qu'un citadin éviterait.</div></div>
+    </div>
+  </div>
+
+  <hr class="dline" data-l="LA NUIT DU 15.03.2077">
+
+  <div class="sec">
+    <div class="sec-title">La situation actuelle <span class="num">[02]</span></div>
+    <div class="sec-sub">Ce que tu as vécu — de ton point de vue</div>
+    <p>Tu n'étais même pas censé être à Neo-Paris longtemps. Ta famille t'a envoyé négocier un contrat de livraison avec un contact. <strong>Le contact ne s'est jamais présenté.</strong> Ça te ronge — un rendez-vous manqué, ça veut toujours dire quelque chose.</p>
+    <p>Seul dans une ville que tu détestes, une vieille femme dans le métro t'a parlé du Cabaret Fantôme : <em>« C'est le seul endroit vivant de cette ville. »</em> Ta règle est simple : si quelque chose est vivant, ça vaut le coup d'aller regarder.</p>
+    <p>Tu étais attablé avec une bière quand les coups de feu ont éclaté. Tu as dégagé un passage à mains nues pour une chanteuse paniquée (<em>Keiyo</em>), utilisé ton AutoKey pour forcer une issue de secours verrouillée, et embarqué tout le monde dans ton van. Puis tu as conduit à 80 km/h dans le vieux Marais, prenant les virages comme si c'était une compétition. C'était presque amusant.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ton réseau <span class="num">[03]</span></div>
+    <div class="sec-sub">Les gens que tu connais — de confiance ou non</div>
+    <div class="contact"><div class="contact-name">Ta famille de pilotes et mécaniciens<span class="role">Lignée nomade</span></div><div class="contact-desc">Une lignée de chauffeurs de stock-car et de mécaniciens qui t'a élevé dans les garages, sur la route. C'est ta famille, ton métier, ta fierté.</div></div>
+    <div class="contact"><div class="contact-name">Les clans de la route<span class="role">Réseau nomade</span></div><div class="contact-desc">D'autres familles et clans entre Lyon et Bruxelles. Entraide, troc, information. Un nomade n'est jamais vraiment seul sur la route.</div></div>
+    <div class="contact"><div class="contact-name">Mécanos & passeurs<span class="role">Contacts utiles</span></div><div class="contact-desc">Quelques visages de confiance qui réparent un moteur sans poser de questions ou font passer une cargaison à travers un checkpoint.</div></div>
+  </div>
+
+  <hr class="dline" data-l="QUI TU ES">
+
+  <div class="sec">
+    <div class="sec-title">Ton histoire <span class="num">[04]</span></div>
+    <div class="sec-sub">D'où tu viens — ce qui t'a construit</div>
+    <p>Issu d'une lignée de chauffeurs de stock-car, tu as grandi dans les garages plutôt que dans une maison. Tu maîtrises tout ce qui touche aux véhicules et à la mécanique — pas par choix, mais parce que la vie t'a forgé ainsi.</p>
+    <p>Réparer des voitures, redresser la tôle, souder des châssis. Un travail dur qui t'a rendu solide et endurant. Aujourd'hui, c'est un pilote expérimenté que l'on croise : sérieux, efficace, taillé pour encaisser et garder le contrôle quand tout part en vrille autour de lui.</p>
+    <p>Le béton des grandes villes t'oppresse encore. Le ciel orange de Neo-Paris n'est pas le tien — le vrai ciel, celui des plaines, te manque déjà. Mais un code tacite persiste en toi, hérité de la route : on protège les siens, on tient parole, on ne laisse personne sur le bord de la route. Ce code ne s'arrête pas aux frontières de ta famille — c'est peut-être pour ça que tu as aidé ces inconnus au Cabaret.</p>
+  </div>
+
+  <hr class="dline" data-l="ZONE GRISE">
+
+  <div class="sec">
+    <div class="sec-title">Rumeurs & intuitions <span class="num">[05]</span></div>
+    <div class="sec-sub">Des choses que tu sens, sans pouvoir les prouver</div>
+    <div class="intuition"><p>Ton contact disparu — ce n'était pas un oubli. Tu sens un coup monté. Quelqu'un voulait que tu sois seul, ce soir-là. Mais qui, et pourquoi ?</p></div>
+    <div class="intuition"><p>Les routes ont changé ces derniers mois. Plus de patrouilles corporatives. Plus de contrôles. Comme si quelqu'un surveillait les mouvements des convois nomades.</p></div>
+    <div class="intuition"><p>Tu as l'impression que ta famille est observée. Rien de concret. Juste cette sensation, dans le ventre, qu'un nomade apprend à ne jamais ignorer.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Tes objectifs <span class="num">[06]</span></div>
+    <div class="sec-sub">Ce qui te fait avancer</div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Découvrir ce qui est arrivé à ton contact.</b> Un rendez-vous manqué, ça ne reste jamais sans réponse.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Garder ton van et ton matériel en état.</b> Un bon mécanicien ne laisse jamais sa machine se dégrader — même en pleine crise.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Décider si tu peux faire confiance à ces citadins.</b> Pour l'instant, le jury délibère encore.</div></div>
+  </div>
+
+  <div class="foot">
+    NEO-PARIS / 2077 — DOSSIER <b>KIKI</b><br>
+    CHIFFREMENT ACTIF — DESTRUCTION RECOMMANDÉE APRÈS LECTURE
+  </div>
+</div>
+</body>
+</html>

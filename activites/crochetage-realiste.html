@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CROCHETAGE — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,170,0,.25);border-radius:6px;background:rgba(20,15,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#ffaa00;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,170,0,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:block;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+#lgo{border-color:#ffaa00;color:#ffaa00;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:rgba(15,12,5,.9);border-bottom:1px solid rgba(255,170,0,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffaa00;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+
+.content{flex:1;padding:20px 16px 60px;max-width:520px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;}
+
+.lock-stage{position:relative;width:320px;height:320px;max-width:90vw;max-height:90vw;}
+.lock-svg{width:100%;height:100%;}
+.pick-line{transition:transform .05s linear;}
+.hud-label{position:absolute;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);text-align:center;}
+.hud-val{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#e8e8f0;text-align:center;border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:2px 10px;background:rgba(0,0,0,.4);min-width:40px;}
+.hud-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;}
+.hud-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+
+.ctrl-row{display:flex;gap:14px;align-items:center;justify-content:center;}
+.rot-btn{width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,170,0,.4);background:rgba(255,170,0,.06);color:#ffaa00;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.rot-btn:active{background:rgba(255,170,0,.25);}
+.turn-btn{padding:16px 34px;border-radius:8px;border:2px solid #00ff88;background:rgba(0,255,136,.1);color:#00ff88;font-family:'Orbitron',monospace;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;}
+.turn-btn:active{background:rgba(0,255,136,.3);}
+.status-line{font-size:13px;letter-spacing:1px;min-height:20px;text-align:center;}
+.status-line.ok{color:#00ff88;}
+.status-line.bad{color:#ff2040;}
+
+.mj-panel{width:100%;max-width:460px;display:flex;flex-direction:column;gap:10px;padding:16px;border:1px dashed rgba(255,255,255,.15);border-radius:8px;}
+.mj-row{display:flex;align-items:center;gap:10px;}
+.mj-row label{font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);min-width:130px;}
+.mj-row input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:6px 10px;color:#fff;font-family:'Share Tech Mono',monospace;}
+.mj-btn{padding:10px;border-radius:6px;border:2px solid #ffaa00;background:rgba(255,170,0,.1);color:#ffaa00;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.mj-only-note{text-align:center;font-size:11px;color:rgba(255,255,255,.3);padding:30px 0;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">🔓 CROCHETAGE</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">🔓 CROCHETAGE</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var state={
+  config:{timeTotal:60,picks:5,wrenches:3,sweetWidth:26,rotSpeed:110,revealZone:false},
+  active:false,
+  attempts:{} /* role -> {angle, timeLeft, picks, wrenches, glory, sweetStart, done, failed} */
+};
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_lockpick_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  render();
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'lp'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';pub({type:'requestState'});});
+    mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());handleMsg(d);}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+function pushState(){pub({type:'state',state:state});}
+function handleMsg(d){
+  if(d.type==='requestState'&&role==='mj'){pushState();return;}
+  if(d.type==='state'){state=d.state;render();}
+}
+
+/* ═════ RENDER ═════ */
+function render(){
+  var c=document.getElementById('content');
+  if(role==='mj'){renderMJ(c);return;}
+  var att=state.attempts[role];
+  if(!state.active||!att){
+    c.innerHTML='<div class="mj-only-note">En attente que le MJ lance une tentative de crochetage.</div>';
+    return;
+  }
+  var html='<div class="lock-stage"><svg class="lock-svg" viewBox="0 0 300 300">'
+    +lockSVG(att)
+    +'</svg></div>'
+    +'<div class="hud-row">'
+    +'<div class="hud-item"><div class="hud-label">TEMPS RESTANT</div><div class="hud-val" style="color:#fff;">'+Math.ceil(att.timeLeft)+'</div></div>'
+    +'<div class="hud-item"><div class="hud-label">CROCHETS</div><div class="hud-val" style="color:#ffaa00;">'+att.picks+'</div></div>'
+    +'<div class="hud-item"><div class="hud-label">TOURNEVIS</div><div class="hud-val" style="color:#00ccff;">'+att.wrenches+'</div></div>'
+    +'<div class="hud-item"><div class="hud-label">GLOIRE</div><div class="hud-val" style="color:#bb44ff;">'+att.glory+'</div></div>'
+    +(state.config.revealZone?'':'<div class="hud-item"><div class="hud-label">RÉSISTANCE</div><div class="hud-val" id="tension-val" style="color:#ff6a00;">'+tensionOf(att)+'%</div></div>')
+    +'</div>'
+    +'<div class="status-line'+(att.lastResult==='ok'?' ok':att.lastResult==='bad'?' bad':'')+'" id="status-line">'+(att.done?(att.success?'✓ SERRURE CROCHETÉE':'✗ ÉCHEC — PLUS D\'OUTILS'):'')+'</div>'
+    +(att.done?'':('<div class="ctrl-row"><button class="rot-btn" onmousedown="startRot(-1)" onmouseup="stopRot()" ontouchstart="startRot(-1)" ontouchend="stopRot()">◀</button>'
+      +'<button class="turn-btn" onclick="attemptTurn()">TOURNER</button>'
+      +'<button class="rot-btn" onmousedown="startRot(1)" onmouseup="stopRot()" ontouchstart="startRot(1)" ontouchend="stopRot()">▶</button></div>'));
+  c.innerHTML=html;
+}
+function angDist(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d;}
+function zoneCenter(att){return (att.sweetStart+state.config.sweetWidth/2)%360;}
+function tensionOf(att){
+  var feelRange=state.config.sweetWidth*2.8+18; /* felt range wider than the true window — you feel it before you're precisely on it */
+  var dist=angDist(att.angle,zoneCenter(att));
+  var prox=Math.max(0,1-dist/feelRange);
+  prox=Math.pow(prox,2.2); /* sharpen so only genuinely close = strong resistance */
+  return Math.round(prox*100);
+}
+function lockSVG(att){
+  var cx=150,cy=150,rOuter=115,rRing=95,rDisc=78;
+  var sweetStart=att.sweetStart,sweetW=state.config.sweetWidth;
+  var pickAngle=att.angle;
+  var reveal=!!state.config.revealZone;
+  var zoneHtml='';
+  if(reveal){
+    var a0=(sweetStart-90)*Math.PI/180,a1=(sweetStart+sweetW-90)*Math.PI/180;
+    var x0=cx+rOuter*Math.cos(a0),y0=cy+rOuter*Math.sin(a0);
+    var x1=cx+rOuter*Math.cos(a1),y1=cy+rOuter*Math.sin(a1);
+    var largeArc=sweetW>180?1:0;
+    var sweetPath='M'+x0+','+y0+' A'+rOuter+','+rOuter+' 0 '+largeArc+' 1 '+x1+','+y1;
+    zoneHtml='<path d="'+sweetPath+'" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="6"/>';
+  }
+  var tension=tensionOf(att);
+  var glowT=tension/100;
+  var glowColor=glowT>0.66?'#ff2040':glowT>0.33?'#ff9d1a':'#3a6a8a';
+  return '<circle cx="'+cx+'" cy="'+cy+'" r="'+rOuter+'" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="4"/>'
+    +zoneHtml
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="'+rRing+'" fill="#3a3530" stroke="#55504a" stroke-width="3"/>'
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="'+rDisc+'" fill="#4a443c" stroke="#66605a" stroke-width="2"/>'
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(rDisc-18)+'" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="10"/>'
+    +'<rect x="'+(cx-7)+'" y="'+(cy-32)+'" width="14" height="64" rx="3" fill="#0a0a0a"/>'
+    +'<g class="pick-line" transform="rotate('+pickAngle+' '+cx+' '+cy+')">'
+    +'<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+(cy-140)+'" stroke="#c8c8c8" stroke-width="4" stroke-linecap="round"/>'
+    +'<line x1="'+cx+'" y1="'+(cy-100)+'" x2="'+cx+'" y2="'+(cy-140)+'" stroke="#ff2040" stroke-width="5" stroke-linecap="round"/>'
+    +'<circle id="heat-glow" cx="'+cx+'" cy="'+(cy-140)+'" r="'+(6+glowT*10)+'" fill="'+glowColor+'" opacity="'+(0.15+glowT*0.75)+'"/>'
+    +'</g>';
+}
+function renderMJ(c){
+  var cfg=state.config;
+  var html='<div class="mj-panel">'
+    +'<div class="mj-row"><label>DURÉE (secondes)</label><input type="number" id="cfg-time" value="'+cfg.timeTotal+'"></div>'
+    +'<div class="mj-row"><label>CROCHETS</label><input type="number" id="cfg-picks" value="'+cfg.picks+'"></div>'
+    +'<div class="mj-row"><label>TOURNEVIS</label><input type="number" id="cfg-wrenches" value="'+cfg.wrenches+'"></div>'
+    +'<div class="mj-row"><label>LARGEUR ZONE (°)</label><input type="number" id="cfg-width" value="'+cfg.sweetWidth+'"></div>'
+    +'<div class="mj-row"><label>VITESSE ROTATION</label><input type="number" id="cfg-speed" value="'+cfg.rotSpeed+'"></div>'
+    +'<div class="mj-row"><label>ZONE VISIBLE (facile)</label><input type="checkbox" id="cfg-reveal" style="flex:0;width:18px;height:18px;" '+(cfg.revealZone?'checked':'')+'></div>'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.35);line-height:1.4;">Par défaut la zone est cachée : le joueur ne voit que la jauge de RÉSISTANCE qui monte en approchant. Coche cette case pour afficher l\'arc exact (mode facile / débutants).</div>'
+    +'<button class="mj-btn" onclick="saveConfig()">💾 ENREGISTRER LES RÉGLAGES</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">'
+    +Object.keys(ROLE_LABELS).map(function(k){return '<button class="mj-btn" style="border-color:'+ROLE_COLORS[k]+';color:'+ROLE_COLORS[k]+';" onclick="startAttempt(\''+k+'\')">▶ LANCER — '+ROLE_LABELS[k]+'</button>';}).join('')
+    +'<button class="mj-btn" style="border-color:#ff2040;color:#ff2040;" onclick="stopAll()">■ ARRÊTER TOUT</button>'
+    +'</div><div id="mj-live"></div>';
+  c.innerHTML=html;
+  var liveHtml='';
+  Object.keys(state.attempts).forEach(function(k){
+    var a=state.attempts[k];
+    liveHtml+='<div class="mj-panel"><b style="color:'+ROLE_COLORS[k]+';">'+ROLE_LABELS[k]+'</b> — Temps: '+Math.ceil(a.timeLeft)+'s · Crochets: '+a.picks+' · Tournevis: '+a.wrenches+' · Gloire: '+a.glory+(a.done?(a.success?' · ✓ RÉUSSI':' · ✗ ÉCHOUÉ'):'')+'</div>';
+  });
+  document.getElementById('mj-live').innerHTML=liveHtml;
+}
+function saveConfig(){
+  if(role!=='mj')return;
+  state.config.timeTotal=parseInt(document.getElementById('cfg-time').value)||60;
+  state.config.picks=parseInt(document.getElementById('cfg-picks').value)||5;
+  state.config.wrenches=parseInt(document.getElementById('cfg-wrenches').value)||3;
+  state.config.sweetWidth=parseInt(document.getElementById('cfg-width').value)||26;
+  state.config.rotSpeed=parseInt(document.getElementById('cfg-speed').value)||110;
+  state.config.revealZone=!!document.getElementById('cfg-reveal').checked;
+  pushState();
+}
+function startAttempt(k){
+  if(role!=='mj')return;
+  state.active=true;
+  state.attempts[k]={angle:0,timeLeft:state.config.timeTotal,picks:state.config.picks,wrenches:state.config.wrenches,glory:100,sweetStart:Math.random()*330,done:false,success:false,lastResult:''};
+  pushState();
+}
+function stopAll(){if(role!=='mj')return;state.active=false;state.attempts={};pushState();}
+
+/* ═════ PLAYER CONTROLS (local prediction + periodic sync) ═════ */
+var rotDir=0,rotInt=null,tickInt=null;
+function startRot(d){rotDir=d;if(rotInt)clearInterval(rotInt);rotInt=setInterval(function(){
+  var att=state.attempts[role];if(!att||att.done)return;
+  att.angle=(att.angle+rotDir*state.config.rotSpeed*0.03+360)%360;
+  var svgWrap=document.querySelector('.lock-stage');
+  if(svgWrap){
+    var pl=svgWrap.querySelector('.pick-line');if(pl)pl.setAttribute('transform','rotate('+att.angle+' 150 150)');
+    if(!state.config.revealZone){
+      var tension=tensionOf(att);
+      var glowT=tension/100;
+      var glowColor=glowT>0.66?'#ff2040':glowT>0.33?'#ff9d1a':'#3a6a8a';
+      var g=svgWrap.querySelector('#heat-glow');
+      if(g){g.setAttribute('r',6+glowT*10);g.setAttribute('opacity',0.15+glowT*0.75);g.setAttribute('fill',glowColor);}
+      var tv=document.getElementById('tension-val');if(tv)tv.textContent=tension+'%';
+    }
+  }
+},30);}
+function stopRot(){rotDir=0;if(rotInt)clearInterval(rotInt);rotInt=null;pub({type:'angleSync',role:role,angle:(state.attempts[role]||{}).angle||0});}
+function attemptTurn(){
+  var att=state.attempts[role];
+  if(!att||att.done)return;
+  var sweetStart=att.sweetStart,sweetW=state.config.sweetWidth;
+  var a=att.angle;
+  var inZone=false;
+  var end=(sweetStart+sweetW)%360;
+  if(sweetStart<end)inZone=(a>=sweetStart&&a<=end);
+  else inZone=(a>=sweetStart||a<=end);
+  var statusEl=document.getElementById('status-line');
+  if(inZone){
+    att.done=true;att.success=true;att.lastResult='ok';
+    if(statusEl){statusEl.textContent='✓ SERRURE CROCHETÉE';statusEl.className='status-line ok';}
+  } else {
+    att.picks=Math.max(0,att.picks-1);
+    if(Math.random()<0.15)att.wrenches=Math.max(0,att.wrenches-1);
+    att.sweetStart=Math.random()*330;
+    att.lastResult='bad';
+    if(statusEl){statusEl.textContent='✗ RATÉ — nouvelle position';statusEl.className='status-line bad';setTimeout(function(){if(statusEl)statusEl.className='status-line';},600);}
+    if(att.picks<=0||att.wrenches<=0){att.done=true;att.success=false;}
+  }
+  pub({type:'attemptResult',role:role,attempt:att});
+  render();
+}
+document.addEventListener('keydown',function(e){
+  if(role==='mj'||!state.active)return;
+  if(e.key==='ArrowLeft'){startRot(-1);}
+  if(e.key==='ArrowRight'){startRot(1);}
+  if(e.key===' '){e.preventDefault();attemptTurn();}
+});
+document.addEventListener('keyup',function(e){
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight')stopRot();
+});
+
+/* MJ receives live angle + result updates */
+var _origHandle=handleMsg;
+handleMsg=function(d){
+  if(d.type==='angleSync'&&role==='mj'){if(state.attempts[d.role]){state.attempts[d.role].angle=d.angle;if(document.getElementById('mj-live'))renderMJ(document.getElementById('content'));}return;}
+  if(d.type==='attemptResult'&&role==='mj'){state.attempts[d.role]=d.attempt;renderMJ(document.getElementById('content'));return;}
+  _origHandle(d);
+};
+
+/* Timer tick — every client with an active attempt ticks its own down locally, MJ authoritative for display only */
+tickInt=setInterval(function(){
+  if(role==='mj'||!state.active)return;
+  var att=state.attempts[role];
+  if(!att||att.done)return;
+  att.timeLeft=Math.max(0,att.timeLeft-1);
+  if(att.timeLeft<=0){att.done=true;att.success=false;pub({type:'attemptResult',role:role,attempt:att});}
+  var hv=document.querySelectorAll('.hud-val')[0];if(hv)hv.textContent=Math.ceil(att.timeLeft);
+  if(att.done)render();
+},1000);
+
+/* AUTO-CONNEXION */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

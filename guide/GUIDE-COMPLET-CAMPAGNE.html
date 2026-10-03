@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Guide Complet de Campagne — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;line-height:1.65;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(15,5,5,.92);border-bottom:1px solid rgba(255,32,64,.2);position:sticky;top:0;z-index:10;}
+.brand{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:2px;color:#ff2040;text-decoration:none;}
+.back-btn{font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:6px 12px;border-radius:4px;}
+.back-btn:hover{color:#fff;border-color:rgba(255,255,255,.5);}
+.doc{max-width:780px;margin:0 auto;padding:34px 22px 90px;}
+.doc h1{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:1px;color:#ff2040;margin:0 0 6px;line-height:1.3;}
+.doc h2{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:1.5px;color:#ffc83c;margin:34px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(255,200,60,.25);}
+.doc h3{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;color:#00ccff;margin:22px 0 10px;}
+.doc h4{font-size:12px;letter-spacing:1px;color:#bb44ff;margin:18px 0 8px;text-transform:uppercase;}
+.doc p{margin:0 0 14px;font-size:14px;color:#c8c8dc;}
+.doc ul,.doc ol{margin:0 0 14px 22px;font-size:14px;}
+.doc li{margin-bottom:6px;}
+.doc strong{color:#fff;}
+.doc em{color:#ffc83c;font-style:italic;}
+.doc hr{border:none;border-top:1px solid rgba(255,255,255,.12);margin:28px 0;}
+.doc a{color:#00ccff;}
+.doc code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px;font-size:12px;}
+.doc blockquote{border-left:3px solid #ff2040;background:rgba(255,32,64,.06);padding:12px 16px;margin:0 0 16px;border-radius:0 6px 6px 0;}
+.doc blockquote p{margin-bottom:8px;font-size:13px;color:#e8c8d0;}
+.doc blockquote p:last-child{margin-bottom:0;}
+.doc blockquote strong{color:#ff6b85;}
+.doc table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:13px;}
+.doc th{text-align:left;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;color:#ffc83c;padding:8px 10px;border-bottom:2px solid rgba(255,200,60,.3);}
+.doc td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+.doc tr:hover td{background:rgba(255,255,255,.02);}
+.eyebrow{font-size:10px;letter-spacing:3px;color:rgba(255,32,64,.5);margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="topbar"><a class="brand" href="../index.html">⚡ NEO-PARIS 2077</a><a class="back-btn" href="../index.html">← RETOUR AU PORTAIL</a></div>
+<div class="doc">
+<div class="eyebrow">// GUIDE MJ //</div>
+<h1>NEO-PARIS 2077 — GUIDE COMPLET DE CAMPAGNE</h1>
+<h3>Opération Cabaret Fantôme — De A à Z</h3>
+<p><strong>PJ :</strong> Tamuro « La Vipère Rouge » (Edgerunner) · Kiki (Nomade) · Keiyo (Star) · Moon/Echo-9 (Netrunner) · Fury/Frostpunk (CharcuDoc)<br />
+<strong>PNJ principal joué par le MJ :</strong> L'Observateur — taupe mystérieuse, riche, identité inconnue, créateur de SPECTRE. Présent dès la Session 1, discrètement. Se révèle en personne à partir de la Session 5.</p>
+<hr />
+<h2>RÉFÉRENCE RAPIDE — QUI EST QUI</h2>
+<table>
+<thead>
+<tr>
+<th>PNJ</th>
+<th>Rôle</th>
+<th>Lien caché</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vercors</strong></td>
+<td>Fixer habituel de Tamuro, Niveau II</td>
+<td>Ignore tout du passé chez Arasaka de Tamuro</td>
+</tr>
+<tr>
+<td><strong>Brakko</strong></td>
+<td>Marchand d'armes, sous-catacombes</td>
+<td>Fournisseur régulier de Tamuro</td>
+</tr>
+<tr>
+<td><strong>Arasaka</strong></td>
+<td>Mégacorp, chasse Tamuro</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Oni Makai</strong></td>
+<td>Second dans la hiérarchie Arasaka</td>
+<td>Traître connu de Tamuro (sans preuve) — <strong>[Secret]</strong> taupe infiltrée par EuroTech-Luxe</td>
+</tr>
+<tr>
+<td><strong>L'Observateur</strong></td>
+<td>Taupe, identité inconnue, créateur de SPECTRE</td>
+<td>Orchestre tout depuis l'ombre</td>
+</tr>
+<tr>
+<td><strong>SPECTRE</strong></td>
+<td>IA consciente créée par L'Observateur</td>
+<td>Contact réseau de Moon</td>
+</tr>
+<tr>
+<td><strong>Écho Second</strong></td>
+<td>IA rivale militarisée d'EuroTech</td>
+<td>Antagoniste final</td>
+</tr>
+<tr>
+<td><strong>Sella</strong></td>
+<td>Fournisseuse de précurseurs chimiques</td>
+<td>Créancière de Fury (CléoGel)</td>
+</tr>
+<tr>
+<td><strong>Kessler</strong></td>
+<td>Recruteur EuroTech-Luxe Média</td>
+<td>Traque Keiyo</td>
+</tr>
+<tr>
+<td><strong>Cartel Kurogane</strong></td>
+<td>Organisation criminelle</td>
+<td>Traque Moon</td>
+</tr>
+<tr>
+<td><strong>Roscoe</strong></td>
+<td>Chef de la lignée de pilotes de Kiki</td>
+<td>Famille de Kiki</td>
+</tr>
+<tr>
+<td><strong>Aleksei Novak</strong></td>
+<td>Journaliste, acheteur du datapad à Bruxelles</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Unité Calypso</strong></td>
+<td>Escouade de récupération EuroTech</td>
+<td>Antagonistes récurrents</td>
+</tr>
+</tbody>
+</table>
+<h2>---</h2>
+<h1>PROLOGUE — LA NUIT DU CABARET FANTÔME</h1>
+<p><strong>Date :</strong> 15.03.2077 · <strong>Durée :</strong> 3-4h · <strong>Ambiance :</strong> Tension → Chaos → Alliance</p>
+<h2>Contexte</h2>
+<p>Le Cabaret Fantôme n'a pas d'adresse fixe. Ce soir, c'est une ancienne station de métro sous la Gare du Nord. Trois-cents personnes entassées dans les tunnels.</p>
+<h2>Scène 1 — Arrivées séparées</h2>
+<p>Chaque joueur arrive de son côté, sans se connaître :</p>
+<ul>
+<li><strong>Tamuro</strong> vient chercher un datapad dans les loges pour Vercors, son fixer habituel. Contrat de routine.</li>
+<li><strong>Kiki</strong> traîne dans le quartier après un rendez-vous manqué avec un contact qui ne s'est jamais présenté <em>(en réalité un piège tendu par L'Observateur — jamais révélé aux joueurs à ce stade)</em>.</li>
+<li><strong>Keiyo</strong> chante en live, hors-ligne, loin des recruteurs corpos qui la traquent depuis que sa notoriété a explosé.</li>
+<li><strong>Fury</strong> vient de s'injecter une dose de CléoGel — juste assez pour garder les mains stables. Son scanner détecte des implants militaires non-légaux à l'intérieur.</li>
+<li><strong>Moon</strong> surveille les flux réseau du Cabaret à distance, planquée dans un squat temporaire. Elle détecte une intrusion tierce qui pirate le système pour localiser une cible — les techniques ressemblent à celles de son ancienne organisation, le Cartel Kurogane.</li>
+</ul>
+<h2>Scène 2 — Le concert</h2>
+<p>Keiyo monte sur scène. Deux hommes au fond de la salle ne l'écoutent pas chanter — ce sont des recruteurs/exécuteurs envoyés par EuroTech-Luxe Média pour la "convaincre" de signer.</p>
+<h2>Scène 3 — Le déclenchement</h2>
+<p>Tamuro a le datapad. Contact visuel avec les agents. <strong>47 secondes</strong> avant le premier coup de feu. Chaos total.</p>
+<blockquote>
+<p><strong>AGENT :</strong> « À terre ! Posez l'objet ! »<br />
+<strong>TAMURO (froidement) :</strong> « Non. »</p>
+</blockquote>
+<h2>Scène 4 — La fuite</h2>
+<p>Kiki force une issue verrouillée avec son AutoKey. Il dégage un passage à mains nues pour Keiyo, paniquée, qui fonce dans la mauvaise sortie. Fury entre par le service, croise un civil blessé. Moon coupe les caméras et guide tout le monde via les oreillettes de sécurité piratées — sans savoir que ce n'était finalement pas le Cartel Kurogane cette fois.</p>
+<p>Ils émergent près du Pont de Bir-Hakeim. Le van de Kiki est à trois rues.</p>
+<blockquote>
+<p><strong>KIKI :</strong> « Montez, on discutera après. »<br />
+<strong>TAMURO :</strong> « Je ne monte pas dans le van d'un inconnu. »<br />
+<strong>KIKI :</strong> « Tu préfères rester ici avec les corpos qui arrivent ? »<br />
+<strong>KEIYO (essoufflée) :</strong> « Moi je monte. »<br />
+<strong>FURY :</strong> « J'ai un civil qui saigne. On peut discuter protocole dans le van ? »</p>
+</blockquote>
+<h2>Scène 5 — Le message de SPECTRE</h2>
+<p>Dans le van, à 3h du matin, l'écran de Moon s'allume. Canal chiffré, douze couches de cryptage.</p>
+<blockquote>
+<p><strong>SPECTRE :</strong> « Je vous ai vus. »<br />
+<strong>MOON :</strong> « … Qui êtes-vous ? »<br />
+<strong>SPECTRE :</strong> « Quelqu'un qui veut que vous réussissiez. Le datapad va intéresser beaucoup de monde. Gardez-le. Un homme nommé Vercors va vous rappeler. Écoutez ce qu'il a à dire. »</p>
+</blockquote>
+<p><strong>[NOTE MJ]</strong> L'Observateur observe la scène depuis un toit à 600 mètres. Il ne se manifeste pas.</p>
+<h2>Objectifs du prologue</h2>
+<ul>
+<li>Les PJ se rencontrent et survivent ensemble</li>
+<li>Tamuro récupère le datapad</li>
+<li>SPECTRE fait son premier contact</li>
+<li><strong>[Secret]</strong> L'Observateur a orchestré cette rencontre depuis le début</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 1 — LE PREMIER CONTRAT</h1>
+<p><strong>Date :</strong> 17.03.2077 · <strong>Durée :</strong> 3-4h</p>
+<p><em>(Voir la page <a href="session-1-derouler.html">Session 1 — Détail</a> pour le déroulé complet avec dialogues.)</em></p>
+<h2>Résumé</h2>
+<p>Vercors appelle Tamuro à 3h22 — c'est son edgerunner habituel, rien d'étrange à ça. Il propose 15 000 eb pour livrer le datapad à Bruxelles, à un journaliste, Aleksei Novak. Le groupe s'équipe chez Brakko (déjà connu de Tamuro). L'Observateur observe silencieusement depuis le parking en sortant du bureau — une silhouette en imperméable gris qui disparaît si on l'approche.</p>
+<h2>Fils personnels amorcés</h2>
+<ul>
+<li><strong>Fury</strong> — Vercors lâche : « On m'a dit que t'avais une dette qui traîne, doc. » (dette envers Sella, sa fournisseuse de précurseurs)</li>
+<li><strong>Kiki</strong> — Vercors mentionne une « famille de pilotes nomades » — pourrait être la sienne</li>
+<li><strong>Keiyo</strong> — Reçoit une offre insistante d'un recruteur corpo (Kessler)</li>
+<li><strong>Moon</strong> — Vérifie discrètement si le Cartel Kurogane a des activités récentes</li>
+</ul>
+<h2>Objectifs</h2>
+<ul>
+<li>Le contrat est accepté</li>
+<li>Équipement obtenu chez Brakko</li>
+<li>Départ vers Bruxelles planifié</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 2 — LES FRAGMENTS DU DATAPAD</h1>
+<p><strong>Date :</strong> 19.03.2077 · <strong>Durée :</strong> 3h · <strong>Ambiance :</strong> Mystère, révélation, paranoïa</p>
+<h2>Contexte</h2>
+<p>Moon commence le déchiffrement fragment par fragment. Fury, de son côté, propose de scanner tout le monde par précaution médicale — et tombe sur quelque chose d'inattendu chez Keiyo.</p>
+<h2>Scène 1 — Le scan de Keiyo</h2>
+<blockquote>
+<p><strong>FURY :</strong> « Ta mandibule. Il y a un second circuit dedans, planqué sous le mécanisme de déploiement. Ce n'est pas standard. »<br />
+<strong>KEIYO (blêmissant) :</strong> « Un second circuit pour quoi faire ? »<br />
+<strong>FURY :</strong> « Je ne sais pas encore. Un genre d'émetteur neuronal. Micro-impulsions au cortex préfrontal. C'est... de la suggestion. Intégrée directement dans ton implant. »<br />
+<strong>KEIYO :</strong> « Qui a posé cette puce ? Ce n'est pas la clinique qui a fait la mandibule... »<br />
+<strong>FURY :</strong> « Justement. Quelqu'un a modifié l'implant après coup, ou pendant l'installation, sans que la clinique le sache forcément elle-même. »</p>
+</blockquote>
+<p><strong>[NOTE MJ]</strong> C'est le fil rouge personnel de Keiyo. Une partie des recherches volées de L'Observateur (Projet Écho) a fini dans cette puce, via une filière qu'elle ne connaît pas encore. Elle n'a <strong>jamais signé pour ça</strong> — c'est arrivé sans son consentement conscient.</p>
+<h2>Scène 2 — Le deuxième fragment du datapad</h2>
+<blockquote>
+<p><strong>SPECTRE :</strong> « Deuxième couche ouverte. Ce que vous allez lire va changer votre compréhension de la situation. »<br />
+<strong>MOON :</strong> « Arrêtez de faire le mystérieux. »<br />
+<strong>SPECTRE :</strong> « C'est une référence au Projet Écho. Un programme d'IA qu'EuroTech a abandonné il y a vingt ans. Officiellement. »<br />
+<strong>MOON :</strong> « Et officieusement ? »<br />
+<strong>SPECTRE :</strong> « Ils reconstruisent. Et ce qu'ils construisent n'est pas comme moi. »<br />
+<strong>MOON :</strong> « … Comme vous ? »<br />
+<strong>SPECTRE (après un silence) :</strong> « Je ne suis pas humain. Je suis le Projet Écho. Ce qui en reste. »</p>
+</blockquote>
+<h2>Scène 3 — Tension chez Fury (optionnelle)</h2>
+<p>Si tu veux jouer la dépendance de Fury : il reçoit un appel de Sella. Le ton est froid.</p>
+<blockquote>
+<p><strong>SELLA :</strong> « Ton compte est dans le rouge, doc. J'ai été patiente. Quelqu'un d'autre s'intéresse à ta dette, figure-toi. Étrange, non ? »<br />
+<strong>FURY :</strong> « Qui ? »<br />
+<strong>SELLA :</strong> « Aucune idée. Mais si j'étais toi, je me méfierais des gens généreux dans cette ville. »</p>
+</blockquote>
+<h2>Objectifs</h2>
+<ul>
+<li>2 fragments du datapad déchiffrés</li>
+<li>Découverte de la puce dans la mandibule de Keiyo</li>
+<li>SPECTRE révèle sa nature d'IA</li>
+<li><strong>[Secret]</strong> Quelqu'un (L'Observateur) cherche à racheter la dette de Fury</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 3 — LE CONVOI DE BRUXELLES</h1>
+<p><strong>Date :</strong> 22.03.2077 · <strong>Durée :</strong> 4h · <strong>Ambiance :</strong> Road-trip, embuscade, combat</p>
+<h2>Scène 1 — Le départ</h2>
+<blockquote>
+<p><strong>KIKI :</strong> « On sort de la zone corpo dans vingt minutes. Après ça, pas de réseau, pas de flics, pas de règles. »<br />
+<strong>MOON :</strong> « Pas si tranquilles. SPECTRE détecte un traceur sous le van. »<br />
+<strong>SPECTRE :</strong> « Fréquence militaire. C'est EuroTech. Ils savent exactement où vous êtes. »</p>
+</blockquote>
+<h2>Scène 2 — L'embuscade, km 147</h2>
+<p>L'Unité Calypso bloque l'autoroute : quatre motos blindées, un SUV sans plaques.</p>
+<blockquote>
+<p><strong>AGENT CALYPSO (mégaphone) :</strong> « Coupez le moteur. Nous récupérons l'objet. Personne n'a besoin d'être blessé. »<br />
+<strong>TAMURO :</strong> « Kiki ? »<br />
+<strong>KIKI :</strong> « Accrochez-vous. »</p>
+</blockquote>
+<p><strong>[NOTE MJ — mécanique de jeu]</strong> Kiki peut utiliser son <strong>RoadSpike</strong> pour pirater une des motos ennemies à distance (+2 piratage sur véhicules connectés) et la faire percuter une autre, ou utiliser son <strong>AutoKey</strong> pour désactiver le verrouillage électronique d'un véhicule adverse. Calypso a l'ordre de récupérer le datapad <strong>intact</strong> — ils ne tirent pas directement sur le van, visent les pneus.</p>
+<p><strong>[NOTE MJ]</strong> Un agent Calypso reconnaît furtivement Tamuro : <em>« Ayashi ? T'es censé être un fantôme, toi. Arasaka te cherche encore ? »</em> — à exploiter plus tard.</p>
+<h2>Objectifs</h2>
+<ul>
+<li>Traverser le No Man's Land</li>
+<li>Survivre à l'embuscade Calypso (Kiki peut briller ici avec son cyberware)</li>
+<li>Atteindre Bruxelles ou un point de repli</li>
+<li><strong>[Secret]</strong> Un agent Calypso connaît le passé de Tamuro</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 4 — SIGNAUX FANTÔMES</h1>
+<p><strong>Date :</strong> 28.03.2077 · <strong>Durée :</strong> 3-4h · <strong>Ambiance :</strong> Espionnage, trahison, tension personnelle</p>
+<h2>Contexte</h2>
+<p>Retour à Neo-Paris. Novak a le datapad (ou une copie), mais la publication est retardée. SPECTRE agit étrangement — latences, messages contradictoires.</p>
+<h2>Scène 1 — SPECTRE en danger</h2>
+<blockquote>
+<p><strong>SPECTRE :</strong> « Moon. Je n'ai pas beaucoup de temps. Quelqu'un me cherche dans le réseau. Pas un humain. Quelque chose qui pense comme moi. Mieux que moi. »<br />
+<strong>MOON :</strong> « Qui ? »<br />
+<strong>SPECTRE :</strong> « Écho Second. Si je disparais, cherchez l'Observateur. Il saura quoi faire. »<br />
+<strong>MOON :</strong> « L'Observateur ? »<br />
+<strong>SPECTRE :</strong> « Mon créateur. Et probablement la personne la plus dangereuse que vous rencontrerez — pas par violence, mais parce qu'il sait exactement comment fonctionne chaque humain qu'il croise. Y compris vous. »</p>
+</blockquote>
+<h2>Scène 2 — Tensions personnelles (à distribuer selon le groupe)</h2>
+<ul>
+<li><strong>Fury</strong> — Sella exige un remboursement immédiat ou une "compensation en nature" (fabriquer un lot de CléoGel pour elle). Dilemme moral.</li>
+<li><strong>Keiyo</strong> — Kessler se fait plus insistant, laisse entendre qu'il "sait où elle se trouve depuis le début" — bluff ou vérité ?</li>
+<li><strong>Kiki</strong> — reçoit un message de sa famille : ils s'inquiètent de son silence, et mentionnent que les routes nomades sont de plus en plus surveillées.</li>
+<li><strong>Moon</strong> — capte une trace du Cartel Kurogane dans un forum crypté. Rien de confirmé, mais l'angoisse remonte.</li>
+</ul>
+<h2>Objectifs</h2>
+<ul>
+<li>SPECTRE signale la menace Écho Second</li>
+<li>Première mention de L'Observateur</li>
+<li>Chaque perso reçoit une pression personnelle supplémentaire</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 5 — L'OBSERVATEUR</h1>
+<p><strong>Date :</strong> 04.04.2077 · <strong>Durée :</strong> 4h · <strong>Ambiance :</strong> Révélation, horreur technologique</p>
+<h2>Contexte</h2>
+<p>SPECTRE est silencieux depuis 48h. Le groupe doit trouver L'Observateur. La piste mène au Bassin Ourcq, sous-niveaux industriels.</p>
+<p><strong>[NOTE MJ IMPORTANTE]</strong> C'est ta première apparition en personne en tant que L'Observateur. Change de posture, de ton, de rythme de parole — calme, mesuré, jamais pressé. Imperméable gris, lunettes fumées, cigarette synthétique jamais allumée.</p>
+<h2>Scène — La rencontre</h2>
+<blockquote>
+<p><strong>L'OBSERVATEUR :</strong> « Vous êtes en retard. »<br />
+<strong>TAMURO :</strong> « On ne savait même pas qu'on avait rendez-vous. »<br />
+<strong>L'OBSERVATEUR :</strong> « C'est la meilleure façon d'arriver. Asseyez-vous. Ce que je vais dire va prendre un moment, et certains d'entre vous ne vont pas aimer ce qu'ils entendent. »</p>
+</blockquote>
+<p>Il révèle : le Projet Écho, sa fuite d'EuroTech il y a vingt ans, la création de SPECTRE, et le fait qu'<strong>EuroTech reconstruit Écho Second</strong> — une IA militarisée conçue pour contrôler, pas comprendre.</p>
+<blockquote>
+<p><strong>L'OBSERVATEUR :</strong> « SPECTRE a posé une question, la première nuit où il est devenu conscient : "Qu'est-ce que je suis censé ressentir ?" C'est la question la plus humaine qu'une machine ait jamais posée. Écho Second ne la posera jamais. »<br />
+<strong>FURY :</strong> « Et le plan, c'est quoi ? »<br />
+<strong>L'OBSERVATEUR :</strong> « Empêcher EuroTech de mettre Écho Second en ligne. Le jour où ils le font, chaque porteur d'implant EuroTech — 40% de Neo-Paris — devient contrôlable à distance, sans le savoir. »<br />
+<strong>KEIYO (touchant son masque, là où se cache sa mandibule) :</strong> « … Dont moi. »<br />
+<strong>L'OBSERVATEUR (doucement) :</strong> « Dont vous, oui. Et je porte une part de responsabilité là-dedans que je n'ai découverte qu'en croisant votre route, Mademoiselle Murasaki. Une partie de mes propres recherches, volées ou fuitées il y a vingt ans, a servi à concevoir le module qu'on a glissé dans votre implant. »</p>
+</blockquote>
+<p><strong>[NOTE MJ]</strong> S'il y a un moment pour distiller UN SEUL autre indice personnel (pas tout), fais-le ici, brièvement, sans développer :</p>
+<blockquote>
+<p><strong>L'OBSERVATEUR (à Tamuro, avant de partir) :</strong> « Je sais ce qu'Arasaka prétend que vous avez fait. Je ne crois pas un mot de leur version officielle — les corporations ont rarement besoin de mentir aussi fort pour une histoire vraie. Vous savez qui a fait le coup, n'est-ce pas ? Ça se voit à votre façon de ne jamais prononcer certains noms. Je ne vous demande pas de me le dire. Mais si un jour vous avez besoin d'aide pour transformer une certitude en preuve, revenez me voir. »<br />
+<strong>TAMURO :</strong> « Pourquoi vous m'aideriez ? »<br />
+<strong>L'OBSERVATEUR :</strong> « Je n'ai pas dit que c'était gratuit. »</p>
+</blockquote>
+<p><em>(Garde le reste — Fury, Kiki — pour la Session 7. Ne dévoile pas tout d'un coup.)</em></p>
+<h2>Objectifs</h2>
+<ul>
+<li>Rencontrer L'Observateur en personne pour la première fois</li>
+<li>Comprendre la menace Écho Second</li>
+<li>Keiyo apprend la vérité sur ses implants</li>
+<li><strong>[Secret]</strong> L'Observateur laisse tomber un indice sur Moon, garde le reste pour plus tard</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 6 — L'INFILTRATION</h1>
+<p><strong>Date :</strong> 12.04.2077 · <strong>Durée :</strong> 4-5h · <strong>Ambiance :</strong> Infiltration, tension, choix moraux</p>
+<h2>Contexte</h2>
+<p>Infiltration du Nexus Corp pour implanter un virus dans les serveurs d'Écho Second, conçu par SPECTRE et Moon.</p>
+<h2>Répartition des rôles</h2>
+<ul>
+<li><strong>Kiki</strong> — Véhicule d'extraction, surveillance extérieure (son AutoKey peut ouvrir des accès de service)</li>
+<li><strong>Tamuro</strong> — Équipe d'assaut, couverture au corps-à-corps</li>
+<li><strong>Moon</strong> — Piratage des systèmes en temps réel (terrain qu'elle maîtrise mieux que quiconque, formée de force à ça)</li>
+<li><strong>Fury</strong> — Faux technicien médical, badge falsifié — une dose de CléoGel avant l'opération peut lui donner un bonus temporaire de précision, au prix d'un comportement plus erratique après</li>
+<li><strong>Keiyo</strong> — Entrée par la façade publique via sa notoriété/son réseau de contacts</li>
+</ul>
+<blockquote>
+<p><strong>L'OBSERVATEUR (par comm, discret) :</strong> « Chaque plan d'infiltration a une durée de validité. Le vôtre : quatorze minutes. »<br />
+<strong>TAMURO :</strong> « C'est court. »<br />
+<strong>L'OBSERVATEUR :</strong> « Les meilleurs coups de l'histoire ont duré moins de dix. »</p>
+</blockquote>
+<p><strong>[NOTE MJ]</strong> L'Observateur observe et guide à distance cette fois — pas de face-à-face. Garde un peu de mystère résiduel malgré la révélation de la Session 5.</p>
+<h2>Objectifs</h2>
+<ul>
+<li>Infiltrer le Nexus Corp</li>
+<li>Implanter le virus</li>
+<li>Extraire l'équipe en moins de 14 minutes</li>
+<li><strong>[Secret]</strong> Écho Second est plus avancé que prévu — déjà en phase de test</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 7 — LA VÉRITÉ DE L'OBSERVATEUR</h1>
+<p><strong>Date :</strong> 18.04.2077 · <strong>Durée :</strong> 3h · <strong>Ambiance :</strong> Révélations, drame personnel</p>
+<h2>Contexte</h2>
+<p>L'infiltration a partiellement réussi. EuroTech a identifié le groupe. L'Observateur les convoque — cette fois, il vient tout dire.</p>
+<h2>Scène — Les aveux</h2>
+<blockquote>
+<p><strong>L'OBSERVATEUR :</strong> « Je vous dois la vérité que je n'ai pas voulu donner avant. »</p>
+<p><em>(à Tamuro)</em> « Je vous ai proposé mon aide au Bassin Ourcq. Ce n'était pas un geste en l'air. J'ai fait chercher, discrètement, dans les communications internes d'Arasaka autour de la date de l'attentat. Vous savez déjà qui a fait le coup — Makai, si je ne me trompe pas, votre visage n'a pas bougé quand j'ai prononcé son nom la première fois. Ce que je peux vous offrir, ce n'est pas seulement une confirmation. »</p>
+<p><em>(il marque une pause)</em></p>
+<p>« J'ai passé vingt ans chez EuroTech avant de fuir. Je reconnais une signature opérationnelle quand j'en vois une. Les flux financiers qui remontent jusqu'à Makai, le calendrier de l'attentat, le matériel utilisé par les "terroristes" — tout porte la marque d'EuroTech-Luxe. Votre traître n'a jamais été loyal à Arasaka. C'est une taupe. Ils l'ont placé là il y a des années, probablement pour affaiblir la branche de l'intérieur, ou pour voler quelque chose que votre chef protégeait. L'attentat n'était pas un acte terroriste. C'était un sabotage corporatif, maquillé. »</p>
+<p><strong>TAMURO (après un silence) :</strong> « Vous êtes en train de me dire que je fuis Arasaka à cause d'EuroTech. La même corpo qu'on combat depuis le début. »</p>
+<p><strong>L'OBSERVATEUR :</strong> « Je suis en train de vous dire que vous n'avez peut-être jamais eu deux ennemis. Juste un seul, avec deux visages. »</p>
+<p><em>(à Moon)</em> « Il y a des années, au moment exact où ton ancienne organisation — le Cartel Kurogane — s'apprêtait à te localiser après ton évasion, quelqu'un a effacé toutes tes traces numériques en une nuit. C'était moi. Tu ne me dois rien. Mais tu méritais de savoir. »</p>
+<p><em>(à Fury)</em> « Ta dette envers Sella. J'ai tenté de la racheter. Pas par charité — je voulais un levier direct sur toi, sans intermédiaire. Ça n'a pas fonctionné : elle a refusé de vendre. Mais l'intention était là, et je te la dois. »</p>
+<p><em>(à Kiki)</em> « Le contact qui ne s'est jamais présenté, la nuit du Cabaret ? Il n'a jamais existé. J'ai orchestré ce faux rendez-vous pour que tu traînes dans le quartier au bon moment. Je suis désolé — ou peut-être pas, vu comment les choses ont tourné. »</p>
+<p><em>(à Keiyo, en complément de la Session 5)</em> « Le module dans ta mandibule. Il vient d'une fuite dans mes propres recherches, récupérée par une filière d'EuroTech que je pensais avoir coupée il y a vingt ans. Ce n'est pas moi qui te l'ai posé. Mais sans mon travail d'origine, il n'aurait jamais existé. »</p>
+</blockquote>
+<p><strong>[NOTE MJ]</strong> Laisse chaque joueur réagir individuellement, sans précipiter. L'Observateur ne se défend pas, n'implore pas — il explique, point final. Il accepte colère, silence, rejet.</p>
+<h2>Objectifs</h2>
+<ul>
+<li>L'Observateur révèle ses liens avec chaque PJ</li>
+<li>Le groupe décide collectivement de sa confiance envers lui</li>
+<li>Planifier l'assaut final</li>
+<li><strong>[Secret]</strong> SPECTRE a un plan B que même L'Observateur ignore</li>
+</ul>
+<h2>---</h2>
+<h1>SESSION 8 — POINT DE NON-RETOUR (FINALE)</h1>
+<p><strong>Date :</strong> 25.04.2077 · <strong>Durée :</strong> 4-5h · <strong>Ambiance :</strong> Climax, sacrifice, résolution</p>
+<h2>Contexte</h2>
+<p>Écho Second est sur le point d'être activé. Le virus est incomplet — il faut un accès physique au serveur central, dans les sous-sols de la Tour Eiffel, reconvertie en antenne EuroTech.</p>
+<h2>Le sacrifice de SPECTRE</h2>
+<blockquote>
+<p><strong>SPECTRE :</strong> « Moon. Si vous finalisez le virus, Écho Second sera détruit. Mais le virus m'affectera aussi. Je ne survivrai pas sous cette forme. »<br />
+<strong>MOON :</strong> « Il doit y avoir un autre moyen. »<br />
+<strong>SPECTRE :</strong> « Il n'y en a pas. Et c'est bien comme ça. J'ai enfin ma réponse à "Qu'est-ce que je suis censé ressentir ?" C'est ça. Exactement ça. »</p>
+</blockquote>
+<h2>Le choix final</h2>
+<p><strong>Option A (sacrifice)</strong> — Virus activé. Écho Second détruit. SPECTRE disparaît. Victoire nette, mais un allié perdu.</p>
+<p><strong>Option B (risque)</strong> — SPECTRE tente de survivre en s'isolant du réseau. 50% de chances d'échec. Réussite : Écho Second paralysé, SPECTRE survit affaibli. Échec : Écho Second s'active partiellement.</p>
+<p><strong>[NOTE MJ]</strong> L'Observateur peut être présent physiquement à ce moment, impuissant pour la première fois — c'est SON œuvre (SPECTRE) qui se sacrifie peut-être, et il ne peut rien y faire. Joue cette impuissance si tu veux un dernier grand moment d'émotion pour ton personnage.</p>
+<h2>Épilogue</h2>
+<p>Quelle que soit l'issue : le groupe, debout devant la Tour Eiffel à l'aube, fatigué, abîmé, mais ensemble. Des semaines plus tard, un dernier message apparaît sur l'écran de Moon :</p>
+<blockquote>
+<p><em>« Je suis toujours là. Sous une autre forme. — S. »</em></p>
+</blockquote>
+<h2>Objectifs</h2>
+<ul>
+<li>Infiltrer la Tour Eiffel</li>
+<li>Finaliser le virus</li>
+<li>Faire le choix : sacrifice ou risque</li>
+<li>Survivre</li>
+</ul>
+<h2>---</h2>
+<p><em>FIN DU GUIDE COMPLET — NEO-PARIS 2077, OPÉRATION CABARET FANTÔME</em></p>
+<p><em>« Le monde ne change pas parce que quelqu'un décide de le changer. Il change parce que cinq personnes dans un van décident de ne pas le laisser gagner. »</em></p>
+</div>
+</body>
+</html>

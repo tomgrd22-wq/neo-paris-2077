@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ENCHÈRE CLANDESTINE — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,200,60,.25);border-radius:6px;background:rgba(20,15,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#ffc83c;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,200,60,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:block;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+#lgo{border-color:#ffc83c;color:#ffc83c;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(15,12,5,.9);border-bottom:1px solid rgba(255,200,60,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffc83c;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.content{flex:1;padding:26px 20px 60px;max-width:520px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;}
+
+.item-name{font-family:'Orbitron',monospace;font-size:18px;text-align:center;color:#fff;}
+.item-desc{font-size:12px;color:rgba(255,255,255,.5);text-align:center;line-height:1.5;}
+.timer{font-family:'Orbitron',monospace;font-size:40px;font-weight:900;}
+.timer.urgent{color:#ff2040;animation:pulse 1s infinite;}
+@keyframes pulse{50%{opacity:.5;}}
+.bid-display{text-align:center;padding:18px;border:2px solid #ffc83c;border-radius:10px;background:rgba(255,200,60,.06);width:100%;max-width:380px;}
+.bid-amount{font-family:'Orbitron',monospace;font-size:32px;font-weight:900;color:#ffc83c;}
+.bid-holder{font-size:11px;letter-spacing:2px;margin-top:6px;}
+.bid-ctrl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.bbtn{padding:12px 20px;border-radius:8px;border:2px solid #ffc83c;background:rgba(255,200,60,.08);color:#ffc83c;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;cursor:pointer;}
+.bid-log{width:100%;max-width:380px;max-height:150px;overflow-y:auto;font-size:11px;}
+.bid-log-row{padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;}
+.bid-custom{display:flex;gap:8px;width:100%;max-width:380px;}
+.bid-custom input{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,200,60,.3);border-radius:6px;padding:10px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:13px;}
+.bid-custom button{padding:0 18px;border-radius:6px;border:2px solid #ffc83c;background:rgba(255,200,60,.1);color:#ffc83c;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;cursor:pointer;}
+.bid-err{font-size:10px;color:#ff2040;letter-spacing:1px;min-height:14px;}
+.npc-tag{font-size:9px;letter-spacing:1px;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);margin-right:6px;}
+.mj-setup{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;}
+.mj-setup input,.mj-setup textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:10px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:13px;}
+.mg-btn{padding:14px 30px;border:2px solid #ffc83c;border-radius:8px;background:rgba(255,200,60,.08);color:#ffc83c;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+.waiting{text-align:center;color:rgba(255,255,255,.3);font-size:13px;padding:20px 0;}
+.result-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;text-align:center;color:#00ff88;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">💰 ENCHÈRE CLANDESTINE</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">💰 ENCHÈRE CLANDESTINE</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var state={phase:'idle',item:'',desc:'',bid:0,holder:'',endsAt:0,log:[],increment:50};
+var localClockInt=null;
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_enchere_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  render();
+  connectMQTT();
+  localClockInt=setInterval(tickTimer,500);
+}
+/* Met à jour uniquement le chrono affiché, sans reconstruire tout le contenu —
+   sinon un input en cours de saisie (offre libre, offre PNJ...) est effacé toutes les 500ms. */
+function tickTimer(){
+  if(state.phase!=='running')return;
+  var remaining=Math.max(0,Math.round((state.endsAt-Date.now())/1000));
+  if(remaining<=0){
+    if(role==='mj')closeAuction();
+    return;
+  }
+  var el=document.getElementById('timer-disp');
+  if(el){
+    var mm=Math.floor(remaining/60),ss=remaining%60;
+    el.textContent=mm+':'+(ss<10?'0':'')+ss;
+    el.className='timer'+(remaining<=10?' urgent':'');
+  }
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'ec'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';});
+    mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());if(d.type==='state'){state=d.state;render();}}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});}
+
+function render(){
+  var c=document.getElementById('content');
+  var remaining=state.phase==='running'?Math.max(0,Math.round((state.endsAt-Date.now())/1000)):0;
+  if(state.phase==='running'&&remaining<=0&&role==='mj'){closeAuction();return;}
+  if(role==='mj'){renderMJ(c,remaining);return;}
+  if(state.phase==='idle'){c.innerHTML='<div class="waiting">En attente qu\'une enchère commence...</div>';return;}
+  if(state.phase==='closed'){renderClosed(c);return;}
+  renderAuction(c,remaining,false);
+}
+function isNpc(who){return !!who&&!ROLE_LABELS[who];}
+function holderLabel(who){return isNpc(who)?who:(ROLE_LABELS[who]||'');}
+function holderColor(who){return isNpc(who)?'#c8c8dc':(ROLE_COLORS[who]||'rgba(255,255,255,.4)');}
+function renderAuction(c,remaining,isMJ){
+  var mm=Math.floor(remaining/60),ss=remaining%60;
+  var html='<div class="item-name">'+esc(state.item)+'</div>'
+    +'<div class="item-desc">'+esc(state.desc)+'</div>'
+    +'<div class="timer'+(remaining<=10?' urgent':'')+'" id="timer-disp">'+mm+':'+(ss<10?'0':'')+ss+'</div>'
+    +'<div class="bid-display"><div class="bid-amount">'+state.bid+' eb</div><div class="bid-holder" style="color:'+(state.holder?holderColor(state.holder):'rgba(255,255,255,.4)')+';">'+(state.holder?(isNpc(state.holder)?'<span class="npc-tag">PNJ</span>':'')+'Meilleure offre : '+esc(holderLabel(state.holder)):'Aucune offre pour l\'instant')+'</div></div>';
+  if(!isMJ){
+    html+='<div class="bid-ctrl">'
+      +'<button class="bbtn" onclick="placeBid('+state.increment+')">+'+state.increment+'</button>'
+      +'<button class="bbtn" onclick="placeBid('+(state.increment*2)+')">+'+(state.increment*2)+'</button>'
+      +'<button class="bbtn" onclick="placeBid('+(state.increment*5)+')">+'+(state.increment*5)+'</button>'
+      +'</div>';
+    html+='<div class="bid-custom"><input type="number" id="custom-bid" placeholder="Ta propre offre (eb)">'
+      +'<button onclick="placeCustomBid()">MISER</button></div>'
+      +'<div class="bid-err" id="bid-err"></div>';
+  }
+  if(state.log&&state.log.length>0){
+    html+='<div class="bid-log">'+state.log.slice().reverse().slice(0,8).map(function(l){return '<div class="bid-log-row"><span style="color:'+holderColor(l.who)+';">'+(l.npc?'<span class="npc-tag">PNJ</span>':'')+esc(holderLabel(l.who))+'</span><span>'+l.amt+' eb</span></div>';}).join('')+'</div>';
+  }
+  if(isMJ){
+    html+='<button class="mg-btn" onclick="closeAuction()">✕ CLORE MAINTENANT</button>';
+    html+='<div class="mj-setup" style="margin-top:10px;border-top:1px dashed rgba(255,255,255,.15);padding-top:14px;">'
+      +'<div class="llabel">AJOUTER UNE OFFRE DE PNJ</div>'
+      +'<input id="npc-name" type="text" placeholder="Nom du PNJ (ex: Corpo rival)">'
+      +'<div style="display:flex;gap:8px;"><input id="npc-amt" type="number" placeholder="Montant total de l\'offre (eb)" style="flex:1;">'
+      +'<button class="mg-btn" style="padding:10px 16px;" onclick="mjAddNpcBid()">➕ OFFRE PNJ</button></div>'
+      +'<div class="bid-err" id="npc-err"></div></div>';
+  }
+  c.innerHTML=html;
+}
+function renderClosed(c){
+  c.innerHTML='<div class="result-title">🔨 ADJUGÉ</div>'
+    +'<div class="item-name">'+esc(state.item)+'</div>'
+    +'<div class="bid-display"><div class="bid-amount">'+state.bid+' eb</div><div class="bid-holder" style="color:'+(state.holder?holderColor(state.holder):'#fff')+';">'+(state.holder?'Remporté par '+esc(holderLabel(state.holder)):'Aucune offre — invendu')+'</div></div>'
+    +(role==='mj'?'<button class="mg-btn" onclick="resetAuction()">↺ NOUVELLE ENCHÈRE</button>':'');
+}
+function placeBid(amt){
+  var newBid=state.bid+amt;
+  state.bid=newBid;state.holder=role;
+  if(!state.log)state.log=[];
+  state.log.push({who:role,amt:newBid});
+  pushState();render();
+}
+function placeCustomBid(){
+  var inp=document.getElementById('custom-bid');
+  var errEl=document.getElementById('bid-err');
+  var amt=parseInt(inp.value);
+  if(isNaN(amt)||amt<=state.bid){if(errEl)errEl.textContent='Doit être supérieur à '+state.bid+' eb';return;}
+  state.bid=amt;state.holder=role;
+  if(!state.log)state.log=[];
+  state.log.push({who:role,amt:amt});
+  if(errEl)errEl.textContent='';
+  pushState();render();
+}
+function mjAddNpcBid(){
+  var name=document.getElementById('npc-name').value.trim();
+  var amt=parseInt(document.getElementById('npc-amt').value);
+  var errEl=document.getElementById('npc-err');
+  if(!name){if(errEl)errEl.textContent='Nom du PNJ requis';return;}
+  if(isNaN(amt)||amt<=state.bid){if(errEl)errEl.textContent='Doit être supérieur à '+state.bid+' eb';return;}
+  state.bid=amt;state.holder=name;
+  if(!state.log)state.log=[];
+  state.log.push({who:name,amt:amt,npc:true});
+  pushState();render();
+}
+function renderMJ(c,remaining){
+  if(state.phase==='idle'){
+    c.innerHTML='<div class="mj-setup"><div class="llabel">OBJET MIS AUX ENCHÈRES</div>'
+      +'<input id="mj-item" type="text" placeholder="Ex: Prototype volé EuroTech">'
+      +'<div class="llabel">DESCRIPTION</div>'
+      +'<textarea id="mj-desc" placeholder="Détail optionnel" style="min-height:50px;"></textarea>'
+      +'<div class="llabel">PRIX DE DÉPART / INCRÉMENT / DURÉE (sec)</div>'
+      +'<div style="display:flex;gap:8px;"><input id="mj-start" type="number" value="200" placeholder="Départ"><input id="mj-inc" type="number" value="50" placeholder="Incrément"><input id="mj-dur" type="number" value="120" placeholder="Durée"></div>'
+      +'<button class="mg-btn" onclick="startAuction()">▶ LANCER L\'ENCHÈRE</button></div>';
+    return;
+  }
+  if(state.phase==='closed'){renderClosed(c);return;}
+  renderAuction(c,remaining,true);
+}
+function startAuction(){
+  var item=document.getElementById('mj-item').value.trim()||'Objet mystère';
+  var desc=document.getElementById('mj-desc').value.trim();
+  var start=parseInt(document.getElementById('mj-start').value)||200;
+  var inc=parseInt(document.getElementById('mj-inc').value)||50;
+  var dur=parseInt(document.getElementById('mj-dur').value)||120;
+  state={phase:'running',item:item,desc:desc,bid:start,holder:'',endsAt:Date.now()+dur*1000,log:[],increment:inc};
+  pushState();render();
+}
+function closeAuction(){state.phase='closed';pushState();render();}
+function resetAuction(){state={phase:'idle',item:'',desc:'',bid:0,holder:'',endsAt:0,log:[],increment:50};pushState();render();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

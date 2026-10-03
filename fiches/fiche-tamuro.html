@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAMURO — Fiche de Personnage</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f; --bg2:#0d0d1a;
+  --text:#c0c0d4; --text-dim:#606078; --text-hi:#e8e8f4;
+  --accent:#ff2040; --accent-soft:rgba(255,32,64,0.05);
+  --border:rgba(255,255,255,0.08);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+.wrap{max-width:1100px;margin:0 auto;padding:50px 20px 90px;}
+.head{padding:20px 0 34px;border-bottom:1px solid var(--border);margin-bottom:34px;text-align:center;}
+.eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:7px;
+  color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:18px;}
+.eyebrow b{color:var(--accent);}
+.title{font-family:'Orbitron',monospace;font-size:clamp(28px,5vw,44px);font-weight:700;
+  color:var(--accent);letter-spacing:3px;text-shadow:0 0 50px var(--accent-soft);}
+.sub{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:3px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:12px;}
+.sheet-box{position:relative;border:1px solid var(--border);border-radius:6px;overflow:hidden;
+  background:#0b0b14;}
+.sheet-box img{display:block;width:100%;height:auto;cursor:zoom-in;}
+.sheet-box::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,0.035) 0px,rgba(255,255,255,0.035) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:overlay;opacity:.5;}
+.hint{text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-top:18px;}
+
+/* ═══ zoomable lightbox ═══ */
+.lightbox{display:none;position:fixed;inset:0;z-index:50;background:rgba(2,2,6,0.94);
+  overflow:hidden;touch-action:none;}
+.lightbox.on{display:block;}
+.lightbox-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  cursor:grab;}
+.lightbox-stage.grabbing{cursor:grabbing;}
+.lightbox-stage.zoomed{cursor:zoom-out;}
+.lightbox img{max-width:92vw;max-height:92vh;border-radius:4px;box-shadow:0 0 60px rgba(255,32,64,0.08);
+  user-select:none;-webkit-user-drag:none;will-change:transform;transform-origin:0 0;}
+.zoom-hud{position:fixed;top:16px;right:16px;z-index:52;display:flex;gap:8px;
+  font-family:'Share Tech Mono',monospace;}
+.zoom-btn{width:38px;height:38px;border-radius:4px;border:1px solid var(--border);
+  background:rgba(13,13,26,0.85);color:var(--accent);font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;}
+.zoom-btn:active{background:rgba(255,255,255,0.08);}
+.zoom-pct{min-width:52px;height:38px;border-radius:4px;border:1px solid var(--border);
+  background:rgba(13,13,26,0.85);color:var(--text-dim);font-size:11px;letter-spacing:1px;
+  display:flex;align-items:center;justify-content:center;}
+.zoom-close{position:fixed;top:16px;left:16px;z-index:52;width:38px;height:38px;border-radius:4px;
+  border:1px solid var(--border);background:rgba(13,13,26,0.85);color:var(--text-hi);
+  font-family:'Share Tech Mono',monospace;font-size:16px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;}
+.zoom-tip{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:52;
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;
+  color:var(--text-dim);text-transform:uppercase;background:rgba(13,13,26,0.7);
+  padding:8px 16px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;}
+
+/* ═══ boot / decryption overlay ═══ */
+#boot{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;
+  justify-content:center;transition:opacity .5s ease,visibility .5s ease;}
+#boot.hide{opacity:0;visibility:hidden;}
+.boot-card{width:min(460px,86vw);font-family:'Share Tech Mono',monospace;color:var(--accent);}
+.boot-top{font-size:10px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;margin-bottom:18px;}
+.boot-lines{min-height:120px;font-size:12px;line-height:2;letter-spacing:1px;}
+.boot-line{opacity:0;color:var(--text);}
+.boot-line.on{opacity:1;}
+.boot-line .ok{color:var(--accent);margin-left:8px;}
+.boot-line .cursor{display:inline-block;width:7px;height:13px;background:var(--accent);margin-left:4px;
+  animation:bootBlink .8s steps(1) infinite;vertical-align:-2px;}
+.boot-bar-wrap{margin-top:22px;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
+.boot-bar{height:100%;width:0%;background:var(--accent);box-shadow:0 0 12px var(--accent);
+  transition:width .35s linear;}
+@keyframes bootBlink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+
+/* ═══ reveal glitch on content ═══ */
+.wrap{opacity:0;}
+.wrap.show{opacity:1;animation:revealGlitch .5s steps(2,end);}
+@keyframes revealGlitch{
+  0%{opacity:0;filter:brightness(2) saturate(0);transform:translateX(0);}
+  20%{opacity:1;filter:brightness(1.4);transform:translateX(-6px);}
+  35%{transform:translateX(5px);}
+  50%{transform:translateX(-2px);filter:brightness(1.1) saturate(1.3);}
+  70%{transform:translateX(2px);}
+  100%{opacity:1;filter:none;transform:translateX(0);}
+}
+.sheet-box.flicker{animation:sheetFlicker 1.1s ease-out .1s;}
+@keyframes sheetFlicker{
+  0%{box-shadow:0 0 0 rgba(0,0,0,0);}
+  8%{box-shadow:0 0 40px var(--accent);filter:brightness(1.6);}
+  16%{filter:brightness(.8);}
+  24%{filter:brightness(1.3);box-shadow:0 0 25px var(--accent);}
+  32%{filter:brightness(1);box-shadow:0 0 0 rgba(0,0,0,0);}
+  100%{filter:brightness(1);}
+}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-card">
+    <div class="boot-top">// SPECTRE OS — ACCÈS DOSSIER //</div>
+    <div class="boot-lines" id="bootLines"></div>
+    <div class="boot-bar-wrap"><div class="boot-bar" id="bootBar"></div></div>
+  </div>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="head">
+    <span class="eyebrow">// <b>DOSSIER TECHNIQUE</b> — SPECTRE //</span>
+    <div class="title">LA VIPÈRE ROUGE</div>
+    <div class="sub">Tamuro Ayashi — Edgerunner · Fiche de personnage</div>
+  </div>
+  <div class="sheet-box" id="sheetBox">
+    <img src="../assets/fiches/fiche-tamuro.png" alt="Fiche de personnage — Tamuro / La Vipère Rouge" onclick="openZoom()">
+  </div>
+  <div class="hint">Cliquer sur la fiche pour l'agrandir — molette ou pincer pour zoomer, glisser pour déplacer</div>
+</div>
+
+<div class="lightbox" id="lb">
+  <div class="lightbox-stage" id="lbStage">
+    <img id="lbImg" src="../assets/fiches/fiche-tamuro.png" alt="Fiche de personnage — Tamuro / La Vipère Rouge">
+  </div>
+</div>
+<div class="zoom-close" id="zoomClose" style="display:none;">✕</div>
+<div class="zoom-hud" id="zoomHud" style="display:none;">
+  <div class="zoom-btn" id="zoomOut">−</div>
+  <div class="zoom-pct" id="zoomPct">100%</div>
+  <div class="zoom-btn" id="zoomIn">+</div>
+</div>
+<div class="zoom-tip" id="zoomTip" style="display:none;">Molette / pincement = zoom · glisser = déplacer · double-clic = reset</div>
+
+<script>
+(function(){
+  var lines=[
+    'CONNEXION AU RÉSEAU SPECTRE',
+    'AUTHENTIFICATION MJ',
+    'LOCALISATION DOSSIER: LA VIPÈRE ROUGE',
+    'DÉCRYPTAGE DES DONNÉES',
+    'INTÉGRITÉ DU FICHIER VÉRIFIÉE'
+  ];
+  var box=document.getElementById('bootLines');
+  var bar=document.getElementById('bootBar');
+  var boot=document.getElementById('boot');
+  var wrap=document.getElementById('wrap');
+  var sheet=document.getElementById('sheetBox');
+  lines.forEach(function(t){
+    var d=document.createElement('div');
+    d.className='boot-line';
+    d.innerHTML=t+'<span class="cursor"></span>';
+    box.appendChild(d);
+  });
+  var rows=box.querySelectorAll('.boot-line');
+  var i=0;
+  function step(){
+    if(i>0){rows[i-1].innerHTML=lines[i-1]+'<span class="ok">OK</span>';}
+    if(i<rows.length){
+      rows[i].classList.add('on');
+      bar.style.width=Math.round(((i+1)/rows.length)*100)+'%';
+      i++;
+      setTimeout(step,260+Math.random()*180);
+    }else{
+      setTimeout(function(){
+        boot.classList.add('hide');
+        wrap.classList.add('show');
+        sheet.classList.add('flicker');
+      },300);
+    }
+  }
+  setTimeout(step,250);
+})();
+
+/* ═══ zoom / pan lightbox ═══ */
+var ZMIN=1, ZMAX=8;
+var scale=1, tx=0, ty=0;
+var lb=document.getElementById('lb');
+var stage=document.getElementById('lbStage');
+var img=document.getElementById('lbImg');
+var hud=document.getElementById('zoomHud');
+var closeBtn=document.getElementById('zoomClose');
+var tip=document.getElementById('zoomTip');
+var pct=document.getElementById('zoomPct');
+
+function applyTransform(){
+  img.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')';
+  pct.textContent=Math.round(scale*100)+'%';
+  stage.classList.toggle('zoomed',scale>1);
+}
+function clampPan(){
+  // keep some travel range relative to scale, generous since image is centered via flex
+  var maxT=Math.max(window.innerWidth,window.innerHeight)*scale;
+  tx=Math.max(-maxT,Math.min(maxT,tx));
+  ty=Math.max(-maxT,Math.min(maxT,ty));
+}
+function resetView(){scale=1;tx=0;ty=0;applyTransform();}
+
+window.openZoom=function(){
+  lb.classList.add('on');
+  hud.style.display='flex';
+  closeBtn.style.display='flex';
+  tip.style.display='block';
+  resetView();
+  document.body.style.overflow='hidden';
+};
+function closeZoom(){
+  lb.classList.remove('on');
+  hud.style.display='none';
+  closeBtn.style.display='none';
+  tip.style.display='none';
+  document.body.style.overflow='';
+}
+closeBtn.addEventListener('click',closeZoom);
+
+function zoomBy(factor,cx,cy){
+  var old=scale;
+  scale=Math.max(ZMIN,Math.min(ZMAX,scale*factor));
+  if(scale===old)return;
+  if(cx===undefined){cx=window.innerWidth/2;cy=window.innerHeight/2;}
+  var ratio=scale/old;
+  // keep the point under the cursor stable
+  tx=cx-(cx-tx)*ratio;
+  ty=cy-(cy-ty)*ratio;
+  if(scale===1){tx=0;ty=0;}
+  clampPan();
+  applyTransform();
+}
+
+document.getElementById('zoomIn').addEventListener('click',function(){zoomBy(1.5);});
+document.getElementById('zoomOut').addEventListener('click',function(){zoomBy(1/1.5);});
+
+stage.addEventListener('wheel',function(e){
+  e.preventDefault();
+  var f=e.deltaY<0?1.15:1/1.15;
+  zoomBy(f,e.clientX,e.clientY);
+},{passive:false});
+
+stage.addEventListener('dblclick',function(e){
+  if(scale>1){resetView();}else{zoomBy(3,e.clientX,e.clientY);}
+});
+
+/* pointer-based drag-pan + pinch-zoom (unifies mouse & touch) */
+var pointers={};
+var dragging=false,lastX=0,lastY=0,pinchDist=0,pinchMid=null;
+
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
+
+stage.addEventListener('pointerdown',function(e){
+  stage.setPointerCapture(e.pointerId);
+  pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  var ids=Object.keys(pointers);
+  if(ids.length===1){
+    dragging=scale>1;
+    lastX=e.clientX;lastY=e.clientY;
+    stage.classList.toggle('grabbing',dragging);
+  }else if(ids.length===2){
+    dragging=false;
+    var pts=ids.map(function(id){return pointers[id];});
+    pinchDist=dist(pts[0],pts[1]);
+    pinchMid=mid(pts[0],pts[1]);
+  }
+});
+stage.addEventListener('pointermove',function(e){
+  if(!pointers[e.pointerId])return;
+  pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  var ids=Object.keys(pointers);
+  if(ids.length===2){
+    var pts=ids.map(function(id){return pointers[id];});
+    var d=dist(pts[0],pts[1]);
+    if(pinchDist>0){
+      var f=d/pinchDist;
+      zoomBy(f,pinchMid.x,pinchMid.y);
+    }
+    pinchDist=d;
+  }else if(dragging){
+    tx+=e.clientX-lastX;
+    ty+=e.clientY-lastY;
+    lastX=e.clientX;lastY=e.clientY;
+    clampPan();
+    applyTransform();
+  }
+});
+function endPointer(e){
+  delete pointers[e.pointerId];
+  if(Object.keys(pointers).length<2)pinchDist=0;
+  if(Object.keys(pointers).length===0){dragging=false;stage.classList.remove('grabbing');}
+}
+stage.addEventListener('pointerup',endPointer);
+stage.addEventListener('pointercancel',endPointer);
+stage.addEventListener('pointerleave',endPointer);
+
+/* click on stage background (not drag) closes; click on image when not zoomed also closes */
+stage.addEventListener('click',function(e){
+  if(dragWasDrag){dragWasDrag=false;return;}
+  if(scale===1)closeZoom();
+});
+var dragWasDrag=false;
+stage.addEventListener('pointermove',function(e){
+  if(dragging)dragWasDrag=true;
+});
+stage.addEventListener('pointerdown',function(){dragWasDrag=false;});
+
+document.addEventListener('keydown',function(e){
+  if(!lb.classList.contains('on'))return;
+  if(e.key==='Escape')closeZoom();
+  if(e.key==='+'||e.key==='=')zoomBy(1.3);
+  if(e.key==='-')zoomBy(1/1.3);
+});
+</script>
+</body>
+</html>

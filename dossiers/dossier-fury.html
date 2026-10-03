@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FURY — Dossier Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070f; --bg2:#0d0d1a;
+  --text:#c0c0d4; --text-dim:#606078; --text-hi:#e8e8f4;
+  --accent:#00ff88; --accent-soft:rgba(0,255,136,0.05);
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --amber:#ffaa00; --red:#ff2040;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;
+  font-size:19px;line-height:1.8;}
+.wrap{max-width:780px;margin:0 auto;padding:0 32px 100px;}
+.bg-mark{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-mark span{position:absolute;font-family:'Orbitron',monospace;font-weight:700;
+  color:var(--accent);opacity:0.015;font-size:240px;letter-spacing:20px;
+  top:30%;left:-5%;white-space:nowrap;transform:rotate(-8deg);}
+.dossier-head{padding:70px 0 40px;border-bottom:1px solid var(--border);
+  margin-bottom:50px;position:relative;z-index:1;}
+.dh-eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:7px;
+  color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:24px;}
+.dh-eyebrow b{color:var(--accent);}
+.dh-alias{font-family:'Orbitron',monospace;font-size:clamp(34px,5vw,52px);font-weight:700;
+  color:var(--accent);letter-spacing:3px;line-height:1.05;display:block;
+  text-shadow:0 0 50px var(--accent-soft);}
+.dh-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:300;letter-spacing:5px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:14px;display:block;}
+.dh-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:5px;text-transform:uppercase;padding:7px 18px;margin-top:22px;
+  border:1px solid var(--accent);color:var(--accent);border-radius:2px;}
+.dh-tag{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:300;font-style:italic;
+  color:rgba(255,255,255,0.45);margin-top:26px;letter-spacing:1px;line-height:1.6;}
+.sec{margin-bottom:48px;position:relative;z-index:1;}
+.sec-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:8px;
+  display:flex;align-items:center;gap:14px;}
+.sec-title::before{content:'';width:24px;height:2px;background:var(--accent);flex-shrink:0;}
+.sec-title .num{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);
+  letter-spacing:2px;margin-left:auto;}
+.sec-sub{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);margin-bottom:24px;margin-left:38px;text-transform:uppercase;}
+p{margin-bottom:16px;}
+strong{color:var(--text-hi);font-weight:600;}
+em{color:var(--accent);font-style:normal;}
+.know{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
+.know-item{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:14px 0;
+  border-bottom:1px solid var(--border);align-items:start;}
+.know-item:last-child{border-bottom:none;}
+.know-ico{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);
+  padding-top:3px;width:22px;text-align:center;}
+.know-txt{font-size:17px;line-height:1.65;}
+.know-txt b{color:var(--text-hi);font-weight:600;}
+.contact{border:1px solid var(--border2);border-radius:4px;padding:18px 22px;
+  background:var(--bg2);margin-bottom:14px;}
+.contact.special{border-color:var(--accent);background:rgba(255,255,255,0.02);}
+.contact-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:600;
+  letter-spacing:1px;color:var(--text-hi);display:flex;align-items:baseline;gap:12px;}
+.contact-name .role{font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.contact-desc{font-size:16px;color:var(--text);margin-top:6px;line-height:1.6;}
+.intuition{border-left:3px solid var(--amber);background:rgba(255,170,0,0.04);
+  padding:18px 24px;margin-bottom:14px;border-radius:0 3px 3px 0;}
+.intuition p{margin-bottom:0;font-size:17px;font-style:italic;color:rgba(255,255,255,0.65);line-height:1.6;}
+.obj{display:flex;align-items:start;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.obj:last-child{border-bottom:none;}
+.obj-check{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:16px;
+  padding-top:2px;flex-shrink:0;}
+.obj-txt{font-size:17px;line-height:1.5;}
+.obj-txt b{color:var(--text-hi);}
+.pq{margin:36px 0;padding:26px 32px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);font-style:italic;font-size:20px;font-weight:300;
+  color:rgba(255,255,255,0.72);line-height:1.65;}
+.pq cite{display:block;margin-top:12px;font-family:'Share Tech Mono',monospace;
+  font-size:11px;font-style:normal;letter-spacing:3px;color:var(--text-dim);}
+.dline{border:none;border-top:1px solid var(--border);margin:44px 0;position:relative;}
+.dline::before{content:attr(data-l);position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  background:var(--bg);padding:0 16px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:5px;color:var(--text-dim);}
+.foot{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--text-dim);text-align:center;line-height:2;}
+.foot b{color:var(--accent);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@media(max-width:600px){.wrap{padding:0 20px 60px;}}
+</style>
+</head>
+<body>
+<div class="bg-mark"><span>FURY</span></div>
+<div class="wrap">
+  <div class="dossier-head">
+    <span class="dh-eyebrow">// DOSSIER PERSONNEL — <b>YEUX SEULS</b> — NE PAS PARTAGER //</span>
+    <span class="dh-alias">FURY</span>
+    <span class="dh-name">Frostpunk</span>
+    <div class="dh-badge">// CHARCUDOC //</div>
+    <div class="dh-tag">Sous CléoGel, tes mains ne tremblent jamais et ton diagnostic ne se trompe pas. Sans lui, tu n'es plus rien. Le pire, c'est que tu ne sais plus lequel des deux tu préfères.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ce que tu sais — Neo-Paris <span class="num">[01]</span></div>
+    <div class="sec-sub">Le corps humain, ses augmentations, et ce qu'on peut y injecter n'ont aucun secret pour toi</div>
+    <div class="know">
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Le milieu médical underground.</b> Cliniques clandestines, ripperdocs, marchés d'organes. Tu sais qui est compétent, qui est un boucher, et où aller en urgence — même si la plupart des confrères te regardent désormais de travers.</div></div>
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>Le CléoGel, mieux que quiconque.</b> Une version modifiée de la colle Cléopâtre que tu as toi-même détournée. Tu connais son dosage, ses effets, ses risques — parce que ton propre corps a servi de premier terrain d'essai. Sous son effet, tes diagnostics et tes soins dépassent largement la norme humaine.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>La biologie du cyberware.</b> Ce qu'un implant fait à un corps, ses limites, comment le saboter ou le réparer. Au Cabaret, ton scanner a détecté des implants militaires non-légaux avant même que la fusillade n'éclate.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Les réseaux du trafic pharmaceutique.</b> Tu n'es plus seulement un observateur de ce marché — tu en fais partie. Fournisseurs, précurseurs chimiques, acheteurs réguliers. Tu sais ce qui est chimiquement possible, et ce qui est mortel — tu l'as testé sur toi-même plus d'une fois.</div></div>
+    </div>
+  </div>
+
+  <hr class="dline" data-l="LA NUIT DU 15.03.2077">
+
+  <div class="sec">
+    <div class="sec-title">La situation actuelle <span class="num">[02]</span></div>
+    <div class="sec-sub">Ce que tu as vécu — de ton point de vue</div>
+    <p>Tu as garé ton fourgon-clinique deux-cents mètres derrière le Cabaret, par pure habitude professionnelle. Avant d'entrer, tu t'es injecté une dose de CléoGel — juste assez pour garder les mains stables et l'esprit tranchant, pas assez pour basculer dans l'imprévisible. Un équilibre que tu ne maîtrises jamais totalement.</p>
+    <p>Ton scanner a détecté une activité biomédicale anormale à l'intérieur — <strong>plusieurs implants militaires</strong>, pas du tout le genre légal. Tu as attrapé ta trousse et ton lanceur de seringues, et tu t'es frayé un chemin vers l'entrée de service.</p>
+    <p>Résultat : tu as opéré <em>Tamuro</em> sur le vif, dans ton fourgon, pendant qu'un nomade conduisait comme un fou. Tes gestes étaient d'une précision presque inhumaine — le produit faisait son effet. Tu l'as recousue proprement, sans qu'elle sache à quel point ta main tremblait à peine une heure plus tôt, avant l'injection.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ton réseau <span class="num">[03]</span></div>
+    <div class="sec-sub">Les gens que tu connais — de confiance ou non</div>
+    <div class="contact"><div class="contact-name">Tes fournisseurs de CléoGel<span class="role">Trafic — précurseurs</span></div><div class="contact-desc">Ceux qui t'approvisionnent en produits chimiques nécessaires à ta prochaine dose. Relation tendue : tu leur dois de l'argent, et ils commencent à le faire savoir.</div></div>
+    <div class="contact"><div class="contact-name">D'anciens confrères médecins<span class="role">Confrères qui t'évitent</span></div><div class="contact-desc">Ceux qui te connaissaient avant ta chute. Certains te méprisent. D'autres continuent, discrètement, à te renvoyer des cas trop lourds pour eux.</div></div>
+    <div class="contact"><div class="contact-name">Tes anciens patients<span class="role">Réseau de dettes</span></div><div class="contact-desc">Des gens que tu as sauvés, sous produit ou non, et qui te doivent une faveur. Une clientèle désespérée se transforme souvent en contacts utiles.</div></div>
+  </div>
+
+  <hr class="dline" data-l="QUI TU ES">
+
+  <div class="sec">
+    <div class="sec-title">Ton histoire <span class="num">[04]</span></div>
+    <div class="sec-sub">D'où tu viens — ce qui t'a construit</div>
+    <p>Tu étais médecin. Un vrai, diplômé, respecté. Puis tu as sombré dans le trafic de substances illégales — d'abord pour financer ton matériel, ensuite parce que le CléoGel, une version modifiée de la colle Cléopâtre que tu as toi-même mise au point, t'a offert quelque chose que ta formation ne t'avait jamais donné : la perfection technique.</p>
+    <p>Obsédé par la performance, tu as fini par expérimenter sur ton propre corps. Sous l'effet du produit, tes diagnostics et tes soins dépassent les normes humaines. Mais ton esprit devient instable. Sans CléoGel, tu perds tes moyens — les mains qui tremblent, le jugement qui flanche. Avec, tu deviens brillant. Et imprévisible.</p>
+    <p>Un médecin brillant, dépendant d'une substance qu'il a lui-même détournée. Tu ne sais plus très bien lequel de vous deux — le médecin ou le produit — soigne réellement les gens.</p>
+  </div>
+
+  <hr class="dline" data-l="ZONE GRISE">
+
+  <div class="sec">
+    <div class="sec-title">Rumeurs & intuitions <span class="num">[05]</span></div>
+    <div class="sec-sub">Des choses que tu sens, sans pouvoir les prouver</div>
+    <div class="intuition"><p>Quand tu as recousu Tamuro, ton scanner a brièvement capté quelque chose d'étrange dans les modifications de Keiyo, plus tard. Un schéma neuronal que tu n'avais jamais vu. Tu n'as pas eu le temps d'analyser — et le CléoGel commençait à te lâcher.</p></div>
+    <div class="intuition"><p>Quelqu'un cherche à racheter ta dette — pas celle d'un vieux prêt oublié, mais celle que tu dois à ton fournisseur principal de précurseurs chimiques. Ton créancier te l'a laissé entendre, presque amusé. Pourquoi un inconnu voudrait-il posséder ta dépendance ?</p></div>
+    <div class="intuition"><p>Les implants militaires que tu as scannés au Cabaret étaient des modèles EuroTech sur mesure. Pas du standard. Du très, très haut de gamme. Ce qui veut dire des enjeux bien plus gros qu'un simple datapad.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Tes objectifs <span class="num">[06]</span></div>
+    <div class="sec-sub">Ce qui te fait avancer</div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Sécuriser ton prochain arrivage de CléoGel.</b> Sans lui, tu n'es qu'un médecin ordinaire aux mains qui tremblent.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Découvrir qui rachète ta dette.</b> Et ce que cette personne compte faire du levier qu'elle vient d'acquérir sur toi.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Rester fonctionnel.</b> Sous produit ou pas. Tant que l'équipe a besoin d'un medtech, tu as une assurance-vie.</div></div>
+  </div>
+
+  <div class="foot">
+    NEO-PARIS / 2077 — DOSSIER <b>FURY</b><br>
+    CHIFFREMENT ACTIF — DESTRUCTION RECOMMANDÉE APRÈS LECTURE
+  </div>
+</div>
+</body>
+</html>

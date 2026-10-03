@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>L'ARCHIVE FANTÔME — Casse Collectif</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{height:100%;overflow:hidden;background:#07070d;font-family:'Share Tech Mono',monospace;color:#c8c8dc;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);}
+
+/* ═════ LOGIN ═════ */
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,200,60,.25);border-radius:6px;background:rgba(20,15,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:21px;font-weight:900;letter-spacing:4px;color:#ffc83c;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,200,60,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+#lcode:focus{border-color:rgba(255,200,60,.5);}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;transition:all .2s;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;display:block;}
+.lbtn small{font-size:8px;letter-spacing:1px;display:block;opacity:.5;margin-top:2px;}
+.lbtn:hover{background:rgba(255,255,255,.04);}
+.lbtn.on{background:rgba(255,200,60,.12);}
+#lerr{font-size:10px;color:rgba(255,32,64,.7);letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki.on,.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter.on,.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury.on,.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo.on,.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro.on,.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj.on,.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+/* ═════ APP ═════ */
+#app{display:none;height:100vh;flex-direction:column;background:#07070d;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:rgba(15,12,5,.9);border-bottom:1px solid rgba(255,200,60,.15);flex-shrink:0;flex-wrap:wrap;gap:8px;}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffc83c;}
+.tstatus{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}.cdot.wait{background:#ffaa00;animation:cwP 1s infinite;}
+@keyframes cwP{50%{opacity:.3;}}
+
+/* SHARED HUD - visible to everyone */
+.shud{display:flex;align-items:center;gap:14px;padding:10px 18px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,200,60,.1);flex-wrap:wrap;flex-shrink:0;}
+.shud-timer{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:#ffc83c;letter-spacing:2px;min-width:70px;}
+.shud-timer.warn{color:#ff2040;animation:tblink .5s infinite;}
+@keyframes tblink{50%{opacity:.4;}}
+.shud-layers{display:flex;gap:10px;flex:1;flex-wrap:wrap;}
+.shud-layer{display:flex;flex-direction:column;gap:3px;min-width:80px;flex:1;}
+.shud-layer-lbl{font-size:8px;letter-spacing:1px;display:flex;justify-content:space-between;}
+.shud-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;}
+.shud-bar-fill{height:100%;transition:width .3s;border-radius:3px;}
+.shud-layer.done .shud-bar-fill{background:#00ff88 !important;}
+
+/* MAIN CONTENT */
+.content{flex:1;overflow:auto;position:relative;}
+.stage{padding:20px;max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:16px;min-height:100%;justify-content:center;}
+.stage-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;letter-spacing:3px;text-align:center;}
+.stage-desc{font-size:13px;color:rgba(255,255,255,.5);text-align:center;max-width:420px;line-height:1.6;}
+.stage-progress-lbl{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);}
+.big-bar{width:280px;height:14px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+.big-bar-fill{height:100%;transition:width .3s;border-radius:8px;}
+
+/* WAITING STATE */
+.waiting-icon{font-size:48px;opacity:.3;animation:waitPulse 2s infinite;}
+@keyframes waitPulse{50%{opacity:.6;}}
+
+/* SUCCESS/FAIL OVERLAY */
+#result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+#result-overlay.on{display:flex;}
+.result-title{font-family:'Orbitron',monospace;font-size:36px;font-weight:900;letter-spacing:6px;text-shadow:0 0 30px currentColor;}
+.result-title.success{color:#00ff88;}
+.result-title.failure{color:#ff2040;}
+.result-sub{font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.6);max-width:420px;text-align:center;line-height:1.7;}
+
+/* ═════ MINIGAME: KIKI - Barrière (timing dial) ═════ */
+.mg-dial-track{width:280px;height:40px;background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.3);border-radius:20px;position:relative;overflow:hidden;}
+.mg-dial-zone{position:absolute;top:0;bottom:0;background:rgba(0,255,136,.3);border-left:2px solid #00ff88;border-right:2px solid #00ff88;}
+.mg-dial-marker{position:absolute;top:-4px;bottom:-4px;width:4px;background:#ffc83c;box-shadow:0 0 10px #ffc83c;}
+.mg-btn{padding:14px 40px;border:2px solid #ffaa00;border-radius:8px;background:rgba(255,170,0,.08);color:#ffaa00;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all .1s;}
+.mg-btn:active{transform:scale(.95);background:rgba(255,170,0,.2);}
+.mg-hits{display:flex;gap:8px;}
+.mg-hit-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,170,0,.3);}
+.mg-hit-dot.on{background:#ffaa00;border-color:#ffaa00;}
+
+/* ═════ MINIGAME: MOON - ICE sequence ═════ */
+.mg-seq-grid{display:grid;grid-template-columns:repeat(4,64px);gap:10px;}
+.mg-seq-tile{width:64px;height:64px;border-radius:8px;border:2px solid rgba(0,204,255,.3);background:rgba(0,204,255,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;}
+.mg-seq-tile.flash{background:#00ccff;box-shadow:0 0 20px #00ccff;transform:scale(1.1);}
+.mg-seq-tile.wrong{background:#ff2040;border-color:#ff2040;}
+.mg-seq-tile:active{transform:scale(.92);}
+.mg-ice-bar{width:200px;height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+.mg-ice-fill{height:100%;background:linear-gradient(90deg,#00ff88,#ffaa00,#ff2040);transition:width .3s;}
+
+/* ═════ MINIGAME: FURY - Circuit (pipe rotation puzzle) ═════ */
+.mg-pipe-grid{display:grid;grid-template-columns:repeat(6,50px);gap:4px;background:rgba(0,255,136,.04);padding:10px;border-radius:10px;border:1px solid rgba(0,255,136,.2);}
+.mg-pipe-tile{width:50px;height:50px;border-radius:6px;border:1px solid rgba(0,255,136,.25);background:rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:background .2s;}
+.mg-pipe-tile:hover{background:rgba(0,255,136,.1);}
+.mg-pipe-tile.lit{background:rgba(0,255,136,.22);border-color:#00ff88;}
+.mg-pipe-glyph{width:80%;height:80%;transition:transform .2s ease;}
+.mg-pipe-entry{position:absolute;left:-14px;top:50%;transform:translateY(-50%);font-size:16px;color:#00ff88;}
+.mg-pipe-exit{position:absolute;right:-14px;top:50%;transform:translateY(-50%);font-size:16px;color:#00ff88;}
+.mg-pipe-solved-msg{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;color:#00ff88;min-height:18px;}
+
+/* ═════ MINIGAME: KEIYO - Distraction meter ═════ */
+.mg-meter-track{width:280px;height:36px;border-radius:18px;background:rgba(255,51,204,.06);border:1px solid rgba(255,51,204,.3);position:relative;overflow:hidden;}
+.mg-meter-zone{position:absolute;left:35%;right:35%;top:0;bottom:0;background:rgba(0,255,136,.25);}
+.mg-meter-needle{position:absolute;top:-3px;bottom:-3px;width:4px;background:#ff33cc;box-shadow:0 0 10px #ff33cc;transition:left .1s linear;}
+.mg-charm-btn{padding:16px 44px;border:2px solid #ff33cc;border-radius:30px;background:rgba(255,51,204,.08);color:#ff33cc;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:3px;cursor:pointer;}
+.mg-charm-btn:active{transform:scale(.95);}
+
+/* ═════ MINIGAME: TAMURO - Protocole (spot diff) ═════ */
+.mg-proto-grid{display:grid;grid-template-columns:repeat(4,60px);gap:8px;}
+.mg-proto-tile{width:60px;height:60px;border-radius:6px;border:2px solid rgba(255,32,64,.3);background:rgba(255,32,64,.05);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all .15s;}
+.mg-proto-tile.selected{border-color:#ff2040;background:rgba(255,32,64,.3);}
+.mg-proto-tile.correct{border-color:#00ff88;background:rgba(0,255,136,.25);}
+.mg-proto-tile.wrong{border-color:#ff2040;background:rgba(255,32,64,.4);}
+.mg-proto-lbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.35);margin-bottom:6px;}
+
+/* ═════ ASSIST PANEL ═════ */
+.assist-panel{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);width:100%;max-width:400px;}
+.assist-btn{padding:8px 12px;border:1px solid rgba(255,255,255,.15);border-radius:16px;background:transparent;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;color:rgba(255,255,255,.6);}
+.assist-btn:hover{background:rgba(255,255,255,.05);}
+.assist-btn:disabled{opacity:.25;cursor:not-allowed;}
+.assist-cooldown{font-size:9px;color:rgba(255,255,255,.3);text-align:center;}
+.assist-req-banner{width:100%;text-align:center;padding:14px;border:1px solid #ffc83c;border-radius:8px;background:rgba(255,200,60,.08);font-size:12px;color:#ffc83c;letter-spacing:1px;}
+.assist-accept-btn,.assist-decline-btn{padding:8px 16px;border-radius:6px;border:1px solid;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:transparent;}
+.assist-accept-btn{border-color:#00ff88;color:#00ff88;}
+.assist-decline-btn{border-color:#ff2040;color:#ff2040;}
+.assist-active-panel{width:100%;text-align:center;padding:14px;border:1px solid #ffc83c;border-radius:8px;background:rgba(255,200,60,.06);font-size:12px;color:#e8e8f0;letter-spacing:.5px;}
+.assist-use-btn{padding:10px 20px;border-radius:6px;border:1px solid #ffc83c;color:#ffc83c;background:rgba(255,200,60,.1);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.assist-target-indicator{width:100%;text-align:center;font-size:10px;color:rgba(0,255,136,.6);letter-spacing:1px;margin-top:6px;}
+
+/* ═════ MJ PANEL ═════ */
+.mj-panel{padding:20px;max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+.mj-title{font-family:'Orbitron',monospace;font-size:14px;letter-spacing:3px;color:#ffc83c;padding-bottom:10px;border-bottom:1px solid rgba(255,200,60,.15);}
+.mj-controls{display:flex;gap:10px;flex-wrap:wrap;}
+.mj-btn{padding:12px 20px;border:1px solid;border-radius:6px;background:transparent;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;}
+.mj-btn.start{border-color:#00ff88;color:#00ff88;}
+.mj-btn.reset{border-color:#ffaa00;color:#ffaa00;}
+.mj-btn.alarm{border-color:#ff2040;color:#ff2040;}
+.mj-layer-detail{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mj-layer-card{border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:12px;background:rgba(255,255,255,.02);}
+.mj-layer-card-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;margin-bottom:8px;}
+.mj-timer-input{display:flex;align-items:center;gap:10px;}
+.mj-timer-input input{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:8px;color:#fff;font-family:'Share Tech Mono',monospace;width:80px;}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}::-webkit-scrollbar-thumb{background:rgba(255,200,60,.2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">📁 L'ARCHIVE FANTÔME</div>
+    <div class="lsub">// CASSE COLLECTIF — 5 COUCHES SIMULTANÉES</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b><small>PARKING</small></button>
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b><small>ICE</small></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b><small>BIOMÉTRIE</small></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b><small>GARDIEN</small></button>
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b><small>PROTOCOLE</small></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b><small>CONTRÔLE</small></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()" style="border-color:#ffc83c;color:#ffc83c;margin-top:6px;padding:12px;">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">📁 ARCHIVE FANTÔME</div>
+    <div class="tstatus"><span id="conn-lbl">CONNEXION...</span><div class="cdot wait" id="conn-dot"></div></div>
+  </div>
+
+  <div class="shud" id="shud">
+    <div class="shud-timer" id="shud-timer">--:--</div>
+    <div class="shud-layers" id="shud-layers"></div>
+  </div>
+
+  <div class="content" id="content"></div>
+</div>
+
+<div id="result-overlay">
+  <div class="result-title" id="result-title">—</div>
+  <div class="result-sub" id="result-sub"></div>
+  <button class="mg-btn" style="margin-top:10px;" onclick="closeResult()">FERMER</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   L'ARCHIVE FANTÔME — Casse collectif synchronisé
+   ═══════════════════════════════════════════════════════════════ */
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null, sCode=null, mc=null, topic='';
+var ROLE_LABELS={kiki:'KIKI',hunter:'MOON',fury:'FURY',keiyo:'KEIYO',tamuro:'TAMURO'};
+var ROLE_COLORS={kiki:'#ffaa00',hunter:'#00ccff',fury:'#00ff88',keiyo:'#ff33cc',tamuro:'#ff2040'};
+var LAYER_ORDER=['kiki','hunter','fury','keiyo','tamuro'];
+
+/* ═════ SHARED STATE (mirrored across all clients, MJ is authority) ═════ */
+var state={
+  phase:'idle', /* idle | running | success | failure */
+  timerTotal:900, /* 15 min default */
+  timerRemaining:900,
+  layers:{
+    kiki:{progress:0,done:false,busy:false},
+    hunter:{progress:0,done:false,busy:false,ice:0},
+    fury:{progress:0,done:false,busy:false},
+    keiyo:{progress:0,done:false,busy:false},
+    tamuro:{progress:0,done:false,busy:false}
+  }
+};
+var tickInterval=null;
+var lastAssist={};
+var hasReceivedState=false;
+
+/* ═════ LOGIN ═════ */
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_archive_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initUI();
+  connectMQTT();
+  startLocalTimerDisplay();
+}
+
+/* ═════ MQTT ═════ */
+function connectMQTT(){
+  try{
+    if(typeof mqtt==='undefined')throw new Error('no mqtt');
+    mc=mqtt.connect(BROKER,{clientId:'af'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){
+      mc.subscribe(topic);
+      document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';
+      if(role!=='mj')pub({type:'requestState'});
+    });
+    mc.on('message',function(t,p){try{handleMsg(JSON.parse(p.toString()));}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+/* Local, MJ-independent timer display for players — self-corrects from timerEndsAt so it stays accurate even if the MJ tab is backgrounded/throttled */
+function startLocalTimerDisplay(){
+  if(role==='mj')return;
+  setInterval(function(){
+    if(state.phase==='running'&&state.timerEndsAt){
+      state.timerRemaining=Math.max(0,Math.round((state.timerEndsAt-Date.now())/1000));
+      renderShud();
+    }
+  },1000);
+}
+
+function handleMsg(d){
+  if(d.type==='requestState'&&role==='mj'){broadcastState();return;}
+  if(d.type==='fullState'){
+    var oldPhase=state.phase;
+    state=d.state;
+    renderShud();
+    checkOverlay();
+    var needRender=(role!=='mj')&&(!hasReceivedState||state.phase!==oldPhase);
+    hasReceivedState=true;
+    if(needRender){renderStage();}
+    return;
+  }
+  if(d.type==='layerReport'&&role==='mj'){
+    /* MJ receives a player's local progress update and merges into authoritative state */
+    if(state.layers[d.layer]){
+      state.layers[d.layer].progress=d.progress;
+      state.layers[d.layer].done=d.progress>=100;
+      if(d.ice!==undefined)state.layers[d.layer].ice=d.ice;
+      broadcastState();
+      checkWinCondition();
+    }
+    return;
+  }
+  if(d.type==='assistReq'){
+    assistPairs[d.to]='pending';
+    if(d.to===role)pendingRequestFrom=d.from;
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistResp'){
+    if(d.accepted)assistPairs[d.from]=d.to;else delete assistPairs[d.from];
+    if(d.to===role){
+      if(d.accepted){activeAsHelperFor=d.from;pendingRequestTo=null;}
+      else{pendingRequestTo=null;}
+    }
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistUse'){
+    delete assistPairs[d.target];
+    if(d.target===role){
+      localProgress=Math.min(100,localProgress+18);
+      reportProgress();
+      flashAssistBanner(d.helper);
+      activeHelperForMe=null;
+    }
+    if(d.helper===role){activeAsHelperFor=null;}
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistReceived'&&d.target===role){
+    localProgress=Math.min(100,localProgress+18);
+    reportProgress();
+    flashAssistBanner();
+  }
+}
+function broadcastState(){pub({type:'fullState',state:state});renderShud();checkOverlay();if(role==='mj')refreshMJDetail();}
+
+/* ═════ MJ: master timer ═════ */
+function startTick(){
+  if(tickInterval)clearInterval(tickInterval);
+  tickInterval=setInterval(function(){
+    if(state.phase!=='running')return;
+    state.timerRemaining=state.timerEndsAt?Math.max(0,Math.round((state.timerEndsAt-Date.now())/1000)):Math.max(0,state.timerRemaining-1);
+    if(state.timerRemaining<=0){
+      state.phase='failure';
+      clearInterval(tickInterval);
+    }
+    broadcastState();
+  },1000);
+}
+
+/* ═════ MJ CONTROLS ═════ */
+function mjStart(){
+  var mins=parseFloat(document.getElementById('mj-timer-val').value)||15;
+  state.timerTotal=Math.round(mins*60);state.timerRemaining=state.timerTotal;state.timerEndsAt=Date.now()+state.timerTotal*1000;
+  state.phase='running';
+  LAYER_ORDER.forEach(function(k){state.layers[k]={progress:0,done:false,busy:false,ice:0};});
+  startTick();broadcastState();
+}
+function mjReset(){
+  clearInterval(tickInterval);
+  state={phase:'idle',timerTotal:state.timerTotal,timerRemaining:state.timerTotal,layers:{
+    kiki:{progress:0,done:false,busy:false},hunter:{progress:0,done:false,busy:false,ice:0},
+    fury:{progress:0,done:false,busy:false},keiyo:{progress:0,done:false,busy:false},tamuro:{progress:0,done:false,busy:false}
+  }};
+  broadcastState();
+}
+function mjAlarm(){state.phase='failure';clearInterval(tickInterval);broadcastState();}
+function mjSuccess(){state.phase='success';clearInterval(tickInterval);broadcastState();}
+
+function checkWinCondition(){
+  if(role!=='mj'||state.phase!=='running')return;
+  var allDone=LAYER_ORDER.every(function(k){return state.layers[k].done;});
+  if(allDone){state.phase='success';clearInterval(tickInterval);broadcastState();}
+}
+
+/* ═════ UI INIT ═════ */
+function initUI(){
+  renderShud();
+  if(role==='mj')renderMJPanel();
+  else renderStage();
+}
+
+function renderShud(){
+  var t=state.timerRemaining;
+  var m=Math.floor(t/60),s=t%60;
+  var te=document.getElementById('shud-timer');
+  te.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  te.classList.toggle('warn',t<60&&state.phase==='running');
+  var l=document.getElementById('shud-layers');l.innerHTML='';
+  LAYER_ORDER.forEach(function(k){
+    var ly=state.layers[k];
+    var col=ROLE_COLORS[k];
+    var d=document.createElement('div');d.className='shud-layer'+(ly.done?' done':'');
+    d.innerHTML='<div class="shud-layer-lbl"><span style="color:'+col+'">'+ROLE_LABELS[k]+'</span><span>'+Math.round(ly.progress)+'%</span></div><div class="shud-bar"><div class="shud-bar-fill" style="width:'+ly.progress+'%;background:'+col+';"></div></div>';
+    l.appendChild(d);
+  });
+}
+
+function checkOverlay(){
+  var ov=document.getElementById('result-overlay');
+  if(state.phase==='success'){
+    document.getElementById('result-title').textContent='ARCHIVE OUVERTE';
+    document.getElementById('result-title').className='result-title success';
+    document.getElementById('result-sub').textContent='Les cinq couches ont cédé simultanément. Les logs de sécurité de la nuit de l\'attentat sont entre vos mains.';
+    ov.classList.add('on');
+  } else if(state.phase==='failure'){
+    document.getElementById('result-title').textContent='ALARME';
+    document.getElementById('result-title').className='result-title failure';
+    document.getElementById('result-sub').textContent='Le système s\'est reverrouillé. Une partie des données a peut-être été récupérée — mais il faut sortir, maintenant.';
+    ov.classList.add('on');
+  } else {
+    ov.classList.remove('on');
+  }
+}
+function closeResult(){document.getElementById('result-overlay').classList.remove('on');}
+
+/* ═════ MJ PANEL ═════ */
+function renderMJPanel(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="mj-panel">'
+    +'<div class="mj-title">⚙ CONTRÔLE MJ</div>'
+    +'<div class="mj-timer-input"><span style="font-size:10px;letter-spacing:2px;">DURÉE (min)</span><input id="mj-timer-val" type="number" value="15" min="1" max="60"></div>'
+    +'<div class="mj-controls">'
+    +'<button class="mj-btn start" onclick="mjStart()">▶ LANCER LE CASSE</button>'
+    +'<button class="mj-btn reset" onclick="mjReset()">↺ RÉINITIALISER</button>'
+    +'<button class="mj-btn alarm" onclick="mjAlarm()">⚠ ALARME MANUELLE</button>'
+    +'<button class="mj-btn start" onclick="mjSuccess()">✓ FORCER RÉUSSITE</button>'
+    +'</div>'
+    +'<div class="mj-layer-detail" id="mj-layer-detail"></div>'
+    +'</div>';
+  refreshMJDetail();
+  setInterval(refreshMJDetail,500);
+}
+function refreshMJDetail(){
+  var d=document.getElementById('mj-layer-detail');if(!d)return;
+  d.innerHTML='';
+  LAYER_ORDER.forEach(function(k){
+    var ly=state.layers[k];
+    var card=document.createElement('div');card.className='mj-layer-card';
+    card.innerHTML='<div class="mj-layer-card-title" style="color:'+ROLE_COLORS[k]+'">'+ROLE_LABELS[k]+' — '+Math.round(ly.progress)+'%</div><div class="shud-bar"><div class="shud-bar-fill" style="width:'+ly.progress+'%;background:'+ROLE_COLORS[k]+';"></div></div>';
+    d.appendChild(card);
+  });
+}
+
+/* ═════ PLAYER STAGE ═════ */
+var localProgress=0;
+function reportProgress(){pub({type:'layerReport',layer:role,progress:localProgress,ice:(typeof localIce!=='undefined'?localIce:undefined)});}
+
+function renderStage(){
+  if(role==='mj')return;
+  resetAssistState();
+  var c=document.getElementById('content');
+  if(state.phase==='idle'){
+    c.innerHTML='<div class="stage"><div class="waiting-icon">⏳</div><div class="stage-title">EN ATTENTE DU SIGNAL</div><div class="stage-desc">Le MJ n\'a pas encore lancé le casse. Reste connecté.</div></div>';
+    return;
+  }
+  if(state.phase!=='running'){return;} /* overlay handles success/failure */
+  localProgress=state.layers[role]?state.layers[role].progress:0;
+  if(role==='kiki')renderKiki();
+  else if(role==='hunter')renderHunter();
+  else if(role==='fury')renderFury();
+  else if(role==='keiyo')renderKeiyo();
+  else if(role==='tamuro')renderTamuro();
+}
+
+/* ═════ ENTRAIDE (consentement, un allié actif à la fois) ═════ */
+var assistPairs={};
+var pendingRequestTo=null;
+var pendingRequestFrom=null;
+var activeAsHelperFor=null;
+var activeHelperForMe=null;
+
+function assistPanelHTML(){
+  var others=LAYER_ORDER.filter(function(k){return k!==role;});
+  var html='<div class="assist-panel" id="assist-panel">';
+  if(pendingRequestFrom){
+    html+='<div class="assist-req-banner">🤝 <b>'+ROLE_LABELS[pendingRequestFrom]+'</b> propose de vous aider'
+      +'<div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">'
+      +'<button class="assist-accept-btn" onclick="respondAssist(true)">✓ ACCEPTER</button>'
+      +'<button class="assist-decline-btn" onclick="respondAssist(false)">✗ REFUSER</button></div></div>';
+  } else if(activeAsHelperFor){
+    var targetProg=state.layers[activeAsHelperFor]?Math.round(state.layers[activeAsHelperFor].progress):0;
+    html+='<div class="assist-active-panel">Vous aidez <b style="color:'+ROLE_COLORS[activeAsHelperFor]+';">'+ROLE_LABELS[activeAsHelperFor]+'</b> — progression actuelle : '+targetProg+'%'
+      +'<div style="margin-top:8px;"><button class="assist-use-btn" onclick="useAssist()">🎯 ENVOYER UN COUP DE MAIN</button></div></div>';
+  } else if(pendingRequestTo){
+    html+='<div class="assist-cooldown">En attente de la réponse de '+ROLE_LABELS[pendingRequestTo]+'...</div>';
+  } else {
+    html+='<div class="assist-cooldown" style="width:100%;">Demande de l\'aide à un allié — il devra accepter, puis pourra voir ta progression et intervenir une fois.</div>';
+    others.forEach(function(k){
+      var busy=!!assistPairs[k];
+      html+='<button class="assist-btn" '+(busy?'disabled':'')+' onclick="requestAssist(\''+k+'\')" style="border-color:'+ROLE_COLORS[k]+'55;color:'+ROLE_COLORS[k]+';">'+(busy?ROLE_LABELS[k]+' (occupé)':'Demander à '+ROLE_LABELS[k])+'</button>';
+    });
+  }
+  if(activeHelperForMe){
+    html+='<div class="assist-target-indicator">🤝 '+ROLE_LABELS[activeHelperForMe]+' vous aide en ce moment</div>';
+  }
+  html+='</div>';
+  return html;
+}
+function requestAssist(target){
+  if(pendingRequestTo||activeAsHelperFor||assistPairs[target])return;
+  pendingRequestTo=target;
+  pub({type:'assistReq',from:role,to:target});
+  refreshAssistPanel();
+}
+function respondAssist(accepted){
+  var helper=pendingRequestFrom;
+  pendingRequestFrom=null;
+  pub({type:'assistResp',from:role,to:helper,accepted:accepted});
+  if(accepted){activeHelperForMe=helper;}
+  refreshAssistPanel();
+}
+function useAssist(){
+  if(!activeAsHelperFor)return;
+  pub({type:'assistUse',target:activeAsHelperFor,helper:role});
+  activeAsHelperFor=null;
+  refreshAssistPanel();
+}
+function refreshAssistPanel(){
+  var p=document.getElementById('assist-panel');
+  if(p)p.outerHTML=assistPanelHTML();
+}
+function resetAssistState(){
+  assistPairs={};pendingRequestTo=null;pendingRequestFrom=null;activeAsHelperFor=null;activeHelperForMe=null;
+}
+function flashAssistBanner(helperRole){
+  var b=document.createElement('div');
+  b.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,255,136,.15);border:1px solid #00ff88;color:#00ff88;padding:8px 20px;border-radius:20px;font-size:11px;letter-spacing:2px;z-index:300;';
+  b.textContent='+ '+(ROLE_LABELS[helperRole]||'UN ALLIÉ')+' VOUS AIDE (+18%)';
+  document.body.appendChild(b);
+  setTimeout(function(){b.remove();},2200);
+}
+
+/* ═════ MINIGAME: KIKI — Barrière (timing dial) ═════ */
+var KIKI_ROUNDS=5;
+var kikiDialPos=0,kikiDialDir=1,kikiZoneStart=35,kikiZoneW=20,kikiHits=0,kikiInt=null,kikiSpeed=1.3;
+function renderKiki(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ffaa00;">🚐 BARRIÈRE DU PARKING</div>'
+    +'<div class="stage-desc">Verrouille le boîtier au bon moment. '+KIKI_ROUNDS+' réussites nécessaires — attention, un clic raté te fait reculer !</div>'
+    +'<div class="mg-hits" id="kiki-hits"></div>'
+    +'<div class="mg-dial-track" id="kiki-track"><div class="mg-dial-zone" id="kiki-zone"></div><div class="mg-dial-marker" id="kiki-marker"></div></div>'
+    +'<button class="mg-btn" onclick="kikiHit()">VERROUILLER</button>'
+    +assistPanelHTML()+'</div>';
+  kikiHits=Math.round((localProgress/100)*KIKI_ROUNDS);
+  renderKikiHits();
+  positionKikiZone();
+  if(kikiInt)clearInterval(kikiInt);
+  kikiDialPos=0;kikiDialDir=1;
+  kikiSpeed=1.1+kikiHits*0.3;
+  kikiInt=setInterval(function(){
+    kikiDialPos+=kikiDialDir*kikiSpeed;
+    if(kikiDialPos>=100){kikiDialPos=100;kikiDialDir=-1;}
+    if(kikiDialPos<=0){kikiDialPos=0;kikiDialDir=1;}
+    var mk=document.getElementById('kiki-marker');if(mk)mk.style.left=kikiDialPos+'%';
+  },20);
+}
+function positionKikiZone(){
+  kikiZoneW=Math.max(11,26-kikiHits*2.8);
+  kikiZoneStart=15+Math.random()*(70-kikiZoneW);
+  var z=document.getElementById('kiki-zone');
+  if(z){z.style.left=kikiZoneStart+'%';z.style.width=kikiZoneW+'%';}
+}
+function renderKikiHits(){
+  var h=document.getElementById('kiki-hits');if(!h)return;h.innerHTML='';
+  for(var i=0;i<KIKI_ROUNDS;i++){var d=document.createElement('div');d.className='mg-hit-dot'+(i<kikiHits?' on':'');h.appendChild(d);}
+}
+function kikiHit(){
+  var track=document.getElementById('kiki-track');
+  if(kikiDialPos>=kikiZoneStart&&kikiDialPos<=kikiZoneStart+kikiZoneW){
+    kikiHits=Math.min(KIKI_ROUNDS,kikiHits+1);
+    localProgress=Math.min(100,Math.round((kikiHits/KIKI_ROUNDS)*100));
+    renderKikiHits();positionKikiZone();reportProgress();
+    kikiSpeed=1.1+kikiHits*0.3;
+    if(kikiHits>=KIKI_ROUNDS){clearInterval(kikiInt);}
+  } else {
+    /* MALUS : un clic raté fait reculer d'une réussite */
+    kikiHits=Math.max(0,kikiHits-1);
+    localProgress=Math.min(100,Math.round((kikiHits/KIKI_ROUNDS)*100));
+    renderKikiHits();positionKikiZone();reportProgress();
+    kikiSpeed=1.1+kikiHits*0.3;
+    if(track){track.style.borderColor='#ff2040';track.style.boxShadow='0 0 14px rgba(255,32,64,.6)';setTimeout(function(){track.style.borderColor='';track.style.boxShadow='';},350);}
+  }
+}
+
+/* ═════ MINIGAME: MOON — ICE sequence (Simon says) ═════ */
+var hunterSeq=[],hunterInput=[],hunterRound=0,localIce=0,hunterShowing=false;
+var SEQ_ICONS=['◆','◈','◇','▲','▼','●'];
+function renderHunter(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#00ccff;">💻 ICE DORMANTE</div>'
+    +'<div class="stage-desc">Mémorise la séquence, puis reproduis-la. 3 manches, longueur croissante.</div>'
+    +'<div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);">NIVEAU ICE</div>'
+    +'<div class="mg-ice-bar"><div class="mg-ice-fill" id="hunter-ice-fill" style="width:'+(localIce*33)+'%;"></div></div>'
+    +'<div class="mg-seq-grid" id="hunter-grid"></div>'
+    +assistPanelHTML()+'</div>';
+  buildHunterGrid();
+  hunterRound=Math.round(localProgress/34);
+  if(hunterRound<3)startHunterRound();
+}
+function buildHunterGrid(){
+  var g=document.getElementById('hunter-grid');g.innerHTML='';
+  for(var i=0;i<8;i++){
+    var t=document.createElement('div');t.className='mg-seq-tile';t.dataset.i=i;
+    t.textContent=SEQ_ICONS[i%SEQ_ICONS.length];
+    t.onclick=function(){hunterClick(parseInt(this.dataset.i));};
+    g.appendChild(t);
+  }
+}
+function startHunterRound(){
+  hunterSeq=[];hunterInput=[];
+  var len=3+hunterRound;
+  for(var i=0;i<len;i++)hunterSeq.push(Math.floor(Math.random()*8));
+  hunterShowing=true;
+  var idx=0;
+  var showNext=function(){
+    if(idx>=hunterSeq.length){hunterShowing=false;return;}
+    var tile=document.querySelector('.mg-seq-tile[data-i="'+hunterSeq[idx]+'"]');
+    if(tile){tile.classList.add('flash');setTimeout(function(){tile.classList.remove('flash');},500);}
+    idx++;setTimeout(showNext,780);
+  };
+  setTimeout(showNext,600);
+}
+function hunterClick(i){
+  if(hunterShowing)return;
+  hunterInput.push(i);
+  var idx=hunterInput.length-1;
+  var tile=document.querySelector('.mg-seq-tile[data-i="'+i+'"]');
+  if(hunterSeq[idx]!==i){
+    if(tile){tile.classList.add('wrong');setTimeout(function(){tile.classList.remove('wrong');},400);}
+    localIce=Math.min(3,localIce+1);
+    var f=document.getElementById('hunter-ice-fill');if(f)f.style.width=(localIce*33)+'%';
+    hunterInput=[];
+    if(localIce>=3){
+      /* MALUS : trois erreurs cumulées = recul d'une manche */
+      hunterRound=Math.max(0,hunterRound-1);
+      localProgress=Math.min(100,hunterRound*34);
+      localIce=0;
+      var f2=document.getElementById('hunter-ice-fill');if(f2)f2.style.width='0%';
+      var grid=document.getElementById('hunter-grid');
+      if(grid){grid.style.borderColor='#ff2040';setTimeout(function(){grid.style.borderColor='';},400);}
+    }
+    reportProgress();
+    setTimeout(function(){startHunterRound();},500);
+    return;
+  }
+  if(tile){tile.classList.add('flash');setTimeout(function(){tile.classList.remove('flash');},200);}
+  if(hunterInput.length===hunterSeq.length){
+    hunterRound++;
+    localProgress=Math.min(100,hunterRound*34);
+    reportProgress();
+    if(hunterRound<3)setTimeout(startHunterRound,700);
+  }
+}
+
+/* ═════ MINIGAME: FURY — Circuit du scanner (puzzle de tuyaux) ═════ */
+var DIR_ROT_CW={N:'E',E:'S',S:'W',W:'N'};
+var TILE_BASE={straight:['E','W'],corner:['N','E']};
+var FURY_ROWS=3, FURY_COLS=6;
+var FURY_PATH_SPEC={'1,0':'straight','1,1':'straight','1,2':'corner','0,2':'corner','0,3':'straight','0,4':'corner','1,4':'corner','1,5':'straight'};
+var furyGrid=[];
+function tileOpenDirs(t){
+  var d=TILE_BASE[t.type].slice();
+  for(var i=0;i<t.rot;i++){d=d.map(function(x){return DIR_ROT_CW[x];});}
+  return d;
+}
+function renderFury(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#00ff88;">🩺 CIRCUIT DU SCANNER</div>'
+    +'<div class="stage-desc">Fais pivoter les tuyaux (clique dessus) pour relier l\'entrée à la sortie. Certaines pièces ne servent à rien — à toi de trouver le bon chemin.</div>'
+    +'<div class="mg-pipe-grid" id="fury-grid" style="position:relative;"></div>'
+    +'<div class="mg-pipe-solved-msg" id="fury-solved-msg"></div>'
+    +assistPanelHTML()+'</div>';
+  initFuryGrid();
+  renderFuryGrid();
+  checkFuryProgress();
+}
+function initFuryGrid(){
+  furyGrid=[];
+  for(var r=0;r<FURY_ROWS;r++){
+    furyGrid.push([]);
+    for(var c=0;c<FURY_COLS;c++){
+      var key=r+','+c;
+      var type=FURY_PATH_SPEC[key]||(Math.random()<0.5?'straight':'corner');
+      furyGrid[r].push({type:type,rot:Math.floor(Math.random()*4)});
+    }
+  }
+}
+function pipeGlyphSVG(type){
+  if(type==='straight')return '<svg viewBox="0 0 40 40"><line x1="0" y1="20" x2="40" y2="20" stroke="#00ff88" stroke-width="6"/></svg>';
+  return '<svg viewBox="0 0 40 40"><path d="M20 0 V20 H40" stroke="#00ff88" stroke-width="6" fill="none"/></svg>';
+}
+function renderFuryGrid(){
+  var g=document.getElementById('fury-grid');if(!g)return;g.innerHTML='';
+  g.style.gridTemplateRows='repeat('+FURY_ROWS+',50px)';
+  for(var r=0;r<FURY_ROWS;r++){
+    for(var c=0;c<FURY_COLS;c++){
+      var t=furyGrid[r][c];
+      var tile=document.createElement('div');
+      tile.className='mg-pipe-tile';tile.dataset.r=r;tile.dataset.c=c;
+      tile.innerHTML='<div class="mg-pipe-glyph" style="transform:rotate('+(t.rot*90)+'deg);">'+pipeGlyphSVG(t.type)+'</div>';
+      if(r===1&&c===0)tile.innerHTML+='<span class="mg-pipe-entry">▶</span>';
+      if(r===1&&c===FURY_COLS-1)tile.innerHTML+='<span class="mg-pipe-exit">▶</span>';
+      tile.onclick=function(){
+        var rr=parseInt(this.dataset.r),cc=parseInt(this.dataset.c);
+        furyGrid[rr][cc].rot=(furyGrid[rr][cc].rot+1)%4;
+        renderFuryGrid();
+        checkFuryProgress();
+      };
+      g.appendChild(tile);
+    }
+  }
+}
+function furyConnected(r,c,dir){
+  var t=furyGrid[r]&&furyGrid[r][c];
+  if(!t)return false;
+  return tileOpenDirs(t).indexOf(dir)>=0;
+}
+function checkFuryProgress(){
+  var visited={};
+  if(furyConnected(1,0,'W')){
+    visited['1,0']=true;
+    var queue=[[1,0]];
+    while(queue.length){
+      var cur=queue.shift();var r=cur[0],c=cur[1];
+      var neighbors=[{nr:r,nc:c+1,outDir:'E',inDir:'W'},{nr:r,nc:c-1,outDir:'W',inDir:'E'},{nr:r+1,nc:c,outDir:'S',inDir:'N'},{nr:r-1,nc:c,outDir:'N',inDir:'S'}];
+      neighbors.forEach(function(n){
+        if(n.nr<0||n.nr>=FURY_ROWS||n.nc<0||n.nc>=FURY_COLS)return;
+        var key=n.nr+','+n.nc;
+        if(visited[key])return;
+        if(furyConnected(r,c,n.outDir)&&furyConnected(n.nr,n.nc,n.inDir)){visited[key]=true;queue.push([n.nr,n.nc]);}
+      });
+    }
+  }
+  var pathTotal=Object.keys(FURY_PATH_SPEC).length;
+  var pathVisited=Object.keys(FURY_PATH_SPEC).filter(function(k){return visited[k];}).length;
+  var exitKey='1,'+(FURY_COLS-1);
+  var solved=!!visited[exitKey]&&furyConnected(1,FURY_COLS-1,'E');
+  var msg=document.getElementById('fury-solved-msg');
+  document.querySelectorAll('.mg-pipe-tile').forEach(function(tile){
+    var key=tile.dataset.r+','+tile.dataset.c;
+    tile.classList.toggle('lit',!!visited[key]);
+  });
+  if(solved){
+    localProgress=100;
+    if(msg)msg.textContent='✓ CIRCUIT RÉTABLI';
+  } else {
+    localProgress=Math.min(88,Math.round(pathVisited/pathTotal*88));
+    if(msg)msg.textContent='';
+  }
+  reportProgress();
+}
+
+/* ═════ MINIGAME: KEIYO — Distraction meter ═════ */
+var keiyoNeedle=15,keiyoVel=0,keiyoInt=null,keiyoHoldTime=0;
+function renderKeiyo(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ff33cc;">🎭 VIGILE HUMAIN</div>'
+    +'<div class="stage-desc">Clique sur CHARME pour amener l\'aiguille dans la zone verte et l\'y maintenir. Sans action, la méfiance du vigile grimpe toute seule — et si tu pousses trop fort, ça se voit aussi.</div>'
+    +'<div class="mg-meter-track" id="keiyo-track"><div class="mg-meter-zone"></div><div class="mg-meter-needle" id="keiyo-needle"></div></div>'
+    +'<button class="mg-charm-btn" onclick="keiyoCharm()">✦ CHARME</button>'
+    +assistPanelHTML()+'</div>';
+  keiyoNeedle=15;keiyoVel=0;keiyoHoldTime=(localProgress/100)*7000;
+  if(keiyoInt)clearInterval(keiyoInt);
+  keiyoInt=setInterval(function(){
+    keiyoVel+=(Math.random()-0.62)*1.1; /* dérive naturelle vers le bas sans action */
+    keiyoVel=Math.max(-3.2,Math.min(3.2,keiyoVel));
+    keiyoNeedle+=keiyoVel;
+    keiyoNeedle=Math.max(0,Math.min(100,keiyoNeedle));
+    var n=document.getElementById('keiyo-needle');if(n)n.style.left=keiyoNeedle+'%';
+    if(keiyoNeedle>=35&&keiyoNeedle<=65){
+      keiyoHoldTime+=100;
+      localProgress=Math.min(100,(keiyoHoldTime/7000)*100);
+      reportProgress();
+    }
+    if(keiyoNeedle<=4||keiyoNeedle>=96){
+      /* MALUS : trop suspect ou trop lourd, on perd une partie de la progression */
+      keiyoHoldTime=Math.max(0,keiyoHoldTime-2200);
+      localProgress=Math.min(100,(keiyoHoldTime/7000)*100);
+      reportProgress();
+      var tr=document.getElementById('keiyo-track');
+      if(tr){tr.style.borderColor='#ff2040';tr.style.boxShadow='0 0 14px rgba(255,32,64,.5)';setTimeout(function(){tr.style.borderColor='';tr.style.boxShadow='';},350);}
+      keiyoNeedle=50;keiyoVel=0;
+    }
+  },100);
+}
+function keiyoCharm(){keiyoVel+=2.3;}
+
+/* ═════ MINIGAME: TAMURO — Protocole (spot the difference) ═════ */
+var PROTO_ICONS=['▲','●','■','◆','▼','◈','✚','✖','◉','★'];
+var tamuroOld=[],tamuroNew=[],tamuroDiffs=[],tamuroPicked=[],tamuroRound=0,tamuroShowingOld=true;
+var tamuroTimerInt=null,tamuroTimeLeft=100;
+var TAMURO_ROUND_SPEC=[{cells:8,cols:4,diffs:2},{cells:10,cols:5,diffs:3},{cells:12,cols:6,diffs:4}];
+function renderTamuro(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ff2040;">⚔ PROTOCOLE INTERNE</div>'
+    +'<div class="stage-desc" id="tamuro-desc">Mémorise l\'ancienne séquence Arasaka, puis repère les symboles qui ont changé avant la fin du temps.</div>'
+    +'<div class="mg-chem-timer" id="tamuro-timer-wrap" style="display:none;"><div class="mg-chem-timer-fill" id="tamuro-timer-fill" style="background:#ff2040;"></div></div>'
+    +'<div class="mg-proto-lbl" id="tamuro-lbl">ANCIENNE SÉQUENCE</div>'
+    +'<div class="mg-proto-grid" id="tamuro-grid"></div>'
+    +assistPanelHTML()+'</div>';
+  tamuroRound=Math.round(localProgress/34);
+  if(tamuroRound<3)startTamuroRound();
+}
+function startTamuroRound(){
+  var spec=TAMURO_ROUND_SPEC[Math.min(tamuroRound,2)];
+  tamuroOld=[];tamuroNew=[];tamuroDiffs=[];tamuroPicked=[];
+  for(var i=0;i<spec.cells;i++)tamuroOld.push(Math.floor(Math.random()*PROTO_ICONS.length));
+  tamuroNew=tamuroOld.slice();
+  var used=[];
+  while(used.length<spec.diffs){
+    var idx=Math.floor(Math.random()*spec.cells);
+    if(used.indexOf(idx)<0){used.push(idx);tamuroDiffs.push(idx);var ni;do{ni=Math.floor(Math.random()*PROTO_ICONS.length);}while(ni===tamuroOld[idx]);tamuroNew[idx]=ni;}
+  }
+  tamuroShowingOld=true;
+  var g=document.getElementById('tamuro-grid');if(g)g.style.gridTemplateColumns='repeat('+spec.cols+',60px)';
+  document.getElementById('tamuro-timer-wrap').style.display='none';
+  renderTamuroGrid(tamuroOld,false);
+  document.getElementById('tamuro-lbl').textContent='ANCIENNE SÉQUENCE — MÉMORISE';
+  setTimeout(function(){
+    tamuroShowingOld=false;
+    renderTamuroGrid(tamuroNew,true);
+    document.getElementById('tamuro-lbl').textContent='NOUVELLE SÉQUENCE — CLIQUE CE QUI A CHANGÉ ('+tamuroDiffs.length+')';
+    document.getElementById('tamuro-timer-wrap').style.display='block';
+    tamuroTimeLeft=100;
+    if(tamuroTimerInt)clearInterval(tamuroTimerInt);
+    tamuroTimerInt=setInterval(function(){
+      tamuroTimeLeft-=1.1;
+      var f=document.getElementById('tamuro-timer-fill');if(f)f.style.width=Math.max(0,tamuroTimeLeft)+'%';
+      if(tamuroTimeLeft<=0){clearInterval(tamuroTimerInt);setTimeout(startTamuroRound,400);}
+    },100);
+  },2800+spec.cells*150);
+}
+function renderTamuroGrid(arr,clickable){
+  var g=document.getElementById('tamuro-grid');if(!g)return;g.innerHTML='';
+  arr.forEach(function(v,i){
+    var t=document.createElement('div');t.className='mg-proto-tile';t.dataset.i=i;
+    t.textContent=PROTO_ICONS[v];
+    if(clickable)t.onclick=function(){tamuroClick(parseInt(this.dataset.i));};
+    g.appendChild(t);
+  });
+}
+function tamuroClick(i){
+  if(tamuroShowingOld||tamuroPicked.indexOf(i)>=0)return;
+  var tile=document.querySelector('.mg-proto-tile[data-i="'+i+'"]');
+  tamuroPicked.push(i);
+  if(tamuroDiffs.indexOf(i)>=0){
+    if(tile)tile.classList.add('correct');
+    if(tamuroPicked.filter(function(p){return tamuroDiffs.indexOf(p)>=0;}).length===tamuroDiffs.length){
+      clearInterval(tamuroTimerInt);
+      tamuroRound++;localProgress=Math.min(100,tamuroRound*34);reportProgress();
+      if(tamuroRound<3)setTimeout(startTamuroRound,900);
+    }
+  } else {
+    /* MALUS : une erreur grignote du temps */
+    tamuroTimeLeft=Math.max(0,tamuroTimeLeft-20);
+    var f=document.getElementById('tamuro-timer-fill');if(f)f.style.width=tamuroTimeLeft+'%';
+    if(tile){tile.classList.add('wrong');setTimeout(function(){tile.classList.remove('wrong');},400);}
+  }
+}
+
+/* Poll shud + stage refresh from state changes handled by broadcast already via handleMsg */
+/* ===== AUTO-CONNEXION VIA LIEN DU PORTAIL (?code=xxx&role=yyy) ===== */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+
+</script>
+</body>
+</html>

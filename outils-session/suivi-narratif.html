@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SUIVI NARRATIF — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:400px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(187,68,255,.25);border-radius:6px;background:rgba(15,5,20,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#bb44ff;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(187,68,255,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lbtn{padding:12px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;text-align:center;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+.lbtn-p{border-color:#00ccff;color:#00ccff;}
+.lbtn-m{border-color:#e8e8f0;color:#e8e8f0;}
+#lgo{border-color:#bb44ff;color:#bb44ff;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(15,5,20,.9);border-bottom:1px solid rgba(187,68,255,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#bb44ff;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.tabs{display:flex;gap:4px;padding:10px 14px;background:rgba(0,0,0,.3);flex-wrap:wrap;}
+.tab{padding:9px 16px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.tab.on{border-color:#bb44ff;color:#bb44ff;background:rgba(187,68,255,.08);}
+.content{flex:1;padding:24px 18px 60px;max-width:640px;margin:0 auto;width:100%;}
+.pane{display:none;}
+.pane.on{display:block;}
+
+.fac-row{margin-bottom:22px;}
+.fac-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.fac-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;}
+.fac-val{font-family:'Orbitron',monospace;font-size:13px;}
+.fac-bar{height:14px;border-radius:7px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+.fac-fill{height:100%;transition:width .4s;}
+.fac-ctrl{display:flex;gap:6px;margin-top:8px;}
+.fac-btn{padding:6px 12px;border-radius:5px;border:1px solid;background:transparent;font-family:'Orbitron',monospace;font-size:10px;cursor:pointer;}
+
+.spectre-box{text-align:center;padding:20px;}
+.spectre-val{font-family:'Orbitron',monospace;font-size:48px;font-weight:900;color:#bb44ff;margin-bottom:10px;}
+.spectre-bar{height:20px;border-radius:10px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(187,68,255,.3);margin-bottom:18px;}
+.spectre-fill{height:100%;background:linear-gradient(90deg,#ff2040,#bb44ff,#00ccff);transition:width .4s;}
+.spectre-note{font-size:11px;color:rgba(255,255,255,.4);line-height:1.6;margin-bottom:20px;}
+.spectre-ctrl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mj-only-note{text-align:center;font-size:11px;color:rgba(255,255,255,.3);padding:40px 20px;}
+
+.web-svg{width:100%;height:auto;}
+.web-node{cursor:pointer;}
+.web-label{font-family:'Share Tech Mono',monospace;font-size:9px;fill:#fff;text-anchor:middle;pointer-events:none;}
+.web-info{margin-top:16px;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.02);font-size:12px;line-height:1.6;color:rgba(255,255,255,.7);min-height:40px;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">📊 SUIVI NARRATIF</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid">
+      <button class="lbtn lbtn-p" data-r="joueur" onclick="selRole('joueur')">JOUEUR</button>
+      <button class="lbtn lbtn-m" data-r="mj" onclick="selRole('mj')">MJ</button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">📊 SUIVI NARRATIF</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="content">
+    <div class="pane" id="pane-reputation"></div>
+    <div class="pane" id="pane-spectre"></div>
+    <div class="pane" id="pane-toile"></div>
+  </div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var currentTab='reputation';
+var state={
+  reputation:{arasaka:50,eurotech:50,gangs:50,nomades:50},
+  spectreHum:60
+};
+var FACTIONS=[
+  {k:'arasaka',name:'ARASAKA',color:'#ff2040'},
+  {k:'eurotech',name:'EUROTECH-LUXE',color:'#00ffcc'},
+  {k:'gangs',name:'GANGS DU BAS',color:'#ffaa00'},
+  {k:'nomades',name:'CLANS NOMADES',color:'#00ff88'}
+];
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_narratif_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  buildTabs();
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'sn'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';});
+    mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());if(d.type==='state'){state=d.state;renderCurrentTab();}}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});}
+
+function buildTabs(){
+  var tabsEl=document.getElementById('tabs');
+  var list=[{k:'reputation',lbl:'⚖ RÉPUTATION'}];
+  if(role==='mj')list.push({k:'toile',lbl:'🕸 CONTACTS'});
+  if(role==='mj')list.push({k:'spectre',lbl:'✦ SPECTRE'});
+  tabsEl.innerHTML='';
+  list.forEach(function(t){
+    var b=document.createElement('button');b.className='tab'+(t.k===currentTab?' on':'');b.textContent=t.lbl;
+    b.onclick=function(){currentTab=t.k;buildTabs();};
+    tabsEl.appendChild(b);
+  });
+  renderCurrentTab();
+}
+function renderCurrentTab(){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+  var pane=document.getElementById('pane-'+currentTab);
+  if(pane)pane.classList.add('on');
+  if(currentTab==='reputation')renderRep();
+  else if(currentTab==='spectre')renderSpectre();
+  else if(currentTab==='toile')renderToile();
+}
+
+/* RÉPUTATION */
+function repColor(v){if(v<34)return '#ff2040';if(v<67)return '#ffaa00';return '#00ff88';}
+function renderRep(){
+  var html='';
+  FACTIONS.forEach(function(f){
+    var v=state.reputation[f.k]||50;
+    var col=repColor(v);
+    html+='<div class="fac-row"><div class="fac-head"><span class="fac-name" style="color:'+f.color+';">'+f.name+'</span><span class="fac-val" style="color:'+col+';">'+v+'/100</span></div>'
+      +'<div class="fac-bar"><div class="fac-fill" style="width:'+v+'%;background:'+col+';"></div></div>';
+    if(role==='mj'){
+      html+='<div class="fac-ctrl">'
+        +'<button class="fac-btn" style="border-color:#ff2040;color:#ff2040;" onclick="adjRep(\''+f.k+'\',-10)">−10</button>'
+        +'<button class="fac-btn" style="border-color:#ff2040;color:#ff2040;" onclick="adjRep(\''+f.k+'\',-5)">−5</button>'
+        +'<button class="fac-btn" style="border-color:#00ff88;color:#00ff88;" onclick="adjRep(\''+f.k+'\',5)">+5</button>'
+        +'<button class="fac-btn" style="border-color:#00ff88;color:#00ff88;" onclick="adjRep(\''+f.k+'\',10)">+10</button>'
+        +'</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('pane-reputation').innerHTML=html;
+}
+function adjRep(k,d){state.reputation[k]=Math.max(0,Math.min(100,(state.reputation[k]||50)+d));pushState();renderRep();}
+
+/* SPECTRE (MJ only) */
+function renderSpectre(){
+  if(role!=='mj'){document.getElementById('pane-spectre').innerHTML='<div class="mj-only-note">Réservé au MJ.</div>';return;}
+  var v=state.spectreHum||0;
+  var html='<div class="spectre-box"><div class="spectre-val">'+v+'</div>'
+    +'<div class="spectre-bar"><div class="spectre-fill" style="width:'+v+'%;"></div></div>'
+    +'<div class="spectre-note">Jauge cachée — évolue selon la façon dont le groupe traite SPECTRE (outil vs quelqu\'un). Influence subtilement la Session 8. Les joueurs ne voient jamais ce chiffre.</div>'
+    +'<div class="spectre-ctrl">'
+    +'<button class="fac-btn" style="border-color:#ff2040;color:#ff2040;padding:10px 16px;" onclick="adjSpectre(-10)">−10</button>'
+    +'<button class="fac-btn" style="border-color:#ff2040;color:#ff2040;padding:10px 16px;" onclick="adjSpectre(-5)">−5</button>'
+    +'<button class="fac-btn" style="border-color:#00ff88;color:#00ff88;padding:10px 16px;" onclick="adjSpectre(5)">+5</button>'
+    +'<button class="fac-btn" style="border-color:#00ff88;color:#00ff88;padding:10px 16px;" onclick="adjSpectre(10)">+10</button>'
+    +'</div></div>';
+  document.getElementById('pane-spectre').innerHTML=html;
+}
+function adjSpectre(d){state.spectreHum=Math.max(0,Math.min(100,(state.spectreHum||0)+d));pushState();renderSpectre();}
+
+/* TOILE DE CONTACTS */
+var WEB_NODES={
+  vercors:{x:120,y:80,name:'VERCORS',color:'#ffaa00',info:'Fixer habituel de Tamuro. Connaissait son père.'},
+  tamuro:{x:280,y:60,name:'TAMURO',color:'#ff2040',info:'Edgerunner, ex-garde Arasaka. Traque Oni Makai.'},
+  brakko:{x:280,y:160,name:'BRAKKO',color:'#ff2040',info:'Marchand d\'armes, fournisseur de Tamuro.'},
+  sella:{x:120,y:220,name:'SELLA',color:'#00ff88',info:'Créancière de Fury (dette CléoGel).'},
+  fury:{x:280,y:240,name:'FURY',color:'#00ff88',info:'CharcuDoc du groupe, dépendant au CléoGel.'},
+  kessler:{x:440,y:80,name:'KESSLER',color:'#ff33cc',info:'Recruteur EuroTech, traque Keiyo.'},
+  keiyo:{x:440,y:180,name:'KEIYO',color:'#ff33cc',info:'Star indépendante, réseau bâti seule.'},
+  hunter:{x:440,y:280,name:'MOON',color:'#00ccff',info:'Netrunner évadée du Cartel Kurogane.'},
+  kiki:{x:120,y:320,name:'KIKI',color:'#ffaa00',info:'Nomade, pilote, lignée de Roscoe.'},
+  observateur:{x:600,y:180,name:"L'OBSERVATEUR",color:'#e8e8f0',info:'Fixer mystérieux, créateur de SPECTRE.'},
+  silas:{x:600,y:300,name:'SILAS CADENCE',color:'#bb44ff',info:'Fixer-edgerunner rival, respecte le groupe.'}
+};
+var WEB_LINKS=[['vercors','tamuro'],['tamuro','brakko'],['sella','fury'],['kessler','keiyo'],['hunter','observateur'],['kiki','vercors'],['observateur','tamuro'],['observateur','fury'],['observateur','keiyo'],['observateur','kiki'],['silas','vercors'],['silas','tamuro']];
+function renderToile(){
+  var svg='<svg class="web-svg" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg">';
+  WEB_LINKS.forEach(function(l){
+    var a=WEB_NODES[l[0]],b=WEB_NODES[l[1]];
+    svg+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>';
+  });
+  Object.keys(WEB_NODES).forEach(function(k){
+    var n=WEB_NODES[k];
+    svg+='<circle class="web-node" data-k="'+k+'" cx="'+n.x+'" cy="'+n.y+'" r="9" fill="'+n.color+'" stroke="#07070d" stroke-width="2"/>';
+    svg+='<text class="web-label" x="'+n.x+'" y="'+(n.y+22)+'">'+n.name+'</text>';
+  });
+  svg+='</svg>';
+  document.getElementById('pane-toile').innerHTML=svg+'<div class="web-info" id="web-info">Clique un nœud pour voir le détail.</div>';
+  document.querySelectorAll('.web-node').forEach(function(el){
+    el.addEventListener('click',function(){
+      var n=WEB_NODES[el.dataset.k];
+      document.getElementById('web-info').innerHTML='<b style="color:'+n.color+';">'+n.name+'</b><br>'+n.info;
+    });
+  });
+}
+
+/* AUTO-CONNEXION */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){
+    var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;
+    selRole((roleParam==='mj')?'mj':'joueur');
+    setTimeout(function(){go();},50);
+  }
+})();
+</script>
+</body>
+</html>

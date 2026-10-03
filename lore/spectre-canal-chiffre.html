@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECTRE — Réseau Noir</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:#07070f;overflow:hidden;font-family:'Share Tech Mono',monospace;color:#c0c0d4;}
+body::before{content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);}
+body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.55) 100%);}
+
+/* ══ LOGIN ══ */
+#login{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#07070f;transition:opacity .5s;}
+#login.off{opacity:0;pointer-events:none;}
+.lb{width:100%;max-width:420px;padding:0 28px;display:flex;flex-direction:column;align-items:center;}
+.l-orb{width:54px;height:54px;border-radius:50%;border:2px solid #bb44ff;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#bb44ff;margin-bottom:22px;animation:pulse 2.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(187,68,255,.4);}50%{box-shadow:0 0 0 10px rgba(187,68,255,0);}}
+.l-title{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:#d0d0d0;letter-spacing:5px;margin-bottom:5px;}
+.l-sub{font-size:10px;letter-spacing:4px;color:rgba(187,68,255,.4);margin-bottom:38px;}
+.l-lbl{font-size:10px;letter-spacing:5px;color:rgba(255,255,255,.25);margin-bottom:10px;align-self:flex-start;}
+#ci{width:100%;background:rgba(187,68,255,.04);border:1px solid rgba(187,68,255,.2);border-radius:3px;padding:13px 16px;font-family:'Share Tech Mono',monospace;font-size:15px;color:rgba(255,255,255,.75);outline:none;letter-spacing:3px;margin-bottom:8px;transition:border-color .3s;text-align:center;}
+#ci::placeholder{color:rgba(255,255,255,.15);letter-spacing:1px;}
+#ci:focus{border-color:rgba(187,68,255,.5);}
+#ci.err{border-color:rgba(255,32,64,.5);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.l-hint{font-size:10px;color:rgba(255,255,255,.18);letter-spacing:2px;margin-bottom:8px;align-self:flex-start;line-height:1.9;}
+.l-hist{display:none;width:100%;border:1px solid rgba(0,255,136,.2);border-radius:3px;padding:11px 14px;background:rgba(0,255,136,.03);margin-bottom:18px;font-size:11px;color:rgba(0,255,136,.6);letter-spacing:2px;line-height:1.8;}
+.l-hist.show{display:block;} .l-hist b{color:#00ff88;}
+.l-roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;}
+.l-btn{padding:15px;background:transparent;border-radius:3px;cursor:pointer;transition:all .2s;text-align:center;border:1px solid;}
+.l-btn .lbn{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:3px;display:block;margin-bottom:5px;}
+.l-btn .lbs{font-size:9px;letter-spacing:3px;display:block;opacity:.45;}
+.btn-h{border-color:rgba(0,204,255,.3);color:#00ccff;} .btn-h:hover:not(:disabled){background:rgba(0,204,255,.07);border-color:rgba(0,204,255,.6);}
+.btn-m{border-color:rgba(208,208,208,.22);color:#d0d0d0;} .btn-m:hover:not(:disabled){background:rgba(208,208,208,.05);border-color:rgba(208,208,208,.5);}
+.l-btn:disabled{opacity:.3;cursor:not-allowed;}
+.l-err{font-size:11px;color:rgba(255,32,64,.6);letter-spacing:3px;margin-top:12px;min-height:16px;text-align:center;}
+.l-info{font-size:11px;color:rgba(187,68,255,.5);letter-spacing:3px;margin-top:8px;min-height:16px;text-align:center;}
+
+/* ══ APP SHELL ══ */
+#app{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;max-width:980px;margin:0 auto;opacity:0;pointer-events:none;transition:opacity .5s;}
+#app.on{opacity:1;pointer-events:all;}
+
+.topbar{flex-shrink:0;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(7,7,15,.97);display:flex;align-items:center;justify-content:space-between;height:50px;}
+.tb-l{display:flex;align-items:center;gap:12px;}
+.tb-orb{width:26px;height:26px;border-radius:50%;border:2px solid #bb44ff;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#bb44ff;flex-shrink:0;animation:pulse 2.5s infinite;}
+.tb-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:4px;color:#d0d0d0;}
+.tb-r{display:flex;align-items:center;gap:12px;}
+.conn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .4s;}
+.conn-dot.connecting{background:#ffaa00;animation:bk 1s infinite;} .conn-dot.connected{background:#00ff88;} .conn-dot.disconnected{background:#ff2040;}
+@keyframes bk{0%,100%{opacity:1;}50%{opacity:.3;}}
+.conn-lbl{font-size:9px;letter-spacing:3px;}
+.conn-lbl.connected{color:#00ff88;} .conn-lbl.connecting{color:#ffaa00;} .conn-lbl.disconnected{color:rgba(255,32,64,.5);}
+
+.nav-tabs{flex-shrink:0;display:flex;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(7,7,15,.95);}
+.nav-tab{flex:1;max-width:200px;padding:10px 0;text-align:center;font-size:10px;letter-spacing:4px;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.3);transition:all .2s;position:relative;}
+.nav-tab.active{color:rgba(255,255,255,.8);}
+.nav-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:currentColor;}
+.t-msg.active{color:#00ccff;} .t-msg.active::after{background:#00ccff;}
+.t-cnt.active{color:#bb44ff;} .t-cnt.active::after{background:#bb44ff;}
+.ntab-badge{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,170,0,.25);color:#ffaa00;border-radius:20px;padding:1px 7px;font-size:9px;margin-left:6px;min-width:20px;}
+.ntab-badge.purple{background:rgba(187,68,255,.25);color:#bb44ff;}
+
+/* ══ MESSAGES TAB ══ */
+#tab-msg{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.c-area{flex:1;overflow-y:auto;padding:16px 20px 8px;display:flex;flex-direction:column;gap:13px;scroll-behavior:smooth;}
+.c-area::-webkit-scrollbar{width:3px;} .c-area::-webkit-scrollbar-thumb{background:rgba(187,68,255,.2);border-radius:2px;}
+.msg{display:flex;flex-direction:column;max-width:78%;animation:mi .3s ease;}
+@keyframes mi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+.msg.past{animation:none;opacity:.6;}
+.msg.hunter{align-self:flex-end;} .msg.spectre,.msg.obs{align-self:flex-start;}
+.msg-lbl{font-size:9px;letter-spacing:4px;margin-bottom:5px;opacity:.5;}
+.msg.hunter .msg-lbl{text-align:right;color:#00ccff;} .msg.spectre .msg-lbl{color:#bb44ff;} .msg.obs .msg-lbl{color:#d0d0d0;}
+.msg-b{padding:11px 15px;border-radius:3px;font-size:14px;line-height:1.85;}
+.msg.hunter .msg-b{background:rgba(0,204,255,.05);border:1px solid rgba(0,204,255,.17);color:rgba(255,255,255,.82);border-top-right-radius:0;}
+.msg.spectre .msg-b{background:rgba(187,68,255,.05);border:1px solid rgba(187,68,255,.17);color:rgba(255,255,255,.82);border-top-left-radius:0;}
+.msg.spectre .msg-b::before{content:'[ S ] > ';color:#bb44ff;}
+.msg.obs .msg-b{background:rgba(208,208,208,.04);border:1px solid rgba(208,208,208,.14);color:rgba(255,255,255,.78);border-top-left-radius:0;font-style:italic;}
+.msg-t{font-size:9px;color:rgba(255,255,255,.14);margin-top:4px;letter-spacing:2px;} .msg.hunter .msg-t{text-align:right;}
+.sys{text-align:center;font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.15);padding:1px 0;} .sys.sep{color:rgba(0,255,136,.25);margin:4px 0;}
+
+.inp-h{flex-shrink:0;padding:10px 20px 18px;border-top:1px solid rgba(0,204,255,.1);background:rgba(7,7,15,.98);display:none;align-items:flex-end;gap:12px;}
+.inp-h.show{display:flex;}
+.inp-mj{flex-shrink:0;background:rgba(7,7,15,.98);display:none;} .inp-mj.show{display:block;}
+.mj-tgl{display:flex;border-top:1px solid rgba(255,255,255,.07);}
+.mj-tb{flex:1;padding:10px;cursor:pointer;text-align:center;font-size:10px;letter-spacing:4px;background:transparent;border:none;transition:all .2s;}
+.mj-tb.st{color:rgba(187,68,255,.45);border-right:1px solid rgba(255,255,255,.07);} .mj-tb.ot{color:rgba(208,208,208,.35);}
+.mj-tb.active.st{color:#bb44ff;background:rgba(187,68,255,.06);} .mj-tb.active.ot{color:#d0d0d0;background:rgba(208,208,208,.04);}
+.mj-row{padding:10px 20px 18px;display:flex;align-items:flex-end;gap:12px;border-top:1px solid rgba(255,255,255,.05);}
+.ipr{font-size:17px;padding-bottom:3px;flex-shrink:0;}
+.ipr-s{color:rgba(187,68,255,.5);} .ipr-o{color:rgba(208,208,208,.35);} .ipr-h{color:rgba(0,204,255,.45);}
+textarea{flex:1;background:transparent;border:none;outline:none;resize:none;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.85);line-height:1.6;border-bottom:1px solid rgba(255,255,255,.12);padding:4px 0;max-height:90px;overflow-y:auto;transition:border-color .3s;}
+textarea::placeholder{color:rgba(255,255,255,.15);} textarea:focus{border-bottom-color:rgba(255,255,255,.3);} textarea::-webkit-scrollbar{display:none;}
+.sbtn{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace;font-size:15px;padding:5px 12px;cursor:pointer;border-radius:2px;transition:all .2s;flex-shrink:0;}
+.sbtn:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.35);color:rgba(255,255,255,.7);}
+
+/* ══ CONTACTS TAB ══ */
+#tab-cnt{flex:1;display:none;overflow:hidden;} #tab-cnt.on{display:flex;}
+
+/* Left: contact list */
+.cl{width:230px;flex-shrink:0;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;overflow:hidden;}
+.cl-head{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cl-title{font-size:9px;letter-spacing:5px;color:rgba(255,255,255,.3);}
+#add-btn{display:none;background:transparent;border:1px solid rgba(187,68,255,.3);color:#bb44ff;font-family:'Share Tech Mono',monospace;font-size:18px;width:26px;height:26px;border-radius:2px;cursor:pointer;line-height:1;transition:all .2s;}
+#add-btn:hover{background:rgba(187,68,255,.1);}
+.cl-items{flex:1;overflow-y:auto;padding:6px 0;} .cl-items::-webkit-scrollbar{width:3px;} .cl-items::-webkit-scrollbar-thumb{background:rgba(187,68,255,.15);border-radius:2px;}
+.cl-empty{padding:20px 14px;font-size:10px;color:rgba(255,255,255,.2);letter-spacing:3px;line-height:2;text-align:center;}
+
+.ci{display:flex;align-items:center;gap:9px;padding:10px 14px;cursor:pointer;transition:background .15s;border-left:3px solid transparent;position:relative;}
+.ci:hover{background:rgba(255,255,255,.03);} .ci.active{background:rgba(187,68,255,.05);border-left-color:#bb44ff;}
+.ci-ico{font-size:17px;flex-shrink:0;width:22px;text-align:center;}
+.ci-info{flex:1;min-width:0;}
+.ci-name{font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-sub{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.3);margin-top:2px;}
+.ci-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.ci-sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ci-unread{background:#ffaa00;color:#07070f;border-radius:20px;font-size:8px;padding:1px 6px;font-weight:bold;display:none;}
+.ci-unread.on{display:block;}
+
+/* Right: detail/conversation panel */
+.cr{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Panel mode selector */
+.cr-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.cr-tab{flex:1;max-width:160px;padding:9px 0;text-align:center;font-size:9px;letter-spacing:4px;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.3);transition:all .2s;position:relative;}
+.cr-tab.active{color:rgba(255,255,255,.7);}
+.cr-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:currentColor;}
+.cr-tab.tc-profile.active::after{background:rgba(255,255,255,.4);}
+.cr-tab.tc-conv.active::after{background:#00ccff;}
+.cr-tabs.hidden{display:none;}
+
+/* Profile panel */
+.p-panel{flex:1;overflow-y:auto;padding:22px 24px;display:flex;flex-direction:column;}
+.p-panel::-webkit-scrollbar{width:3px;} .p-panel::-webkit-scrollbar-thumb{background:rgba(187,68,255,.15);border-radius:2px;}
+.p-empty{margin:auto;text-align:center;font-size:10px;color:rgba(255,255,255,.18);letter-spacing:4px;line-height:2.5;}
+.cd-head{padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:18px;position:relative;}
+.cd-ico{font-size:32px;margin-bottom:8px;}
+.cd-name{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;letter-spacing:3px;line-height:1.1;}
+.cd-typebadge{display:inline-block;font-size:9px;letter-spacing:5px;padding:3px 11px;border-radius:2px;border:1px solid currentColor;margin-top:8px;opacity:.6;}
+.cd-mja{position:absolute;top:0;right:0;display:flex;gap:8px;}
+.cdb{background:transparent;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;padding:5px 11px;border-radius:2px;cursor:pointer;transition:all .2s;}
+.cdb-e{border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.35);} .cdb-e:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);}
+.cdb-d{border:1px solid rgba(255,32,64,.18);color:rgba(255,32,64,.35);} .cdb-d:hover{background:rgba(255,32,64,.07);color:rgba(255,32,64,.6);}
+.cd-status{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:4px;margin-bottom:18px;}
+.cd-sdot{width:7px;height:7px;border-radius:50%;}
+.cd-fields{display:flex;flex-direction:column;gap:0;margin-bottom:18px;}
+.cd-field{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.cd-field:last-child{border-bottom:none;}
+.cdf-l{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.27);padding-top:2px;}
+.cdf-v{font-size:13px;color:rgba(255,255,255,.72);}
+.td span{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;}
+.cd-dlbl{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.27);margin-bottom:8px;}
+.cd-desc{font-size:13px;color:rgba(255,255,255,.62);line-height:1.85;white-space:pre-wrap;}
+
+/* Conversation panel */
+.conv-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.conv-area{flex:1;overflow-y:auto;padding:14px 18px 8px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;}
+.conv-area::-webkit-scrollbar{width:3px;} .conv-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.cmsg{display:flex;flex-direction:column;max-width:78%;animation:mi .3s ease;}
+.cmsg.from-hunter{align-self:flex-end;}
+.cmsg.from-contact{align-self:flex-start;}
+.cmsg-lbl{font-size:9px;letter-spacing:4px;margin-bottom:5px;opacity:.5;}
+.cmsg.from-hunter .cmsg-lbl{text-align:right;color:#00ccff;}
+.cmsg-b{padding:10px 14px;border-radius:3px;font-size:13px;line-height:1.85;}
+.cmsg.from-hunter .cmsg-b{background:rgba(0,204,255,.05);border:1px solid rgba(0,204,255,.17);color:rgba(255,255,255,.82);border-top-right-radius:0;}
+.cmsg.from-contact .cmsg-b{border-top-left-radius:0;}
+.cmsg-t{font-size:9px;color:rgba(255,255,255,.14);margin-top:3px;letter-spacing:2px;}
+.cmsg.from-hunter .cmsg-t{text-align:right;}
+.conv-empty{margin:auto;text-align:center;font-size:10px;color:rgba(255,255,255,.18);letter-spacing:4px;line-height:2.5;}
+.conv-inp{flex-shrink:0;padding:10px 18px 16px;border-top:1px solid rgba(255,255,255,.07);background:rgba(7,7,15,.98);display:flex;align-items:flex-end;gap:12px;}
+.conv-ipr{font-size:16px;padding-bottom:3px;flex-shrink:0;}
+
+/* ══ MODAL ══ */
+#modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+#modal.on{opacity:1;pointer-events:all;}
+.mbox{background:#0d0d1a;border:1px solid rgba(187,68,255,.3);border-radius:4px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:26px;margin:20px;}
+.mbox::-webkit-scrollbar{width:3px;} .mbox::-webkit-scrollbar-thumb{background:rgba(187,68,255,.2);border-radius:2px;}
+.mt{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:4px;color:#d0d0d0;margin-bottom:22px;}
+.fr{margin-bottom:16px;}
+.fl{font-size:9px;letter-spacing:5px;color:rgba(255,255,255,.3);display:block;margin-bottom:7px;}
+.fi,.fs,.fta{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:9px 13px;font-family:'Share Tech Mono',monospace;font-size:13px;color:rgba(255,255,255,.75);outline:none;transition:border-color .2s;}
+.fi:focus,.fs:focus,.fta:focus{border-color:rgba(187,68,255,.4);}
+.fs{cursor:pointer;appearance:none;} .fs option{background:#0d0d1a;}
+.fta{resize:vertical;min-height:80px;line-height:1.7;}
+.fr-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cg{display:flex;gap:9px;flex-wrap:wrap;}
+.cc{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;}
+.cc.sel{border-color:#fff;transform:scale(1.15);}
+.tbs{display:flex;gap:7px;}
+.tb{width:34px;height:34px;border-radius:2px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s;}
+.tb.sel{background:rgba(187,68,255,.15);border-color:#bb44ff;color:#bb44ff;}
+.ma{display:flex;gap:10px;margin-top:22px;}
+.mc{padding:12px 16px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;border:1px solid rgba(255,255,255,.12);border-radius:3px;background:transparent;color:rgba(255,255,255,.3);cursor:pointer;transition:all .2s;}
+.mc:hover{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.5);}
+.ms{flex:1;padding:12px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;border:1px solid rgba(187,68,255,.4);border-radius:3px;background:transparent;color:#bb44ff;cursor:pointer;transition:all .2s;}
+.ms:hover{background:rgba(187,68,255,.08);}
+.mj-badge{position:fixed;top:12px;right:14px;z-index:300;font-size:9px;letter-spacing:4px;color:#ffaa00;border:1px solid rgba(255,170,0,.3);padding:4px 10px;border-radius:2px;background:rgba(255,170,0,.05);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lb">
+    <div class="l-orb">S</div>
+    <div class="l-title">RÉSEAU NOIR</div>
+    <div class="l-sub">NEO-PARIS / 2077 — PROTOCOLE CHIFFRÉ</div>
+    <div class="l-lbl">Code de session</div>
+    <input type="text" id="ci" placeholder="ex : cabaret2077" autocomplete="off" spellcheck="false" oninput="chkH()">
+    <div class="l-hint">Le MJ choisit un code — Moon entre le même pour rejoindre.</div>
+    <div class="l-hist" id="lh"><b>◈ Historique détecté</b><br><span id="hcnt"></span> messages sauvegardés.</div>
+    <div class="l-roles">
+      <button class="l-btn btn-h" id="bh" onclick="connect('hunter')"><span class="lbn">MOON</span><span class="lbs">// NETRUNNER</span></button>
+      <button class="l-btn btn-m" id="bm" onclick="connect('mj')"><span class="lbn">MJ</span><span class="lbs">// OBSERVATEUR + SPECTRE</span></button>
+    </div>
+    <div class="l-err" id="le"></div>
+    <div class="l-info" id="li"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="tb-orb">S</div>
+      <span class="tb-title" id="tbt">CANAL CHIFFRÉ</span>
+    </div>
+    <div class="tb-r">
+      <button id="clr-btn" style="display:none;background:transparent;border:1px solid rgba(255,32,64,.2);color:rgba(255,32,64,.4);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;padding:4px 10px;border-radius:2px;cursor:pointer;" onclick="clrH()">🗑 EFFACER</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="conn-dot connecting" id="cdot"></div>
+        <span class="conn-lbl connecting" id="clbl">CONNEXION...</span>
+      </div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab t-msg active" onclick="showTab('msg')">💬 MESSAGES</button>
+    <button class="nav-tab t-cnt" onclick="showTab('cnt')">◈ CONTACTS <span class="ntab-badge purple" id="cnt-badge">0</span></button>
+  </div>
+
+  <!-- Messages tab -->
+  <div id="tab-msg">
+    <div class="c-area" id="ca"><div class="sys">— CANAL ÉTABLI — CHIFFREMENT ACTIF —</div></div>
+    <div class="inp-h" id="inp-h">
+      <div class="ipr ipr-h">›</div>
+      <textarea id="hta" placeholder="Message à SPECTRE..." rows="1" oninput="rsz(this)" onkeydown="hk(event,'main-h')"></textarea>
+      <button class="sbtn" onclick="sendMain('hunter')">⏎</button>
+    </div>
+    <div class="inp-mj" id="inp-mj">
+      <div class="mj-tgl">
+        <button class="mj-tb st active" id="ts" onclick="setV('spectre')">[ S ] SPECTRE</button>
+        <button class="mj-tb ot" id="to" onclick="setV('obs')">◈ L'OBSERVATEUR</button>
+      </div>
+      <div class="mj-row">
+        <div class="ipr ipr-s" id="mpr">›</div>
+        <textarea id="mjta" placeholder="Répondre en tant que SPECTRE..." rows="1" oninput="rsz(this)" onkeydown="hk(event,'main-mj')"></textarea>
+        <button class="sbtn" onclick="sendMain('mj')">⏎</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contacts tab -->
+  <div id="tab-cnt">
+    <div class="cl">
+      <div class="cl-head">
+        <span class="cl-title">CONTACTS</span>
+        <button id="add-btn" onclick="openModal()" title="Ajouter">+</button>
+      </div>
+      <div class="cl-items" id="cl-items">
+        <div class="cl-empty">Aucun contact.<br>Le MJ peut en créer.</div>
+      </div>
+    </div>
+    <div class="cr">
+      <!-- Panel tabs (profile / conversation) -->
+      <div class="cr-tabs hidden" id="cr-tabs">
+        <button class="cr-tab tc-profile active" id="cr-tab-profile" onclick="setPanelMode('profile')">PROFIL</button>
+        <button class="cr-tab tc-conv" id="cr-tab-conv" onclick="setPanelMode('conv')">💬 CONVERSATION <span class="ntab-badge" id="conv-badge" style="display:none">!</span></button>
+      </div>
+      <!-- Profile panel -->
+      <div class="p-panel" id="p-panel">
+        <div class="p-empty">Sélectionne un contact<br>pour voir son profil.</div>
+      </div>
+      <!-- Conversation panel -->
+      <div class="conv-panel" id="conv-panel" style="display:none;">
+        <div class="conv-area" id="conv-area">
+          <div class="conv-empty" id="conv-empty">Aucun message. Commence la conversation.</div>
+        </div>
+        <div class="conv-inp" id="conv-inp">
+          <div class="conv-ipr" id="conv-ipr" style="color:rgba(0,204,255,.45)">›</div>
+          <textarea id="conv-ta" rows="1" placeholder="Envoyer un message..." oninput="rsz(this)" onkeydown="hk(event,'conv')"></textarea>
+          <button class="sbtn" onclick="sendConv()">⏎</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="mbox">
+    <div class="mt" id="mtitle">NOUVEAU CONTACT</div>
+    <div class="fr"><label class="fl">NOM</label><input type="text" id="fn" class="fi" placeholder="Ex: Brakko"></div>
+    <div class="fr fr-2">
+      <div><label class="fl">TYPE</label>
+        <select id="ftp" class="fs"><option>PERSONNE</option><option>CORPORATION</option><option>LIEU</option><option>DONNÉES</option><option>FICHIER</option><option>MENACE</option></select>
+      </div>
+      <div><label class="fl">STATUT</label>
+        <select id="fst" class="fs"><option>ACTIF</option><option>DANGER</option><option>INCONNU</option><option>COMPROMIS</option><option>HORS LIGNE</option></select>
+      </div>
+    </div>
+    <div class="fr fr-2">
+      <div><label class="fl">LOCALISATION</label><input type="text" id="floc" class="fi" placeholder="Niveau II"></div>
+      <div><label class="fl">AFFILIATION</label><input type="text" id="faff" class="fi" placeholder="Indépendant"></div>
+    </div>
+    <div class="fr"><label class="fl">NIVEAU DE MENACE</label>
+      <div class="tbs" id="tbs">
+        <button class="tb" data-v="0" onclick="setTh(0)">0</button><button class="tb" data-v="1" onclick="setTh(1)">1</button>
+        <button class="tb" data-v="2" onclick="setTh(2)">2</button><button class="tb" data-v="3" onclick="setTh(3)">3</button>
+        <button class="tb" data-v="4" onclick="setTh(4)">4</button><button class="tb" data-v="5" onclick="setTh(5)">5</button>
+      </div>
+    </div>
+    <div class="fr"><label class="fl">COULEUR</label><div class="cg" id="cg"></div></div>
+    <div class="fr"><label class="fl">DESCRIPTION / DONNÉES</label><textarea id="fd" class="fta" placeholder="Informations sur ce contact..."></textarea></div>
+    <div class="ma"><button class="mc" onclick="closeModal()">ANNULER</button><button class="ms" onclick="saveContact()">SAUVEGARDER</button></div>
+  </div>
+</div>
+
+<script>
+const BROKER='wss://broker.emqx.io:8084/mqtt';
+const TP='spectre_noir_v1_', HP='spectre_hist_v1_', CP='spectre_cont_v1_', CMP='spectre_cmsg_v1_';
+const MAX_H=500;
+const COLORS=['#ff2040','#ff33cc','#ffaa00','#00ff88','#00ccff','#bb44ff','#ff6600','#d0d0d0'];
+const TICONS={PERSONNE:'◉',CORPORATION:'⬡',LIEU:'◈','DONNÉES':'◧',FICHIER:'▣',MENACE:'◆'};
+const SCOL={ACTIF:'#00ff88',DANGER:'#ff2040',INCONNU:'#ffaa00',COMPROMIS:'#ff33cc','HORS LIGNE':'#606078'};
+
+let role='',sCode='',topic='',voice='spectre',mqtt_client=null;
+let knownIds=new Set(), contacts=[], convMsgs={}, selId=null, panelMode='profile';
+let unreadConv=new Set(), editId=null, fThr=0, fCol=COLORS[0];
+
+function now(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function rsz(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,90)+'px';}
+function hk(e,w){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(w==='conv')sendConv();else if(w==='main-h')sendMain('hunter');else sendMain('mj');}}
+
+/* Storage */
+function hKey(){return HP+sCode;} function cKey(){return CP+sCode;} function cmKey(id){return CMP+sCode+'_'+id;}
+function lH(){try{return JSON.parse(localStorage.getItem(hKey())||'[]');}catch{return[];}}
+function sH(m){const h=lH();h.push(m);if(h.length>MAX_H)h.splice(0,h.length-MAX_H);localStorage.setItem(hKey(),JSON.stringify(h));}
+function lC(){try{return JSON.parse(localStorage.getItem(cKey())||'[]');}catch{return[];}}
+function sC(){localStorage.setItem(cKey(),JSON.stringify(contacts));}
+function lCM(id){try{return JSON.parse(localStorage.getItem(cmKey(id))||'[]');}catch{return[];}}
+function sCM(id,msgs){localStorage.setItem(cmKey(id),JSON.stringify(msgs.slice(-200)));}
+
+function chkH(){
+  const code=document.getElementById('ci').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(code.length<3){document.getElementById('lh').classList.remove('show');return;}
+  const h=(()=>{try{return JSON.parse(localStorage.getItem(HP+code)||'[]');}catch{return[];}})();
+  if(h.length>0){document.getElementById('hcnt').textContent=h.length;document.getElementById('lh').classList.add('show');}
+  else document.getElementById('lh').classList.remove('show');
+}
+
+/* Connect */
+function connect(r){
+  const code=document.getElementById('ci').value.trim().toLowerCase().replace(/\s+/g,'_');
+  const err=document.getElementById('le'),info=document.getElementById('li');
+  err.textContent='';
+  if(code.length<3){document.getElementById('ci').classList.add('err');setTimeout(()=>document.getElementById('ci').classList.remove('err'),400);err.textContent='⚠ CODE TROP COURT';return;}
+  role=r;sCode=code;topic=TP+code;
+  document.getElementById('bh').disabled=true;document.getElementById('bm').disabled=true;
+  info.textContent='CONNEXION AU RÉSEAU...';
+  mqtt_client=mqtt.connect(BROKER,{clientId:'sc_'+Math.random().toString(16).substr(2,8),clean:true,connectTimeout:8000,reconnectPeriod:3000});
+  mqtt_client.on('connect',()=>{mqtt_client.subscribe(topic,e=>{if(e){err.textContent='⚠ ERREUR';return;}launch();});});
+  mqtt_client.on('error',()=>{err.textContent='⚠ IMPOSSIBLE DE JOINDRE LE RÉSEAU';info.textContent='';document.getElementById('bh').disabled=false;document.getElementById('bm').disabled=false;});
+  setTimeout(()=>{if(!document.getElementById('login').classList.contains('off')&&info.textContent.includes('CONN')){err.textContent='⚠ DÉLAI DÉPASSÉ';info.textContent='';document.getElementById('bh').disabled=false;document.getElementById('bm').disabled=false;mqtt_client.end();}},10000);
+}
+
+function launch(){
+  document.getElementById('login').classList.add('off');
+  setTimeout(()=>{document.getElementById('login').style.display='none';},500);
+  setTimeout(()=>{document.getElementById('app').classList.add('on');},150);
+  setConn('connected');
+  contacts=lC();
+  // Load all conv msgs from localStorage
+  contacts.forEach(c=>{convMsgs[c.id]=lCM(c.id);});
+  renderList();
+
+  if(role==='hunter'){
+    document.getElementById('inp-h').classList.add('show');
+    setTimeout(()=>document.getElementById('hta').focus(),300);
+  } else {
+    document.getElementById('tbt').textContent='CANAL CHIFFRÉ — MJ';
+    document.getElementById('inp-mj').classList.add('show');
+    document.getElementById('clr-btn').style.display='block';
+    document.getElementById('add-btn').style.display='block';
+    const b=document.createElement('div');b.className='mj-badge';b.textContent='⚠ VUE MJ';document.body.appendChild(b);
+    setTimeout(()=>document.getElementById('mjta').focus(),300);
+  }
+
+  // Chat history
+  const hist=lH();
+  if(hist.length>0){
+    const s1=document.createElement('div');s1.className='sys sep';s1.textContent=`─── ${hist.length} MESSAGES SAUVEGARDÉS ───`;
+    document.getElementById('ca').appendChild(s1);
+    hist.forEach(m=>addMsg(m,true));
+    const s2=document.createElement('div');s2.className='sys sep';s2.textContent='─── EN DIRECT ───';
+    document.getElementById('ca').appendChild(s2);
+  }
+  if(role==='mj'&&hist.length===0){
+    setTimeout(()=>pubMain('spectre',"Canal établi. Chiffrement actif sur douze couches. Je vous regardais approcher depuis plusieurs minutes, Moon. Que souhaitez-vous savoir ?"),600);
+  }
+
+  mqtt_client.on('message',(_,payload)=>{
+    try{
+      const d=JSON.parse(payload.toString());
+      if(d.type==='contacts'){contacts=d.contacts;sC();contacts.forEach(c=>{if(!convMsgs[c.id])convMsgs[c.id]=lCM(c.id);});renderList();if(selId){const c=contacts.find(x=>x.id===selId);if(c)renderProfile(c);}}
+      else if(d.type==='contact_msg'){addConvMsg(d,false);}
+      else addMsg(d,false);
+    }catch(e){}
+  });
+  mqtt_client.on('offline',()=>setConn('disconnected'));
+  mqtt_client.on('reconnect',()=>setConn('connecting'));
+  mqtt_client.on('connect',()=>setConn('connected'));
+}
+
+function setConn(s){
+  document.getElementById('cdot').className='conn-dot '+s;
+  const l=document.getElementById('clbl');l.className='conn-lbl '+s;
+  l.textContent=s==='connected'?'CONNECTÉ':s==='connecting'?'RECONNEXION...':'HORS LIGNE';
+}
+
+/* Tabs */
+function showTab(t){
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.t-'+t).classList.add('active');
+  document.getElementById('tab-msg').style.display=t==='msg'?'flex':'none';
+  const ct=document.getElementById('tab-cnt');
+  ct.classList.toggle('on',t==='cnt');
+  if(t==='cnt'&&selId){const c=contacts.find(x=>x.id===selId);if(c){renderProfile(c);updatePanelTabs(c);}}
+}
+
+/* Panel mode (profile / conv) */
+function setPanelMode(m){
+  panelMode=m;
+  document.getElementById('cr-tab-profile').classList.toggle('active',m==='profile');
+  document.getElementById('cr-tab-conv').classList.toggle('active',m==='conv');
+  document.getElementById('p-panel').style.display=m==='profile'?'flex':'none';
+  document.getElementById('conv-panel').style.display=m==='conv'?'flex':'none';
+  if(m==='conv'&&selId){
+    // Clear unread for this contact
+    unreadConv.delete(selId);
+    document.getElementById('conv-badge').style.display='none';
+    renderConvMessages(selId);
+  }
+}
+
+function updatePanelTabs(c){
+  const tabs=document.getElementById('cr-tabs');
+  tabs.classList.remove('hidden');
+  // Update conv badge
+  const badge=document.getElementById('conv-badge');
+  badge.style.display=unreadConv.has(c.id)?'inline-flex':'none';
+  // Update conv input prompt color
+  if(role==='mj'){
+    document.getElementById('conv-ipr').style.color=(c.color||'#bb44ff')+'99';
+    document.getElementById('conv-ta').placeholder='Répondre en tant que '+c.name+'...';
+  } else {
+    document.getElementById('conv-ipr').style.color='rgba(0,204,255,.45)';
+    document.getElementById('conv-ta').placeholder='Envoyer un message à '+c.name+'...';
+  }
+}
+
+/* Main chat voice */
+function setV(v){
+  voice=v;
+  document.getElementById('ts').classList.toggle('active',v==='spectre');
+  document.getElementById('to').classList.toggle('active',v==='obs');
+  const pr=document.getElementById('mpr'),ta=document.getElementById('mjta');
+  if(v==='spectre'){pr.className='ipr ipr-s';ta.placeholder='Répondre en tant que SPECTRE...';}
+  else{pr.className='ipr ipr-o';ta.placeholder="Écrire en tant que L'Observateur...";}
+  ta.focus();
+}
+
+/* Main chat */
+function sendMain(who){
+  const ta=document.getElementById(who==='hunter'?'hta':'mjta');
+  const t=ta.value.trim();if(!t)return;
+  ta.value='';ta.style.height='auto';
+  pubMain(who==='hunter'?'hunter':voice,t);
+}
+function pubMain(from,text){
+  if(!mqtt_client||!mqtt_client.connected)return;
+  const m={id:Date.now()+'_'+Math.random().toString(36).substr(2,5),from,text,time:now()};
+  mqtt_client.publish(topic,JSON.stringify(m));
+}
+function addMsg(m,isPast){
+  if(knownIds.has(m.id))return;knownIds.add(m.id);
+  if(!isPast)sH(m);
+  const area=document.getElementById('ca');
+  const div=document.createElement('div');
+  div.className='msg '+m.from+(isPast?' past':'');
+  let lbl=m.from==='hunter'?'MOON':m.from==='spectre'?'SPECTRE':(role==='mj'?"L'OBSERVATEUR":'TRANSMISSION INCONNUE');
+  div.innerHTML=`<div class="msg-lbl">${lbl}</div><div class="msg-b">${esc(m.text)}</div><div class="msg-t">${m.time}</div>`;
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+function clrH(){if(!confirm('Effacer tout l\'historique ?'))return;localStorage.removeItem(hKey());document.getElementById('ca').innerHTML='<div class="sys">— HISTORIQUE EFFACÉ —</div>';knownIds.clear();}
+
+/* ══ CONTACTS ══ */
+function renderList(){
+  const el=document.getElementById('cl-items');
+  document.getElementById('cnt-badge').textContent=contacts.length;
+  if(contacts.length===0){el.innerHTML='<div class="cl-empty">Aucun contact.<br>Le MJ peut en créer.</div>';return;}
+  el.innerHTML='';
+  contacts.forEach(c=>{
+    const hasConv=(convMsgs[c.id]||[]).length>0;
+    const hasUnread=unreadConv.has(c.id);
+    const sc=SCOL[c.status]||'#606078';
+    const d=document.createElement('div');
+    d.className='ci'+(selId===c.id?' active':'');
+    d.onclick=()=>selectContact(c.id);
+    d.innerHTML=`
+      <div class="ci-ico" style="color:${c.color||'#bb44ff'}">${TICONS[c.type]||'◉'}</div>
+      <div class="ci-info">
+        <div class="ci-name">${esc(c.name)}</div>
+        <div class="ci-sub">${c.type||'PERSONNE'}${hasConv?' · 💬':''}</div>
+      </div>
+      <div class="ci-r">
+        <div class="ci-sdot" style="background:${sc}"></div>
+        <div class="ci-unread${hasUnread?' on':''}">!</div>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function selectContact(id){
+  selId=id;
+  unreadConv.delete(id);
+  panelMode='profile';
+  renderList();
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  renderProfile(c);
+  updatePanelTabs(c);
+  document.getElementById('p-panel').style.display='flex';
+  document.getElementById('conv-panel').style.display='none';
+  document.getElementById('cr-tab-profile').classList.add('active');
+  document.getElementById('cr-tab-conv').classList.remove('active');
+}
+
+function renderProfile(c){
+  const el=document.getElementById('p-panel');
+  const sc=SCOL[c.status]||'#606078';
+  const ico=TICONS[c.type]||'◉';
+  const threat=c.threat||0;
+  const dots=Array.from({length:5},(_,i)=>`<span style="background:${i<threat?c.color||'#bb44ff':'rgba(255,255,255,.12)'}"></span>`).join('');
+  const mja=role==='mj'?`<div class="cd-mja"><button class="cdb cdb-e" onclick="openModal('${c.id}')">ÉDITER</button><button class="cdb cdb-d" onclick="delContact('${c.id}')">SUPPR.</button></div>`:'';
+  const contactBtn=role==='hunter'?`<button onclick="setPanelMode('conv')" style="margin-top:16px;padding:10px 20px;background:transparent;border:1px solid ${c.color||'#bb44ff'};color:${c.color||'#bb44ff'};font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;border-radius:3px;cursor:pointer;">💬 CONTACTER</button>`:'';
+  el.innerHTML=`
+    <div class="cd-head" style="border-bottom-color:${c.color||'#bb44ff'}22">
+      ${mja}
+      <div class="cd-ico" style="color:${c.color||'#bb44ff'}">${ico}</div>
+      <div class="cd-name" style="color:${c.color||'#bb44ff'}">${esc(c.name)}</div>
+      <div class="cd-typebadge" style="color:${c.color||'#bb44ff'};border-color:${c.color||'#bb44ff'}">${c.type||'PERSONNE'}</div>
+    </div>
+    <div class="cd-status" style="color:${sc}"><div class="cd-sdot" style="background:${sc}"></div>${c.status||'INCONNU'}</div>
+    <div class="cd-fields">
+      ${c.location?`<div class="cd-field"><div class="cdf-l">LOCALISATION</div><div class="cdf-v">${esc(c.location)}</div></div>`:''}
+      ${c.affiliation?`<div class="cd-field"><div class="cdf-l">AFFILIATION</div><div class="cdf-v">${esc(c.affiliation)}</div></div>`:''}
+      <div class="cd-field"><div class="cdf-l">MENACE</div><div class="cdf-v"><div class="td">${dots}</div></div></div>
+    </div>
+    ${c.description?`<div class="cd-dlbl">— DONNÉES —</div><div class="cd-desc">${esc(c.description)}</div>`:''}
+    ${contactBtn}`;
+}
+
+function renderConvMessages(id){
+  const area=document.getElementById('conv-area');
+  const msgs=convMsgs[id]||[];
+  area.innerHTML='';
+  const c=contacts.find(x=>x.id===id);
+  if(msgs.length===0){area.innerHTML='<div class="conv-empty">Aucun message.<br>Commence la conversation.</div>';return;}
+  msgs.forEach(m=>{
+    const div=document.createElement('div');
+    div.className='cmsg from-'+m.from;
+    const lbl=m.from==='hunter'?'MOON':(c?c.name.toUpperCase():'CONTACT');
+    const col=m.from==='hunter'?'#00ccff':(c?c.color||'#bb44ff':'#bb44ff');
+    const bStyle=m.from==='contact'?`background:${col}11;border:1px solid ${col}33;color:rgba(255,255,255,.82);border-top-left-radius:0`:'background:rgba(0,204,255,.05);border:1px solid rgba(0,204,255,.17);color:rgba(255,255,255,.82);border-top-right-radius:0';
+    div.innerHTML=`<div class="cmsg-lbl" style="color:${col}">${lbl}</div><div class="cmsg-b" style="${bStyle}">${esc(m.text)}</div><div class="cmsg-t">${m.time}</div>`;
+    area.appendChild(div);
+  });
+  area.scrollTop=area.scrollHeight;
+}
+
+function addConvMsg(m,isLocal){
+  if(knownIds.has(m.id))return;knownIds.add(m.id);
+  if(!convMsgs[m.contactId])convMsgs[m.contactId]=[];
+  convMsgs[m.contactId].push(m);
+  // Save locally
+  sCM(m.contactId,convMsgs[m.contactId]);
+  // Mark unread if not currently viewing this conv
+  const isViewingThisConv=(selId===m.contactId&&panelMode==='conv'&&document.getElementById('tab-cnt').classList.contains('on'));
+  if(!isViewingThisConv&&!isLocal){
+    unreadConv.add(m.contactId);
+    // Flash nav tab
+    document.querySelector('.t-cnt').style.color='#ffaa00';
+    setTimeout(()=>{if(!document.querySelector('.t-cnt').classList.contains('active'))document.querySelector('.t-cnt').style.color='';},3000);
+  }
+  renderList();
+  // If currently viewing this contact's conv, append
+  if(selId===m.contactId&&panelMode==='conv'){
+    const c=contacts.find(x=>x.id===m.contactId);
+    const area=document.getElementById('conv-area');
+    const empties=area.querySelectorAll('.conv-empty');empties.forEach(e=>e.remove());
+    const div=document.createElement('div');
+    div.className='cmsg from-'+m.from;
+    const lbl=m.from==='hunter'?'MOON':(c?c.name.toUpperCase():'CONTACT');
+    const col=m.from==='hunter'?'#00ccff':(c?c.color||'#bb44ff':'#bb44ff');
+    const bStyle=m.from==='contact'?`background:${col}11;border:1px solid ${col}33;color:rgba(255,255,255,.82);border-top-left-radius:0`:'background:rgba(0,204,255,.05);border:1px solid rgba(0,204,255,.17);color:rgba(255,255,255,.82);border-top-right-radius:0';
+    div.innerHTML=`<div class="cmsg-lbl" style="color:${col}">${lbl}</div><div class="cmsg-b" style="${bStyle}">${esc(m.text)}</div><div class="cmsg-t">${m.time}</div>`;
+    area.appendChild(div);area.scrollTop=area.scrollHeight;
+    // Clear unread
+    unreadConv.delete(m.contactId);
+    document.getElementById('conv-badge').style.display='none';
+  } else if(selId===m.contactId){
+    // Viewing profile, show badge on conv tab
+    document.getElementById('conv-badge').style.display='inline-flex';
+  }
+}
+
+function sendConv(){
+  if(!selId)return;
+  const ta=document.getElementById('conv-ta');
+  const text=ta.value.trim();if(!text)return;
+  ta.value='';ta.style.height='auto';
+  const from=role==='hunter'?'hunter':'contact';
+  pubConv(selId,from,text);
+}
+
+function pubConv(contactId,from,text){
+  if(!mqtt_client||!mqtt_client.connected)return;
+  const m={type:'contact_msg',id:Date.now()+'_'+Math.random().toString(36).substr(2,5),contactId,from,text,time:now()};
+  mqtt_client.publish(topic,JSON.stringify(m));
+}
+
+function delContact(id){
+  if(!confirm('Supprimer ce contact ?'))return;
+  contacts=contacts.filter(c=>c.id!==id);sC();pubContacts();
+  if(selId===id){selId=null;document.getElementById('p-panel').innerHTML='<div class="p-empty">Sélectionne un contact.</div>';document.getElementById('cr-tabs').classList.add('hidden');}
+  renderList();
+}
+function pubContacts(){if(!mqtt_client||!mqtt_client.connected)return;mqtt_client.publish(topic,JSON.stringify({type:'contacts',contacts}));}
+
+/* Modal */
+function bCG(){
+  const g=document.getElementById('cg');g.innerHTML='';
+  COLORS.forEach(col=>{const d=document.createElement('div');d.className='cc'+(col===fCol?' sel':'');d.style.background=col;d.onclick=()=>{fCol=col;bCG();};g.appendChild(d);});
+}
+function setTh(v){fThr=v;document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v));}
+function openModal(id=null){
+  editId=id;const c=id?contacts.find(x=>x.id===id):null;
+  document.getElementById('mtitle').textContent=id?'MODIFIER':'NOUVEAU CONTACT';
+  document.getElementById('fn').value=c?c.name:'';
+  document.getElementById('ftp').value=c?c.type:'PERSONNE';
+  document.getElementById('fst').value=c?c.status:'ACTIF';
+  document.getElementById('floc').value=c?c.location||'':'';
+  document.getElementById('faff').value=c?c.affiliation||'':'';
+  document.getElementById('fd').value=c?c.description||'':'';
+  fThr=c?c.threat||0:0;fCol=c?c.color||COLORS[0]:COLORS[0];
+  setTh(fThr);bCG();
+  document.getElementById('modal').classList.add('on');
+  setTimeout(()=>document.getElementById('fn').focus(),100);
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');editId=null;}
+function saveContact(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){document.getElementById('fn').style.borderColor='rgba(255,32,64,.5)';setTimeout(()=>document.getElementById('fn').style.borderColor='',1000);return;}
+  const c={id:editId||('c_'+Date.now()),name,type:document.getElementById('ftp').value,status:document.getElementById('fst').value,location:document.getElementById('floc').value.trim(),affiliation:document.getElementById('faff').value.trim(),description:document.getElementById('fd').value.trim(),threat:fThr,color:fCol,updatedAt:Date.now()};
+  if(editId)contacts=contacts.map(x=>x.id===editId?c:x);else contacts.push(c);
+  if(!convMsgs[c.id])convMsgs[c.id]=lCM(c.id);
+  sC();pubContacts();renderList();
+  if(selId===c.id){renderProfile(c);}
+  closeModal();
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+</script>
+</body>
+</html>

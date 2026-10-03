@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>LE GALA D'EUROTECH-LUXE — Soirée d'Infiltration</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+html,body{height:100%;overflow:hidden;background:#07070d;font-family:'Share Tech Mono',monospace;color:#c8c8dc;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);}
+
+/* ═════ LOGIN ═════ */
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(0,204,255,.25);border-radius:6px;background:rgba(5,15,20,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:19px;font-weight:900;letter-spacing:3px;color:#00ccff;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(0,204,255,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+#lcode:focus{border-color:rgba(0,204,255,.5);}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;transition:all .2s;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;display:block;}
+.lbtn small{font-size:8px;letter-spacing:1px;display:block;opacity:.5;margin-top:2px;}
+.lbtn:hover{background:rgba(255,255,255,.04);}
+.lbtn.on{background:rgba(0,204,255,.12);}
+#lerr{font-size:10px;color:rgba(255,32,64,.7);letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki.on,.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter.on,.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury.on,.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo.on,.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro.on,.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj.on,.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+/* ═════ APP ═════ */
+#app{display:none;height:100vh;flex-direction:column;background:#07070d;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:rgba(5,12,15,.9);border-bottom:1px solid rgba(0,204,255,.15);flex-shrink:0;flex-wrap:wrap;gap:8px;}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#00ccff;}
+.tstatus{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}.cdot.wait{background:#ffaa00;animation:cwP 1s infinite;}
+@keyframes cwP{50%{opacity:.3;}}
+
+.shud{display:flex;align-items:center;gap:14px;padding:10px 18px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(0,204,255,.1);flex-wrap:wrap;flex-shrink:0;}
+.shud-timer{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:#00ccff;letter-spacing:2px;min-width:70px;}
+.shud-timer.warn{color:#ff2040;animation:tblink .5s infinite;}
+@keyframes tblink{50%{opacity:.4;}}
+.shud-layers{display:flex;gap:10px;flex:1;flex-wrap:wrap;}
+.shud-layer{display:flex;flex-direction:column;gap:3px;min-width:80px;flex:1;}
+.shud-layer-lbl{font-size:8px;letter-spacing:1px;display:flex;justify-content:space-between;}
+.shud-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;}
+.shud-bar-fill{height:100%;transition:width .3s;border-radius:3px;}
+.shud-layer.done .shud-bar-fill{background:#00ff88 !important;}
+
+.content{flex:1;overflow:auto;position:relative;}
+.stage{padding:20px;max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:16px;min-height:100%;justify-content:center;}
+.stage-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;letter-spacing:3px;text-align:center;}
+.stage-desc{font-size:13px;color:rgba(255,255,255,.5);text-align:center;max-width:420px;line-height:1.6;}
+.waiting-icon{font-size:48px;opacity:.3;animation:waitPulse 2s infinite;}
+@keyframes waitPulse{50%{opacity:.6;}}
+
+#result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+#result-overlay.on{display:flex;}
+.result-title{font-family:'Orbitron',monospace;font-size:32px;font-weight:900;letter-spacing:6px;text-shadow:0 0 30px currentColor;}
+.result-title.success{color:#00ff88;}
+.result-title.failure{color:#ff2040;}
+.result-sub{font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.6);max-width:420px;text-align:center;line-height:1.7;}
+
+.g-status{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;min-height:18px;color:#00ff88;}
+.mg-btn{padding:13px 30px;border:2px solid #00ccff;border-radius:8px;background:rgba(0,204,255,.08);color:#00ccff;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .1s;}
+.mg-btn:active{transform:scale(.95);}
+.assist-panel{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);width:100%;max-width:400px;}
+.assist-btn{padding:8px 12px;border:1px solid rgba(255,255,255,.15);border-radius:16px;background:transparent;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;color:rgba(255,255,255,.6);}
+.assist-btn:hover{background:rgba(255,255,255,.05);}
+.assist-btn:disabled{opacity:.25;cursor:not-allowed;}
+.assist-cooldown{font-size:9px;color:rgba(255,255,255,.3);text-align:center;}
+.assist-req-banner{width:100%;text-align:center;padding:14px;border:1px solid #ffc83c;border-radius:8px;background:rgba(255,200,60,.08);font-size:12px;color:#ffc83c;letter-spacing:1px;}
+.assist-accept-btn,.assist-decline-btn{padding:8px 16px;border-radius:6px;border:1px solid;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:transparent;}
+.assist-accept-btn{border-color:#00ff88;color:#00ff88;}
+.assist-decline-btn{border-color:#ff2040;color:#ff2040;}
+.assist-active-panel{width:100%;text-align:center;padding:14px;border:1px solid #00ccff;border-radius:8px;background:rgba(0,204,255,.06);font-size:12px;color:#e8e8f0;letter-spacing:.5px;}
+.assist-use-btn{padding:10px 20px;border-radius:6px;border:1px solid #00ccff;color:#00ccff;background:rgba(0,204,255,.1);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.assist-target-indicator{width:100%;text-align:center;font-size:10px;color:rgba(0,255,136,.6);letter-spacing:1px;margin-top:6px;}
+
+/* ═════ TAMURO — Objet caché ═════ */
+.hidden-grid{display:grid;gap:6px;}
+.hidden-tile{border:2px solid rgba(255,32,64,.25);border-radius:6px;background:rgba(255,32,64,.05);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;}
+.hidden-tile.wrong{border-color:#ff2040;background:rgba(255,32,64,.3);}
+.hidden-target{font-size:32px;margin-bottom:6px;}
+
+/* ═════ KIKI — Doublon ═════ */
+.dup-grid{display:grid;grid-template-columns:repeat(4,54px);gap:8px;}
+.dup-tile{width:54px;height:54px;border-radius:6px;border:2px solid rgba(255,170,0,.25);background:rgba(255,170,0,.05);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
+.dup-tile.on{border-color:#00ff88;background:rgba(0,255,136,.2);}
+.dup-tile.wrong{border-color:#ff2040;background:rgba(255,32,64,.25);}
+
+/* ═════ FURY — Bluff ═════ */
+.bluff-face{font-size:60px;margin-bottom:6px;}
+.bluff-opts{display:flex;gap:10px;}
+
+/* ═════ MOON — Pare-feu mobile ═════ */
+#fw-zone{position:relative;width:280px;height:280px;background:rgba(0,204,255,.03);border-radius:8px;overflow:hidden;border:1px solid rgba(0,204,255,.3);touch-action:none;}
+.fw-obs{position:absolute;width:18px;height:18px;border-radius:50%;background:#ff2040;}
+#fw-player{position:absolute;width:14px;height:14px;border-radius:50%;background:#00ccff;box-shadow:0 0 10px #00ccff;}
+
+/* ═════ KEIYO — Rythme ═════ */
+#rhythm-lanes{position:relative;width:240px;height:280px;background:rgba(255,51,204,.03);border-radius:8px;overflow:hidden;border:1px solid rgba(255,51,204,.25);}
+.rn-note{position:absolute;height:16px;border-radius:4px;}
+.rhythm-keys{display:flex;gap:8px;margin-top:10px;}
+.rhythm-key{width:50px;padding:12px 0;text-align:center;border:2px solid rgba(255,51,204,.3);border-radius:8px;background:rgba(255,51,204,.05);color:#ff33cc;font-family:'Orbitron',monospace;font-weight:900;cursor:pointer;}
+.rhythm-key:active{transform:scale(.92);background:rgba(255,51,204,.25);}
+
+/* ═════ MJ PANEL ═════ */
+.mj-panel{padding:20px;max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+.mj-title{font-family:'Orbitron',monospace;font-size:14px;letter-spacing:3px;color:#00ccff;padding-bottom:10px;border-bottom:1px solid rgba(0,204,255,.15);}
+.mj-controls{display:flex;gap:10px;flex-wrap:wrap;}
+.mj-btn{padding:12px 20px;border:1px solid;border-radius:6px;background:transparent;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;}
+.mj-btn.start{border-color:#00ff88;color:#00ff88;}
+.mj-btn.reset{border-color:#ffaa00;color:#ffaa00;}
+.mj-btn.alarm{border-color:#ff2040;color:#ff2040;}
+.mj-layer-detail{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mj-layer-card{border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:12px;background:rgba(255,255,255,.02);}
+.mj-layer-card-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;margin-bottom:8px;}
+.mj-timer-input{display:flex;align-items:center;gap:10px;}
+.mj-timer-input input{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:8px;color:#fff;font-family:'Share Tech Mono',monospace;width:80px;}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}::-webkit-scrollbar-thumb{background:rgba(0,204,255,.2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">🥂 LE GALA D'EUROTECH-LUXE</div>
+    <div class="lsub">// SOIRÉE MONDAINE — 5 ÉPREUVES SIMULTANÉES //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b><small>OBJET CACHÉ</small></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b><small>DOUBLON</small></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b><small>BLUFF</small></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b><small>PARE-FEU</small></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b><small>RYTHME</small></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b><small>CONTRÔLE</small></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()" style="border-color:#00ccff;color:#00ccff;margin-top:6px;padding:12px;">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">🥂 GALA EUROTECH</div>
+    <div class="tstatus"><span id="conn-lbl">CONNEXION...</span><div class="cdot wait" id="conn-dot"></div></div>
+  </div>
+  <div class="shud" id="shud">
+    <div class="shud-timer" id="shud-timer">--:--</div>
+    <div class="shud-layers" id="shud-layers"></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<div id="result-overlay">
+  <div class="result-title" id="result-title">—</div>
+  <div class="result-sub" id="result-sub"></div>
+  <button class="mg-btn" style="margin-top:10px;" onclick="closeResult()">FERMER</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LE GALA D'EUROTECH-LUXE — Soirée d'Infiltration synchronisée
+   ═══════════════════════════════════════════════════════════════ */
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null, sCode=null, mc=null, topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var LAYER_ORDER=['tamuro','kiki','fury','hunter','keiyo'];
+
+var state={
+  phase:'idle',
+  timerTotal:900,
+  timerRemaining:900,
+  layers:{
+    tamuro:{progress:0,done:false},
+    kiki:{progress:0,done:false},
+    fury:{progress:0,done:false},
+    hunter:{progress:0,done:false},
+    keiyo:{progress:0,done:false}
+  }
+};
+var tickInterval=null;
+var lastAssist={};
+var hasReceivedState=false;
+var activeIntervals=[];
+function trackInterval(id){activeIntervals.push(id);return id;}
+function clearActiveIntervals(){activeIntervals.forEach(function(id){clearInterval(id);clearTimeout(id);});activeIntervals=[];}
+
+/* ═════ LOGIN ═════ */
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_gala_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initUI();
+  connectMQTT();
+  startLocalTimerDisplay();
+}
+
+/* ═════ MQTT ═════ */
+function connectMQTT(){
+  try{
+    if(typeof mqtt==='undefined')throw new Error('no mqtt');
+    mc=mqtt.connect(BROKER,{clientId:'ce'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){
+      mc.subscribe(topic);
+      document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';
+      if(role!=='mj')pub({type:'requestState'});
+    });
+    mc.on('message',function(t,p){try{handleMsg(JSON.parse(p.toString()));}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+/* Local, MJ-independent timer display for players — self-corrects from timerEndsAt so it stays accurate even if the MJ tab is backgrounded/throttled */
+function startLocalTimerDisplay(){
+  if(role==='mj')return;
+  setInterval(function(){
+    if(state.phase==='running'&&state.timerEndsAt){
+      state.timerRemaining=Math.max(0,Math.round((state.timerEndsAt-Date.now())/1000));
+      renderShud();
+    }
+  },1000);
+}
+
+function handleMsg(d){
+  if(d.type==='requestState'&&role==='mj'){broadcastState();return;}
+  if(d.type==='fullState'){
+    var oldPhase=state.phase;
+    state=d.state;
+    renderShud();
+    checkOverlay();
+    var needRender=(role!=='mj')&&(!hasReceivedState||state.phase!==oldPhase);
+    hasReceivedState=true;
+    if(needRender){renderStage();}
+    return;
+  }
+  if(d.type==='layerReport'&&role==='mj'){
+    if(state.layers[d.layer]){
+      state.layers[d.layer].progress=d.progress;
+      state.layers[d.layer].done=d.progress>=100;
+      broadcastState();
+      checkWinCondition();
+    }
+    return;
+  }
+  if(d.type==='assistReq'){
+    assistPairs[d.to]='pending';
+    if(d.to===role)pendingRequestFrom=d.from;
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistResp'){
+    if(d.accepted)assistPairs[d.from]=d.to;else delete assistPairs[d.from];
+    if(d.to===role){
+      if(d.accepted){activeAsHelperFor=d.from;pendingRequestTo=null;}
+      else{pendingRequestTo=null;}
+    }
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistUse'){
+    delete assistPairs[d.target];
+    if(d.target===role){
+      localProgress=Math.min(100,localProgress+18);
+      reportProgress();
+      flashAssistBanner(d.helper);
+      activeHelperForMe=null;
+    }
+    if(d.helper===role){activeAsHelperFor=null;}
+    refreshAssistPanel();
+    return;
+  }
+  if(d.type==='assistReceived'&&d.target===role){
+    localProgress=Math.min(100,localProgress+18);
+    reportProgress();
+    flashAssistBanner();
+  }
+}
+function broadcastState(){pub({type:'fullState',state:state});renderShud();checkOverlay();if(role==='mj')refreshMJDetail();}
+
+function startTick(){
+  if(tickInterval)clearInterval(tickInterval);
+  tickInterval=setInterval(function(){
+    if(state.phase!=='running')return;
+    state.timerRemaining=state.timerEndsAt?Math.max(0,Math.round((state.timerEndsAt-Date.now())/1000)):Math.max(0,state.timerRemaining-1);
+    if(state.timerRemaining<=0){state.phase='failure';clearInterval(tickInterval);}
+    broadcastState();
+  },1000);
+}
+
+function mjStart(){
+  var mins=parseFloat(document.getElementById('mj-timer-val').value)||15;
+  state.timerTotal=Math.round(mins*60);state.timerRemaining=state.timerTotal;state.timerEndsAt=Date.now()+state.timerTotal*1000;
+  state.phase='running';
+  LAYER_ORDER.forEach(function(k){state.layers[k]={progress:0,done:false};});
+  startTick();broadcastState();
+}
+function mjReset(){
+  clearInterval(tickInterval);
+  state={phase:'idle',timerTotal:state.timerTotal,timerRemaining:state.timerTotal,layers:{
+    tamuro:{progress:0,done:false},kiki:{progress:0,done:false},fury:{progress:0,done:false},hunter:{progress:0,done:false},keiyo:{progress:0,done:false}
+  }};
+  broadcastState();
+}
+function mjAlarm(){state.phase='failure';clearInterval(tickInterval);broadcastState();}
+function mjSuccess(){state.phase='success';clearInterval(tickInterval);broadcastState();}
+
+function checkWinCondition(){
+  if(role!=='mj'||state.phase!=='running')return;
+  var allDone=LAYER_ORDER.every(function(k){return state.layers[k].done;});
+  if(allDone){state.phase='success';clearInterval(tickInterval);broadcastState();}
+}
+
+function initUI(){
+  renderShud();
+  if(role==='mj')renderMJPanel();
+  else renderStage();
+}
+
+function renderShud(){
+  var t=state.timerRemaining;
+  var m=Math.floor(t/60),s=t%60;
+  var te=document.getElementById('shud-timer');
+  te.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  te.classList.toggle('warn',t<60&&state.phase==='running');
+  var l=document.getElementById('shud-layers');l.innerHTML='';
+  LAYER_ORDER.forEach(function(k){
+    var ly=state.layers[k];
+    var col=ROLE_COLORS[k];
+    var d=document.createElement('div');d.className='shud-layer'+(ly.done?' done':'');
+    d.innerHTML='<div class="shud-layer-lbl"><span style="color:'+col+'">'+ROLE_LABELS[k]+'</span><span>'+Math.round(ly.progress)+'%</span></div><div class="shud-bar"><div class="shud-bar-fill" style="width:'+ly.progress+'%;background:'+col+';"></div></div>';
+    l.appendChild(d);
+  });
+}
+
+function checkOverlay(){
+  var ov=document.getElementById('result-overlay');
+  if(state.phase==='success'){
+    document.getElementById('result-title').textContent='MISSION ACCOMPLIE';
+    document.getElementById('result-title').className='result-title success';
+    document.getElementById('result-sub').textContent="Les cinq épreuves sont surmontées. Vous êtes passés inaperçus jusqu'au bout — et vous ressortez avec ce que vous étiez venus chercher.";
+    ov.classList.add('on');
+  } else if(state.phase==='failure'){
+    document.getElementById('result-title').textContent='ALARME';
+    document.getElementById('result-title').className='result-title failure';
+    document.getElementById('result-sub').textContent="La sécurité a repéré une présence suspecte. Il faut sortir avant que ça dégénère.";
+    ov.classList.add('on');
+  } else {
+    ov.classList.remove('on');
+  }
+}
+function closeResult(){document.getElementById('result-overlay').classList.remove('on');}
+
+function renderMJPanel(){
+  var c=document.getElementById('content');
+  c.innerHTML='<div class="mj-panel">'
+    +'<div class="mj-title">⚙ CONTRÔLE MJ</div>'
+    +'<div class="mj-timer-input"><span style="font-size:10px;letter-spacing:2px;">DURÉE (min)</span><input id="mj-timer-val" type="number" value="15" min="1" max="60"></div>'
+    +'<div class="mj-controls">'
+    +'<button class="mj-btn start" onclick="mjStart()">▶ LANCER LA SOIRÉE</button>'
+    +'<button class="mj-btn reset" onclick="mjReset()">↺ RÉINITIALISER</button>'
+    +'<button class="mj-btn alarm" onclick="mjAlarm()">⚠ ALARME MANUELLE</button>'
+    +'<button class="mj-btn start" onclick="mjSuccess()">✓ FORCER RÉUSSITE</button>'
+    +'</div>'
+    +'<div class="mj-layer-detail" id="mj-layer-detail"></div>'
+    +'</div>';
+  refreshMJDetail();
+}
+function refreshMJDetail(){
+  var d=document.getElementById('mj-layer-detail');if(!d)return;
+  d.innerHTML='';
+  LAYER_ORDER.forEach(function(k){
+    var ly=state.layers[k];
+    var card=document.createElement('div');card.className='mj-layer-card';
+    card.innerHTML='<div class="mj-layer-card-title" style="color:'+ROLE_COLORS[k]+'">'+ROLE_LABELS[k]+' - '+Math.round(ly.progress)+'%</div><div class="shud-bar"><div class="shud-bar-fill" style="width:'+ly.progress+'%;background:'+ROLE_COLORS[k]+';"></div></div>';
+    d.appendChild(card);
+  });
+}
+
+var localProgress=0;
+function reportProgress(){pub({type:'layerReport',layer:role,progress:localProgress});}
+
+function renderStage(){
+  if(role==='mj')return;
+  clearActiveIntervals();
+  resetAssistState();
+  var c=document.getElementById('content');
+  if(state.phase==='idle'){
+    c.innerHTML='<div class="stage"><div class="waiting-icon">⏳</div><div class="stage-title">EN ATTENTE DU SIGNAL</div><div class="stage-desc">Le MJ n\'a pas encore lancé l\'infiltration. Reste connecté.</div></div>';
+    return;
+  }
+  if(state.phase!=='running'){return;}
+  localProgress=state.layers[role]?state.layers[role].progress:0;
+  if(role==='tamuro')renderTamuro();
+  else if(role==='kiki')renderKiki();
+  else if(role==='fury')renderFury();
+  else if(role==='hunter')renderHunter();
+  else if(role==='keiyo')renderKeiyo();
+}
+
+/* ═════ ENTRAIDE (consentement, un allié actif à la fois) ═════ */
+var assistPairs={}; /* target(role) -> helper(role) ou 'pending' */
+var pendingRequestTo=null;
+var pendingRequestFrom=null;
+var activeAsHelperFor=null;
+var activeHelperForMe=null;
+
+function assistPanelHTML(){
+  var others=LAYER_ORDER.filter(function(k){return k!==role;});
+  var html='<div class="assist-panel" id="assist-panel">';
+  if(pendingRequestFrom){
+    html+='<div class="assist-req-banner">🤝 <b>'+ROLE_LABELS[pendingRequestFrom]+'</b> propose de vous aider'
+      +'<div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">'
+      +'<button class="assist-accept-btn" onclick="respondAssist(true)">✓ ACCEPTER</button>'
+      +'<button class="assist-decline-btn" onclick="respondAssist(false)">✗ REFUSER</button></div></div>';
+  } else if(activeAsHelperFor){
+    var targetProg=state.layers[activeAsHelperFor]?Math.round(state.layers[activeAsHelperFor].progress):0;
+    html+='<div class="assist-active-panel">Vous aidez <b style="color:'+ROLE_COLORS[activeAsHelperFor]+';">'+ROLE_LABELS[activeAsHelperFor]+'</b> — progression actuelle : '+targetProg+'%'
+      +'<div style="margin-top:8px;"><button class="assist-use-btn" onclick="useAssist()">🎯 ENVOYER UN COUP DE MAIN</button></div></div>';
+  } else if(pendingRequestTo){
+    html+='<div class="assist-cooldown">En attente de la réponse de '+ROLE_LABELS[pendingRequestTo]+'...</div>';
+  } else {
+    html+='<div class="assist-cooldown" style="width:100%;">Demande de l\'aide à un allié — il devra accepter, puis pourra voir ta progression et intervenir une fois.</div>';
+    others.forEach(function(k){
+      var busy=!!assistPairs[k];
+      html+='<button class="assist-btn" '+(busy?'disabled':'')+' onclick="requestAssist(\''+k+'\')" style="border-color:'+ROLE_COLORS[k]+'55;color:'+ROLE_COLORS[k]+';">'+(busy?ROLE_LABELS[k]+' (occupé)':'Demander à '+ROLE_LABELS[k])+'</button>';
+    });
+  }
+  if(activeHelperForMe){
+    html+='<div class="assist-target-indicator">🤝 '+ROLE_LABELS[activeHelperForMe]+' vous aide en ce moment</div>';
+  }
+  html+='</div>';
+  return html;
+}
+function requestAssist(target){
+  if(pendingRequestTo||activeAsHelperFor||assistPairs[target])return;
+  pendingRequestTo=target;
+  pub({type:'assistReq',from:role,to:target});
+  refreshAssistPanel();
+}
+function respondAssist(accepted){
+  var helper=pendingRequestFrom;
+  pendingRequestFrom=null;
+  pub({type:'assistResp',from:role,to:helper,accepted:accepted});
+  if(accepted){activeHelperForMe=helper;}
+  refreshAssistPanel();
+}
+function useAssist(){
+  if(!activeAsHelperFor)return;
+  pub({type:'assistUse',target:activeAsHelperFor,helper:role});
+  activeAsHelperFor=null;
+  refreshAssistPanel();
+}
+function refreshAssistPanel(){
+  var p=document.getElementById('assist-panel');
+  if(p)p.outerHTML=assistPanelHTML();
+}
+function resetAssistState(){
+  assistPairs={};pendingRequestTo=null;pendingRequestFrom=null;activeAsHelperFor=null;activeHelperForMe=null;
+}
+function flashAssistBanner(helperRole){
+  var b=document.createElement('div');
+  b.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,255,136,.15);border:1px solid #00ff88;color:#00ff88;padding:8px 20px;border-radius:20px;font-size:11px;letter-spacing:2px;z-index:300;';
+  b.textContent='+ '+(ROLE_LABELS[helperRole]||'UN ALLIÉ')+' VOUS AIDE (+18%)';
+  document.body.appendChild(b);
+  setTimeout(function(){b.remove();},2200);
+}
+
+/* ═══════════ TAMURO — Objet caché ═══════════ */
+var hiddenRound=0,hiddenTarget='';
+var HIDDEN_ICONS=['♠','♣','♥','♦','◆','●','■','▲','★','✚','✖','◉'];
+function renderTamuro(){
+  hiddenRound=Math.round((localProgress/100)*3);
+  hiddenNextRound();
+}
+function hiddenNextRound(){
+  var c=document.getElementById('content');
+  if(hiddenRound>=3){
+    c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ff2040;">\u{1F441} OBJET CACH\u00c9</div><div class="g-status">\u2713 TERMIN\u00c9</div>'+assistPanelHTML()+'</div>';
+    return;
+  }
+  var n=12+hiddenRound*6;
+  var cols=hiddenRound===0?4:(hiddenRound===1?5:6);
+  hiddenTarget=HIDDEN_ICONS[Math.floor(Math.random()*HIDDEN_ICONS.length)];
+  var grid=[];for(var i=0;i<n;i++)grid.push(HIDDEN_ICONS[Math.floor(Math.random()*HIDDEN_ICONS.length)]);
+  var pos=Math.floor(Math.random()*n);grid[pos]=hiddenTarget;
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ff2040;">\u{1F441} OBJET CACH\u00c9</div>'
+    +'<div class="stage-desc">Un invit\u00e9 louche planque quelque chose. Rep\u00e8re le symbole affich\u00e9 dans la foule. Manche '+(hiddenRound+1)+'/3.</div>'
+    +'<div class="hidden-target">'+hiddenTarget+'</div>'
+    +'<div class="hidden-grid" id="hidden-grid" style="grid-template-columns:repeat('+cols+',44px);"></div>'
+    +assistPanelHTML()+'</div>';
+  var g=document.getElementById('hidden-grid');
+  grid.forEach(function(v,i){
+    var t=document.createElement('div');t.className='hidden-tile';t.style.height='44px';t.textContent=v;
+    t.onclick=function(){
+      if(v===hiddenTarget){
+        hiddenRound++;localProgress=Math.min(100,Math.round((hiddenRound/3)*100));reportProgress();
+        setTimeout(hiddenNextRound,500);
+      } else {
+        t.classList.add('wrong');
+      }
+    };
+    g.appendChild(t);
+  });
+}
+
+/* ═══════════ KIKI — Doublon ═══════════ */
+var dupRound=0,dupPicked=[],dupTarget=null;
+var DUP_ICONS=['◆','●','■','▲','★','✚','✖','◉','◐','◑','▣','◧','◨','⬡'];
+function renderKiki(){
+  dupRound=Math.round((localProgress/100)*3);
+  dupNextRound();
+}
+function dupNextRound(){
+  var c=document.getElementById('content');
+  if(dupRound>=3){
+    c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ffaa00;">\u{1F46F} DOUBLON</div><div class="g-status">\u2713 TERMIN\u00c9</div>'+assistPanelHTML()+'</div>';
+    return;
+  }
+  var n=11+dupRound*4;
+  var icons=DUP_ICONS.slice(0,n);
+  var dupIdx=Math.floor(Math.random()*n);
+  icons.push(icons[dupIdx]);
+  icons=icons.slice().sort(function(){return Math.random()-0.5;});
+  var seen={},dupVal=null;
+  icons.forEach(function(v){if(seen[v])dupVal=v;seen[v]=true;});
+  dupTarget=dupVal;dupPicked=[];
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ffaa00;">\u{1F46F} DOUBLON</div>'
+    +'<div class="stage-desc">Un badge est en double dans la foule \u2014 rep\u00e8re la seule paire identique. Manche '+(dupRound+1)+'/3.</div>'
+    +'<div class="dup-grid" id="dup-grid"></div>'
+    +assistPanelHTML()+'</div>';
+  var g=document.getElementById('dup-grid');
+  icons.forEach(function(v,i){
+    var t=document.createElement('div');t.className='dup-tile';t.textContent=v;
+    t.onclick=function(){
+      if(v===dupTarget&&dupPicked.indexOf(i)<0){
+        t.classList.add('on');dupPicked.push(i);
+        if(dupPicked.length===2){
+          dupRound++;localProgress=Math.min(100,Math.round((dupRound/3)*100));reportProgress();
+          setTimeout(dupNextRound,600);
+        }
+      } else if(v!==dupTarget){
+        t.classList.add('wrong');setTimeout(function(){t.classList.remove('wrong');},300);
+      }
+    };
+    g.appendChild(t);
+  });
+}
+
+/* ═══════════ FURY — Bluff ═══════════ */
+var bluffScore=0,bluffNervous=false;
+function renderFury(){
+  bluffScore=Math.round((localProgress/100)*4);
+  bluffNextRound();
+}
+function bluffNextRound(){
+  var c=document.getElementById('content');
+  if(bluffScore>=4){
+    c.innerHTML='<div class="stage"><div class="stage-title" style="color:#00ff88;">\u{1F3AD} BLUFF</div><div class="g-status">\u2713 TERMIN\u00c9</div>'+assistPanelHTML()+'</div>';
+    return;
+  }
+  bluffNervous=Math.random()<0.5;
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#00ff88;">\u{1F3AD} BLUFF</div>'
+    +'<div class="stage-desc">Un invit\u00e9 te parle. Ment-il ? '+bluffScore+'/4 bonnes lectures.</div>'
+    +'<div class="bluff-face">'+(bluffNervous?'\u{1F630}':'\u{1F610}')+'</div>'
+    +'<div class="bluff-opts"><button class="mg-btn" style="border-color:#ff2040;color:#ff2040;" onclick="bluffAnswer(true)">IL MENT</button><button class="mg-btn" style="border-color:#00ccff;color:#00ccff;" onclick="bluffAnswer(false)">IL DIT VRAI</button></div>'
+    +'<div class="g-status" id="bluff-status"></div>'
+    +assistPanelHTML()+'</div>';
+}
+function bluffAnswer(guessedLie){
+  var correct=(bluffNervous===guessedLie);
+  if(correct){
+    bluffScore++;localProgress=Math.min(100,Math.round((bluffScore/4)*100));reportProgress();
+    document.getElementById('bluff-status').textContent='\u2713 BONNE LECTURE';
+  } else {
+    document.getElementById('bluff-status').textContent='\u2717 RAT\u00c9 \u2014 il se m\u00e9fie un peu plus';
+  }
+  setTimeout(bluffNextRound,800);
+}
+
+/* ═══════════ MOON — Pare-feu mobile ═══════════ */
+var fwPos={x:20,y:140},fwObstacles=[],fwInt=null,fwDone=false,fwProgress=0;
+function renderHunter(){
+  fwPos={x:20,y:140};fwDone=false;fwProgress=localProgress;
+  var c=document.getElementById('content');
+  fwObstacles=[];for(var i=0;i<5;i++)fwObstacles.push({x:70+Math.random()*180,y:Math.random()*260,vx:(Math.random()-0.5)*2.6,vy:(Math.random()-0.5)*2.6});
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#00ccff;">\u{1F6E1} PARE-FEU MOBILE</div>'
+    +'<div class="stage-desc">Fais glisser le curseur de la gauche vers la droite sans toucher les gardes de s\u00e9curit\u00e9 (points rouges).</div>'
+    +'<div class="g-status" id="fw-status">Progression : '+Math.round(fwProgress)+'%</div>'
+    +'<div id="fw-zone"></div>'
+    +assistPanelHTML()+'</div>';
+  var zone=document.getElementById('fw-zone');
+  var player=document.createElement('div');player.id='fw-player';zone.appendChild(player);
+  fwObstacles.forEach(function(o,i){var d=document.createElement('div');d.className='fw-obs';d.dataset.i=i;zone.appendChild(d);});
+  var exitMark=document.createElement('div');exitMark.style.cssText='position:absolute;right:0;top:0;bottom:0;width:8px;background:rgba(0,255,136,.3);';zone.appendChild(exitMark);
+  function handleMove(clientX,clientY){
+    if(fwDone)return;
+    var rect=zone.getBoundingClientRect();
+    fwPos.x=clientX-rect.left;fwPos.y=clientY-rect.top;
+    if(player){player.style.left=(fwPos.x-7)+'px';player.style.top=(fwPos.y-7)+'px';}
+    var p=Math.max(fwProgress,Math.min(100,(fwPos.x/272)*100));
+    if(p>fwProgress){
+      fwProgress=p;localProgress=Math.round(fwProgress);reportProgress();
+      var st=document.getElementById('fw-status');if(st)st.textContent='Progression : '+Math.round(fwProgress)+'%';
+    }
+    if(fwPos.x>=266&&!fwDone){
+      fwDone=true;localProgress=100;reportProgress();
+      var st2=document.getElementById('fw-status');if(st2)st2.textContent='\u2713 TRAVERS\u00c9E R\u00c9USSIE';
+    }
+  }
+  zone.onpointermove=function(e){e.preventDefault();handleMove(e.clientX,e.clientY);};
+  zone.onpointerdown=function(e){e.preventDefault();};
+  fwInt=trackInterval(setInterval(function(){
+    fwObstacles.forEach(function(o,idx){
+      o.x+=o.vx;o.y+=o.vy;
+      if(o.x<0||o.x>262)o.vx*=-1;
+      if(o.y<0||o.y>262)o.vy*=-1;
+      var el=document.querySelector('.fw-obs[data-i="'+idx+'"]');
+      if(el){el.style.left=o.x+'px';el.style.top=o.y+'px';}
+      if(!fwDone&&Math.hypot(o.x+9-fwPos.x,o.y+9-fwPos.y)<15){
+        fwProgress=Math.max(0,fwProgress-20);
+        localProgress=Math.round(fwProgress);reportProgress();
+        var st=document.getElementById('fw-status');if(st)st.textContent='\u2717 REP\u00c9R\u00c9 \u2014 tu recules';
+      }
+    });
+  },30));
+}
+
+/* ═══════════ KEIYO — Rythme ═══════════ */
+var rhythmScore=0,rhythmTotal=16,rhythmInt=null,rhythmSpawned=0;
+function renderKeiyo(){
+  var c=document.getElementById('content');
+  rhythmScore=0;rhythmSpawned=0;
+  c.innerHTML='<div class="stage"><div class="stage-title" style="color:#ff33cc;">\u{1F3B5} RYTHME</div>'
+    +'<div class="stage-desc">Danse pour ne pas te faire remarquer. Appuie sur la touche de la voie quand la note atteint la ligne rouge.</div>'
+    +'<div class="g-status" id="rhythm-status">SCORE : 0/'+rhythmTotal+'</div>'
+    +'<div id="rhythm-lanes"><div style="position:absolute;bottom:26px;left:0;right:0;height:3px;background:#ff2040;"></div></div>'
+    +'<div class="rhythm-keys"><div class="rhythm-key" onclick="rhythmHit(0)">A</div><div class="rhythm-key" onclick="rhythmHit(1)">Z</div><div class="rhythm-key" onclick="rhythmHit(2)">E</div><div class="rhythm-key" onclick="rhythmHit(3)">R</div></div>'
+    +assistPanelHTML()+'</div>';
+  var keys=['A','Z','E','R'];
+  document.onkeydown=function(e){
+    var idx=keys.indexOf(e.key.toUpperCase());
+    if(idx>=0)rhythmHit(idx);
+  };
+  var lanesEl=document.getElementById('rhythm-lanes');
+  rhythmInt=trackInterval(setInterval(function(){
+    if(rhythmSpawned<rhythmTotal&&Math.random()<0.1){
+      var lane=Math.floor(Math.random()*4);
+      var n=document.createElement('div');n.className='rn-note';n.dataset.lane=lane;
+      n.style.cssText='top:0px;left:'+(lane*25)+'%;width:23%;background:'+['#ff2040','#00ff88','#00ccff','#ffaa00'][lane]+';';
+      lanesEl.appendChild(n);rhythmSpawned++;
+    }
+    document.querySelectorAll('.rn-note').forEach(function(n){
+      var top=parseFloat(n.style.top)+3.4;n.style.top=top+'px';
+      if(top>280)n.remove();
+    });
+    if(rhythmSpawned>=rhythmTotal&&document.querySelectorAll('.rn-note').length===0){
+      clearInterval(rhythmInt);document.onkeydown=null;
+      localProgress=Math.round((rhythmScore/rhythmTotal)*100);reportProgress();
+      var st=document.getElementById('rhythm-status');if(st)st.textContent='TERMIN\u00c9 \u2014 SCORE: '+rhythmScore+'/'+rhythmTotal;
+    }
+  },60));
+}
+function rhythmHit(lane){
+  var notes=document.querySelectorAll('.rn-note[data-lane="'+lane+'"]');
+  notes.forEach(function(n){
+    var top=parseFloat(n.style.top);
+    if(top>220&&top<270){
+      rhythmScore++;n.remove();
+      localProgress=Math.round((rhythmScore/rhythmTotal)*100);reportProgress();
+      var st=document.getElementById('rhythm-status');if(st)st.textContent='SCORE : '+rhythmScore+'/'+rhythmTotal;
+    }
+  });
+}
+
+/* ===== AUTO-CONNEXION VIA LIEN DU PORTAIL (?code=xxx&role=yyy) ===== */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

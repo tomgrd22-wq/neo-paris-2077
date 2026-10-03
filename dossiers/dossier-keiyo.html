@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KEIYO — Dossier Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07070f; --bg2:#0d0d1a;
+  --text:#c0c0d4; --text-dim:#606078; --text-hi:#e8e8f4;
+  --accent:#ff33cc; --accent-soft:rgba(255,51,204,0.05);
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --amber:#ffaa00; --red:#ff2040;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',Georgia,serif;
+  font-size:19px;line-height:1.8;}
+.wrap{max-width:780px;margin:0 auto;padding:0 32px 100px;}
+.bg-mark{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-mark span{position:absolute;font-family:'Orbitron',monospace;font-weight:700;
+  color:var(--accent);opacity:0.015;font-size:240px;letter-spacing:20px;
+  top:30%;left:-5%;white-space:nowrap;transform:rotate(-8deg);}
+.dossier-head{padding:70px 0 40px;border-bottom:1px solid var(--border);
+  margin-bottom:50px;position:relative;z-index:1;}
+.dh-eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:7px;
+  color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:24px;}
+.dh-eyebrow b{color:var(--accent);}
+.dh-alias{font-family:'Orbitron',monospace;font-size:clamp(34px,5vw,52px);font-weight:700;
+  color:var(--accent);letter-spacing:3px;line-height:1.05;display:block;
+  text-shadow:0 0 50px var(--accent-soft);}
+.dh-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:300;letter-spacing:5px;
+  color:var(--text-dim);text-transform:uppercase;margin-top:14px;display:block;}
+.dh-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:5px;text-transform:uppercase;padding:7px 18px;margin-top:22px;
+  border:1px solid var(--accent);color:var(--accent);border-radius:2px;}
+.dh-tag{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:300;font-style:italic;
+  color:rgba(255,255,255,0.45);margin-top:26px;letter-spacing:1px;line-height:1.6;}
+.sec{margin-bottom:48px;position:relative;z-index:1;}
+.sec-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:8px;
+  display:flex;align-items:center;gap:14px;}
+.sec-title::before{content:'';width:24px;height:2px;background:var(--accent);flex-shrink:0;}
+.sec-title .num{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);
+  letter-spacing:2px;margin-left:auto;}
+.sec-sub{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;
+  color:var(--text-dim);margin-bottom:24px;margin-left:38px;text-transform:uppercase;}
+p{margin-bottom:16px;}
+strong{color:var(--text-hi);font-weight:600;}
+em{color:var(--accent);font-style:normal;}
+.know{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
+.know-item{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:14px 0;
+  border-bottom:1px solid var(--border);align-items:start;}
+.know-item:last-child{border-bottom:none;}
+.know-ico{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);
+  padding-top:3px;width:22px;text-align:center;}
+.know-txt{font-size:17px;line-height:1.65;}
+.know-txt b{color:var(--text-hi);font-weight:600;}
+.contact{border:1px solid var(--border2);border-radius:4px;padding:18px 22px;
+  background:var(--bg2);margin-bottom:14px;}
+.contact.special{border-color:var(--accent);background:rgba(255,255,255,0.02);}
+.contact-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:600;
+  letter-spacing:1px;color:var(--text-hi);display:flex;align-items:baseline;gap:12px;}
+.contact-name .role{font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.contact-desc{font-size:16px;color:var(--text);margin-top:6px;line-height:1.6;}
+.intuition{border-left:3px solid var(--amber);background:rgba(255,170,0,0.04);
+  padding:18px 24px;margin-bottom:14px;border-radius:0 3px 3px 0;}
+.intuition p{margin-bottom:0;font-size:17px;font-style:italic;color:rgba(255,255,255,0.65);line-height:1.6;}
+.obj{display:flex;align-items:start;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.obj:last-child{border-bottom:none;}
+.obj-check{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:16px;
+  padding-top:2px;flex-shrink:0;}
+.obj-txt{font-size:17px;line-height:1.5;}
+.obj-txt b{color:var(--text-hi);}
+.pq{margin:36px 0;padding:26px 32px;border-left:3px solid var(--accent);
+  background:var(--accent-soft);font-style:italic;font-size:20px;font-weight:300;
+  color:rgba(255,255,255,0.72);line-height:1.65;}
+.pq cite{display:block;margin-top:12px;font-family:'Share Tech Mono',monospace;
+  font-size:11px;font-style:normal;letter-spacing:3px;color:var(--text-dim);}
+.dline{border:none;border-top:1px solid var(--border);margin:44px 0;position:relative;}
+.dline::before{content:attr(data-l);position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  background:var(--bg);padding:0 16px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:5px;color:var(--text-dim);}
+.foot{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--text-dim);text-align:center;line-height:2;}
+.foot b{color:var(--accent);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@media(max-width:600px){.wrap{padding:0 20px 60px;}}
+</style>
+</head>
+<body>
+<div class="bg-mark"><span>KEIYO</span></div>
+<div class="wrap">
+  <div class="dossier-head">
+    <span class="dh-eyebrow">// DOSSIER PERSONNEL — <b>YEUX SEULS</b> — NE PAS PARTAGER //</span>
+    <span class="dh-alias">KEIYO</span>
+    <span class="dh-name">Keiyori Murasaki</span>
+    <div class="dh-badge">// STAR //</div>
+    <div class="dh-tag">Tu t'es construite seule, pixel par pixel, jusqu'à ce que les corpos remarquent enfin ce qu'ils n'avaient pas fabriqué.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ce que tu sais — Neo-Paris <span class="num">[01]</span></div>
+    <div class="sec-sub">Tu connais le pouvoir d'une communauté bâtie depuis rien</div>
+    <div class="know">
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>Comment se construire depuis rien.</b> Née au Japon, ignorée et sous-estimée, tu t'es imposée seule grâce au réseau — sans studio, sans label, sans argent au départ. Tu sais exactement ce que ça coûte de bâtir une communauté fidèle à partir de zéro.</div></div>
+      <div class="know-item"><div class="know-ico">★</div><div class="know-txt"><b>Ta mandibule biomécanique.</b> Une mâchoire rétractable dissimulée sous ton masque, qui se déploie en un instant — crocs métalliques creux, injection de toxine paralysante synthétique au contact. Personne dans ton public ne sait qu'elle existe. C'est pour ça que tu ne retires jamais ton masque en interview.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Comment les corporations traquent les talents indépendants.</b> Recrutement, pression, surveillance, tentatives de contrôle. Tu es passée par toutes leurs méthodes de séduction — et tu les as toutes refusées.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Les Niveaux I et II.</b> Ta notoriété t'a ouvert des portes que peu de gens du Bas franchissent. Tu sais comment t'y comporter, t'y habiller, t'y faire respecter sans jamais leur appartenir.</div></div>
+      <div class="know-item"><div class="know-ico">▸</div><div class="know-txt"><b>Comment l'information circule dans l'élite.</b> Rumeurs, faveurs, chantages feutrés. Le pouvoir des hauteurs ne se prend pas par les armes — il se négocie, et tu as appris à négocier.</div></div>
+    </div>
+  </div>
+
+  <hr class="dline" data-l="LA NUIT DU 15.03.2077">
+
+  <div class="sec">
+    <div class="sec-title">La situation actuelle <span class="num">[02]</span></div>
+    <div class="sec-sub">Ce que tu as vécu — de ton point de vue</div>
+    <p>Tu n'es pas venue au Cabaret pour les vues ni pour l'algorithme. Tu es venue pour chanter <strong>hors-ligne</strong>, loin des caméras, loin des recruteurs qui ne te lâchent jamais depuis que ta réputation a franchi les frontières du Japon. Ce soir-là, pour la première fois depuis longtemps, tu chantais sans qu'aucune plateforme ne capte ta voix.</p>
+    <p>Puis deux hommes sont apparus dans le fond de la salle. Pas des fans. Des recruteurs, ou pire — des gens payés pour te convaincre autrement. Quand tout a basculé, une voix calme dans ton oreillette — <em>Moon</em>, une netrunner que tu n'avais jamais rencontrée — t'a guidée vers la sortie : « Couloir de gauche. Ne cours pas. »</p>
+    <p>Une fois dehors, tu es <strong>retournée à l'intérieur.</strong> Parce qu'il y avait encore quelqu'un de coincé, et que tu ne pouvais pas vivre avec l'inverse. C'est ce moment-là qui a soudé l'équipe autour de toi.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ton réseau <span class="num">[03]</span></div>
+    <div class="sec-sub">Les gens que tu connais — de confiance ou non</div>
+    <div class="contact"><div class="contact-name">Ta communauté<span class="role">Réseau construit seule</span></div><div class="contact-desc">Des fans loyaux depuis tes débuts, qui te cacheraient sans hésiter si besoin. Une arme puissante, à condition de savoir t'en servir sans les exposer.</div></div>
+    <div class="contact"><div class="contact-name">Les recruteurs corpos<span class="role">Menace permanente</span></div><div class="contact-desc">Ils ne renoncent jamais vraiment. Nouvelles offres, nouvelles pressions, nouvelles approches. Tu commences à connaître leurs visages par cœur.</div></div>
+    <div class="contact"><div class="contact-name">Contacts du spectacle indépendant<span class="role">Monde du streaming</span></div><div class="contact-desc">D'autres artistes qui, comme toi, ont refusé de signer. Solidarité fragile, mais réelle.</div></div>
+  </div>
+
+  <hr class="dline" data-l="QUI TU ES">
+
+  <div class="sec">
+    <div class="sec-title">Ton histoire <span class="num">[04]</span></div>
+    <div class="sec-sub">D'où tu viens — ce qui t'a construit</div>
+    <p>Née au Japon, tu as grandi ignorée et sous-estimée. Petite, discrète, invisible. Puis tu t'es imposée grâce au réseau — seule, tu as diffusé tes performances et construit une communauté fidèle. Ton style a fini par marquer.</p>
+    <p>Les corporations ont tenté de te recruter. Tu as refusé. Tu gardes ton indépendance, envers et contre tout. Aujourd'hui reconnue dans tout le Japon, tu vis sous pression constante : surveillance, menaces voilées, tentatives de contrôle plus ou moins subtiles.</p>
+    <p>Derrière ton image publique, tu luttes chaque jour pour rester toi-même. Personne ne t'a jamais rien offert — tout ce que tu as, tu l'as pris. Ils veulent maintenant te le reprendre.</p>
+  </div>
+
+  <hr class="dline" data-l="ZONE GRISE">
+
+  <div class="sec">
+    <div class="sec-title">Rumeurs & intuitions <span class="num">[05]</span></div>
+    <div class="sec-sub">Des choses que tu sens, sans pouvoir les prouver</div>
+    <div class="intuition"><p>Ta mandibule a été posée dans une clinique discrète, à un moment où tu avais besoin de te défendre et peu de questions à poser. Depuis, tu te surprends parfois à penser des choses qui ne te ressemblent pas — comme un écho, une pensée qui ne vient pas de toi. Tu n'oses pas y croire.</p></div>
+    <div class="intuition"><p>D'autres artistes indépendants ont « disparu » ou changé brutalement de comportement ces dernières années, juste après avoir refusé une offre corpo. Tu en connaissais certains. Tu n'as jamais fait le lien — jusqu'à maintenant.</p></div>
+    <div class="intuition"><p>Les corporations semblent désespérées de te récupérer. Pas en colère : <em>désespérées</em>. Comme si tu valais bien plus que ce qu'elles t'ont jamais laissé croire.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Tes objectifs <span class="num">[06]</span></div>
+    <div class="sec-sub">Ce qui te fait avancer</div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Rester indépendante.</b> Ne jamais signer. Ne jamais appartenir à personne.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Comprendre ce que tes implants t'ont vraiment fait.</b> Et pourquoi certaines pensées ne te semblent pas les tiennes.</div></div>
+    <div class="obj"><div class="obj-check">▸</div><div class="obj-txt"><b>Utiliser ta voix pour quelque chose qui compte.</b> Pas pour vendre. Pour changer les choses.</div></div>
+  </div>
+
+  <div class="foot">
+    NEO-PARIS / 2077 — DOSSIER <b>KEIYO</b><br>
+    CHIFFREMENT ACTIF — DESTRUCTION RECOMMANDÉE APRÈS LECTURE
+  </div>
+</div>
+</body>
+</html>

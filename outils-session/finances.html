@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FINANCES — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,200,60,.25);border-radius:6px;background:rgba(20,15,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;color:#ffc83c;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,200,60,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:block;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+#lgo{border-color:#ffc83c;color:#ffc83c;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(15,12,5,.9);border-bottom:1px solid rgba(255,200,60,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffc83c;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.content{flex:1;padding:24px 18px 60px;max-width:600px;margin:0 auto;width:100%;}
+
+.char-card{border:1px solid var(--c,rgba(255,255,255,.15));border-left:3px solid var(--c);border-radius:8px;padding:18px 20px;margin-bottom:14px;background:rgba(255,255,255,.02);}
+.char-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.char-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--c);letter-spacing:1px;}
+.char-bals{display:flex;gap:14px;}
+.char-bal-item{text-align:right;}
+.char-bal-lbl{font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.35);}
+.char-bal{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;}
+.char-bal.money{color:#00ff88;}
+.char-bal.debt{color:#ff2040;}
+.char-hist{max-height:150px;overflow-y:auto;margin-bottom:10px;}
+.hist-row{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);}
+.hist-row b{color:rgba(255,255,255,.75);}
+.hist-row .tag{font-size:8px;letter-spacing:1px;padding:1px 5px;border-radius:3px;margin-right:6px;}
+.hist-row .tag.money{background:rgba(0,255,136,.15);color:#00ff88;}
+.hist-row .tag.debt{background:rgba(255,32,64,.15);color:#ff2040;}
+.char-add{display:flex;gap:6px;margin-top:6px;}
+.char-add input{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:7px 10px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:11px;}
+.char-add input.amt{max-width:80px;}
+.char-add button{padding:0 12px;border-radius:4px;border:1px solid;background:transparent;font-family:'Orbitron',monospace;font-size:10px;cursor:pointer;}
+.char-add-lbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);margin-top:10px;}
+.hist-empty{font-size:11px;color:rgba(255,255,255,.25);text-align:center;padding:10px 0;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">💰 FINANCES & DETTES</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">💰 FINANCES & DETTES</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var LAYER_ORDER=['tamuro','kiki','fury','hunter','keiyo'];
+var state={
+  money:{tamuro:0,kiki:0,fury:0,hunter:0,keiyo:0},
+  debt:{tamuro:0,kiki:0,fury:800,hunter:0,keiyo:0},
+  history:{tamuro:[],kiki:[],fury:[{note:'Dette CléoGel initiale',amt:800,kind:'debt'}],hunter:[],keiyo:[]}
+};
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_finances_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  render();
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'fn'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';});
+    mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());if(d.type==='state'){state=d.state;render();}}catch(e){}});
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});}
+
+function render(){
+  var c=document.getElementById('content');
+  var roles=(role==='mj')?LAYER_ORDER:[role];
+  var html='';
+  roles.forEach(function(k){
+    var money=state.money?(state.money[k]||0):0;
+    var debt=state.debt?(state.debt[k]||0):0;
+    var hist=state.history[k]||[];
+    html+='<div class="char-card" style="--c:'+ROLE_COLORS[k]+';">'
+      +'<div class="char-head"><span class="char-name">'+ROLE_LABELS[k]+'</span>'
+      +'<span class="char-bals">'
+      +'<span class="char-bal-item"><div class="char-bal-lbl">ARGENT</div><div class="char-bal money">'+money+' eb</div></span>'
+      +'<span class="char-bal-item"><div class="char-bal-lbl">DETTE</div><div class="char-bal debt">'+debt+' eb</div></span>'
+      +'</span></div>'
+      +'<div class="char-hist" id="hist-'+k+'">'+(hist.length===0?'<div class="hist-empty">Aucune transaction.</div>':hist.slice().reverse().map(function(h){
+        var kind=h.kind||'money';
+        return '<div class="hist-row"><span><span class="tag '+kind+'">'+(kind==='debt'?'DETTE':'ARGENT')+'</span>'+esc(h.note)+'</span><b style="color:'+(h.amt<0?'#ff2040':'#00ff88')+';">'+(h.amt>0?'+':'')+h.amt+'</b></div>';
+      }).join(''))+'</div>';
+    if(role==='mj'){
+      html+='<div class="char-add-lbl">➕ ARGENT (+gagné / -dépensé)</div>'
+        +'<div class="char-add"><input type="text" id="note-money-'+k+'" placeholder="Note (ex: paiement contrat)"><input type="number" class="amt" id="amt-money-'+k+'" placeholder="±eb">'
+        +'<button style="border-color:#00ff88;color:#00ff88;" onclick="addTx(\''+k+'\',\'money\')">OK</button></div>'
+        +'<div class="char-add-lbl">➕ DETTE (+contractée / -remboursée)</div>'
+        +'<div class="char-add"><input type="text" id="note-debt-'+k+'" placeholder="Note (ex: remboursement CléoGel)"><input type="number" class="amt" id="amt-debt-'+k+'" placeholder="±eb">'
+        +'<button style="border-color:#ff2040;color:#ff2040;" onclick="addTx(\''+k+'\',\'debt\')">OK</button></div>';
+    }
+    html+='</div>';
+  });
+  c.innerHTML=html;
+}
+function addTx(k,kind){
+  var note=document.getElementById('note-'+kind+'-'+k).value.trim();
+  var amt=parseInt(document.getElementById('amt-'+kind+'-'+k).value);
+  if(!note||isNaN(amt))return;
+  if(!state.history[k])state.history[k]=[];
+  state.history[k].push({note:note,amt:amt,kind:kind});
+  if(!state.money)state.money={};
+  if(!state.debt)state.debt={};
+  if(kind==='debt'){state.debt[k]=(state.debt[k]||0)+amt;}
+  else{state.money[k]=(state.money[k]||0)+amt;}
+  pushState();render();
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>
