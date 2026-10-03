@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KEIYO — Téléphone</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:#07070a;color:#e8e8f0;font-family:'Rajdhani',sans-serif;overflow:hidden;}
+body{display:flex;align-items:center;justify-content:center;}
+
+#login{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+.lw{width:min(380px,92vw);padding:30px 26px;border:1px solid rgba(255,51,204,.3);border-radius:12px;background:rgba(255,51,204,.03);}
+.ltitle{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;letter-spacing:3px;color:#ff33cc;text-align:center;}
+.lsub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.4);text-align:center;margin-top:6px;margin-bottom:26px;}
+.llabel{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.35);margin-bottom:6px;}
+#lcode{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:5px;padding:11px 12px;color:#fff;font-family:'Share Tech Mono',monospace;letter-spacing:1px;outline:none;margin-bottom:18px;}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lbtn{padding:12px 6px;border-radius:7px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#fff;cursor:pointer;font-family:'Rajdhani',sans-serif;}
+.lbtn b{display:block;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;}
+.lbtn small{display:block;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-top:3px;}
+.lbtn-c{border-color:#ff33cc;color:#ff33cc;}
+.lbtn-m{border-color:#ffc83c;color:#ffc83c;}
+#lerr{margin-top:14px;font-size:11px;color:#ff33cc;letter-spacing:1px;min-height:14px;text-align:center;}
+
+#app{display:none;width:100%;height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,51,204,.2);background:rgba(255,51,204,.04);flex-shrink:0;}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;color:#ff33cc;}
+.brand small{display:block;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:2px;}
+.addbtn{display:none;width:32px;height:32px;border-radius:50%;border:1px solid #ff33cc;color:#ff33cc;background:rgba(255,51,204,.08);font-size:18px;cursor:pointer;align-items:center;justify-content:center;}
+.addbtn.show{display:flex;}
+
+.main{flex:1;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;overflow-y:auto;display:none;}
+.screen.on{display:block;}
+
+/* LISTE DES CONTACTS */
+.cnt-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;}
+.cnt-row:hover{background:rgba(255,255,255,.03);}
+.cnt-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:700;font-size:14px;}
+.cnt-info{flex:1;min-width:0;}
+.cnt-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;}
+.cnt-desc{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cnt-badge{width:9px;height:9px;border-radius:50%;background:#ff33cc;flex-shrink:0;box-shadow:0 0 6px #ff33cc;}
+.cnt-empty{padding:40px 20px;text-align:center;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.25);line-height:2;}
+.cnt-del{opacity:0;width:26px;height:26px;border:none;background:transparent;color:rgba(255,51,204,.6);font-size:14px;cursor:pointer;flex-shrink:0;}
+.cnt-row:hover .cnt-del{opacity:1;}
+
+/* CONVERSATION */
+.conv-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:#07070a;z-index:2;}
+.conv-back{font-size:18px;cursor:pointer;color:rgba(255,255,255,.6);}
+.conv-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:700;font-size:12px;flex-shrink:0;}
+.conv-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;}
+.conv-desc{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;}
+.conv-edit{margin-left:auto;display:none;gap:8px;}
+.conv-edit.show{display:flex;}
+.conv-edit button{background:transparent;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;}
+.conv-msgs{padding:16px;display:flex;flex-direction:column;gap:8px;min-height:calc(100% - 140px);}
+.cmsg{max-width:75%;display:flex;flex-direction:column;}
+.cmsg.me{align-self:flex-end;align-items:flex-end;}
+.cmsg.them{align-self:flex-start;align-items:flex-start;}
+.cmsg-bub{padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;}
+.cmsg-t{font-size:9px;color:rgba(255,255,255,.25);margin-top:3px;font-family:'Share Tech Mono',monospace;}
+.conv-empty{padding:40px 20px;text-align:center;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.25);}
+.conv-input-wrap{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);position:sticky;bottom:0;background:#07070a;}
+.conv-input-wrap textarea{flex:1;resize:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:10px 16px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;max-height:80px;}
+.conv-send{width:38px;height:38px;border-radius:50%;border:none;background:#ff33cc;color:#07070a;font-size:15px;cursor:pointer;flex-shrink:0;}
+
+/* MODAL CONTACT (MJ) */
+.modal-ov{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px;}
+.modal-ov.on{display:flex;}
+.modal{width:min(360px,100%);background:#0c0c12;border:1px solid rgba(255,51,204,.3);border-radius:12px;padding:22px;}
+.modal h3{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;color:#ff33cc;margin-bottom:18px;}
+.modal label{display:block;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);margin:12px 0 5px;}
+.modal label:first-of-type{margin-top:0;}
+.modal input,.modal textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:9px 11px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;}
+.modal textarea{resize:none;height:50px;}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;}
+.sw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.sw.on{border-color:#fff;}
+.modal-btns{display:flex;gap:8px;margin-top:20px;}
+.modal-btns button{flex:1;padding:10px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;}
+.modal-btns .ok{border-color:#ff33cc;color:#ff33cc;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">🎤 KEIYO</div>
+    <div class="lsub">// TÉLÉPHONE — CONTACTS</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid">
+      <button class="lbtn lbtn-c" onclick="go('keiyo')"><b>KEIYO</b><small>// STAR</small></button>
+      <button class="lbtn lbtn-m" onclick="go('mj')"><b>MJ</b><small>// CONTRÔLE</small></button>
+    </div>
+    <div id="lerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">KEIYO // TÉLÉPHONE<small>CONTACTS</small></div>
+    <button class="addbtn" id="addbtn" onclick="openModal()">+</button>
+  </div>
+  <div class="main">
+    <div class="screen on" id="screen-list"></div>
+    <div class="screen" id="screen-conv"></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-ov" onclick="if(event.target===this)closeModal();">
+  <div class="modal">
+    <h3 id="modal-title">NOUVEAU CONTACT</h3>
+    <label>NOM</label><input id="m-name" placeholder="Ex: Brakko">
+    <label>DESCRIPTION</label><textarea id="m-desc" placeholder="Marchand d'armes, fournisseur habituel..."></textarea>
+    <label>COULEUR</label>
+    <div class="swatches" id="m-swatches"></div>
+    <div class="modal-btns">
+      <button onclick="closeModal()">ANNULER</button>
+      <button class="ok" onclick="saveModal()">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═════ CONFIG PERSONNAGE ═════ */
+var CHAR='keiyo',ACCENT='#ff33cc',DISPLAY_NAME='KEIYO';
+var DEFAULT_CONTACTS=[
+  {id:'c_yumi',name:'Yumi Sato',desc:"Technicienne streaming. Ta seule employée fixe. Gère la diffusion, le matériel, la sécurité de tes flux. Fidèle depuis le tout début.",color:'#00ccff'},
+  {id:'c_kessler',name:'Kessler',desc:"Recruteur — EuroTech-Luxe Media. Revient sans cesse à la charge avec de nouvelles offres, toujours plus généreuses, toujours plus insistantes.",color:'#ffaa00'},
+  {id:'c_choeur',name:'Le Chœur',desc:"Communauté de fans — collectif anonyme. Des inconnus, organisés autour d'un forum crypté, prêts à te cacher sans poser de questions.",color:'#bb44ff'}
+];
+var SWATCHES=['#ff2040','#ffaa00','#ff33cc','#00ccff','#00ff88','#bb44ff','#e8e8f0'];
+
+/* ═════ ÉTAT ═════ */
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic=null;
+var contacts=[],convMsgs={},selCnt=null,cntBadge=new Set();
+var modalEditId=null,modalColor=ACCENT;
+
+function storKeyC(){return 'phone_c_'+CHAR+'_'+sCode;}
+function storKeyM(){return 'phone_conv_'+CHAR+'_'+sCode;}
+
+function go(r){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  var err=document.getElementById('lerr');err.textContent='';
+  if(!code||code.length<3){err.textContent='CODE TROP COURT';return;}
+  role=r;sCode=code;topic='spectre_phone_'+CHAR+'_v1_'+code;
+  err.textContent='CONNEXION...';
+  mc=mqtt.connect(BROKER,{clientId:'ph'+CHAR+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:4000});
+  mc.on('connect',function(){
+    mc.subscribe(topic,function(suberr){
+      if(suberr){err.textContent='ERREUR DE CONNEXION';return;}
+      document.getElementById('login').style.display='none';
+      document.getElementById('app').style.display='flex';
+      if(role==='mj')document.getElementById('addbtn').classList.add('show');
+      loadLocal();
+      renderList();
+      if(role!=='mj')pub({type:'requestState'});
+    });
+  });
+  mc.on('message',function(t,p){
+    try{
+      var d=JSON.parse(p.toString());
+      if(d.type==='requestState'&&role==='mj'){pub({type:'syncAll',contacts:contacts,conv:convMsgs});return;}
+      if(d.type==='syncAll'){contacts=d.contacts||contacts;convMsgs=d.conv||convMsgs;saveLocal();renderList();if(selCnt)renderConv(selCnt);}
+      else if(d.type==='contacts'){contacts=d.contacts;saveLocal();renderList();}
+      else if(d.type==='msg'){
+        if(!convMsgs[d.cid])convMsgs[d.cid]=[];
+        convMsgs[d.cid].push({from:d.from,text:d.text,time:d.time});
+        saveLocal();
+        if(selCnt===d.cid)renderConv(d.cid);
+        else{cntBadge.add(d.cid);renderList();}
+      }
+    }catch(e){}
+  });
+  mc.on('error',function(){err.textContent='RÉSEAU INACCESSIBLE';});
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function now(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function initials(n){return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').substr(0,2).toUpperCase();}
+
+function loadLocal(){
+  contacts=null;convMsgs=null;
+  try{contacts=JSON.parse(localStorage.getItem(storKeyC()));}catch(e){}
+  try{convMsgs=JSON.parse(localStorage.getItem(storKeyM()));}catch(e){}
+  if(!contacts||!contacts.length)contacts=JSON.parse(JSON.stringify(DEFAULT_CONTACTS));
+  if(!convMsgs)convMsgs={};
+}
+function saveLocal(){
+  try{localStorage.setItem(storKeyC(),JSON.stringify(contacts));}catch(e){}
+  try{localStorage.setItem(storKeyM(),JSON.stringify(convMsgs));}catch(e){}
+}
+
+/* ═════ LISTE ═════ */
+function renderList(){
+  var el=document.getElementById('screen-list');
+  if(!contacts.length){el.innerHTML='<div class="cnt-empty">AUCUN CONTACT<br>'+(role==='mj'?'Clique sur + pour en ajouter.':'Le MJ peut en ajouter.')+'</div>';return;}
+  var html='';
+  contacts.forEach(function(c){
+    var hasNew=cntBadge.has(c.id);
+    html+='<div class="cnt-row" onclick="openConv(\''+c.id+'\')">'
+      +'<div class="cnt-av" style="background:'+c.color+'22;color:'+c.color+';border:1px solid '+c.color+';">'+initials(c.name)+'</div>'
+      +'<div class="cnt-info"><div class="cnt-name" style="color:'+c.color+';">'+esc(c.name)+'</div><div class="cnt-desc">'+esc(c.desc||'')+'</div></div>'
+      +(hasNew?'<div class="cnt-badge"></div>':'')
+      +(role==='mj'?'<button class="cnt-del" onclick="event.stopPropagation();delContact(\''+c.id+'\')">✕</button>':'')
+      +'</div>';
+  });
+  el.innerHTML=html;
+}
+
+/* ═════ CONVERSATION ═════ */
+function openConv(id){
+  selCnt=id;cntBadge.delete(id);
+  document.getElementById('screen-list').classList.remove('on');
+  document.getElementById('screen-conv').classList.add('on');
+  renderConv(id);renderList();
+}
+function backToList(){
+  selCnt=null;
+  document.getElementById('screen-conv').classList.remove('on');
+  document.getElementById('screen-list').classList.add('on');
+}
+function renderConv(id){
+  var c=contacts.find(function(x){return x.id===id;});if(!c)return;
+  var msgs=convMsgs[id]||[];
+  var msgsHtml=msgs.length?msgs.map(function(m){
+    var mine=(role==='mj')?(m.from==='contact'):(m.from!=='contact');
+    return '<div class="cmsg '+(mine?'me':'them')+'"><div class="cmsg-bub" style="'+(mine?'background:'+(role==='mj'?c.color:ACCENT)+';color:#07070a;':'background:rgba(255,255,255,.07);color:#fff;')+'">'+esc(m.text)+'</div><div class="cmsg-t">'+m.time+'</div></div>';
+  }).join(''):'<div class="conv-empty">Aucun message pour l\'instant.</div>';
+  var el=document.getElementById('screen-conv');
+  el.innerHTML='<div class="conv-head"><span class="conv-back" onclick="backToList()">←</span>'
+    +'<div class="conv-av" style="background:'+c.color+'22;color:'+c.color+';border:1px solid '+c.color+';">'+initials(c.name)+'</div>'
+    +'<div><div class="conv-name" style="color:'+c.color+';">'+esc(c.name)+'</div><div class="conv-desc">'+esc(c.desc||'')+'</div></div>'
+    +'<div class="conv-edit'+(role==='mj'?' show':'')+'"><button onclick="openModal(\''+c.id+'\')">✎</button></div>'
+    +'</div>'
+    +'<div class="conv-msgs" id="conv-msgs">'+msgsHtml+'</div>'
+    +'<div class="conv-input-wrap"><textarea id="conv-input" placeholder="'+(role==='mj'?'Répondre en tant que '+esc(c.name)+'...':'Écrire un message...')+'" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg(\''+c.id+'\');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,80)+\'px\';"></textarea><button class="conv-send" onclick="sendMsg(\''+c.id+'\')">➤</button></div>';
+  var box=document.getElementById('conv-msgs');box.scrollTop=box.scrollHeight;
+}
+function sendMsg(id){
+  var ta=document.getElementById('conv-input');
+  var txt=ta.value.trim();if(!txt)return;
+  ta.value='';ta.style.height='auto';
+  var from=(role==='mj')?'contact':'player';
+  var m={from:from,text:txt,time:now()};
+  if(!convMsgs[id])convMsgs[id]=[];
+  convMsgs[id].push(m);saveLocal();
+  pub({type:'msg',cid:id,from:from,text:txt,time:m.time});
+  renderConv(id);
+}
+
+/* ═════ MODAL (MJ) ═════ */
+function openModal(editId){
+  modalEditId=editId||null;
+  var c=editId?contacts.find(function(x){return x.id===editId;}):null;
+  document.getElementById('modal-title').textContent=editId?'MODIFIER CONTACT':'NOUVEAU CONTACT';
+  document.getElementById('m-name').value=c?c.name:'';
+  document.getElementById('m-desc').value=c?c.desc:'';
+  modalColor=c?c.color:ACCENT;
+  var sw=document.getElementById('m-swatches');sw.innerHTML='';
+  SWATCHES.forEach(function(col){
+    var d=document.createElement('div');d.className='sw'+(col===modalColor?' on':'');d.style.background=col;
+    d.onclick=function(){modalColor=col;document.querySelectorAll('.sw').forEach(function(x){x.classList.remove('on');});d.classList.add('on');};
+    sw.appendChild(d);
+  });
+  document.getElementById('modal-ov').classList.add('on');
+}
+function closeModal(){document.getElementById('modal-ov').classList.remove('on');}
+function saveModal(){
+  var name=document.getElementById('m-name').value.trim();
+  var desc=document.getElementById('m-desc').value.trim();
+  if(!name)return;
+  if(modalEditId){
+    var c=contacts.find(function(x){return x.id===modalEditId;});
+    if(c){c.name=name;c.desc=desc;c.color=modalColor;}
+  } else {
+    contacts.push({id:'c'+Date.now(),name:name,desc:desc,color:modalColor});
+  }
+  saveLocal();pub({type:'contacts',contacts:contacts});renderList();
+  if(selCnt)renderConv(selCnt);
+  closeModal();
+}
+function delContact(id){
+  if(!confirm('Supprimer ce contact ?'))return;
+  contacts=contacts.filter(function(x){return x.id!==id;});
+  delete convMsgs[id];
+  saveLocal();pub({type:'contacts',contacts:contacts});renderList();
+  if(selCnt===id)backToList();
+}
+
+/* ═════ AUTO-CONNEXION VIA LIEN DU PORTAIL (?code=xxx&role=yyy) ═════ */
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(codeParam&&roleParam){setTimeout(function(){go(roleParam);},50);}
+})();
+</script>
+</body>
+</html>

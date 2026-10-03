@@ -177,11 +177,11 @@ var firebaseConfig={
 var auth=null,db=null;
 var currentUserData=null;
 var CHARACTERS={
-  tamuro:{name:'TAMURO',title:'La Vipère Rouge — Edgerunner',ico:'⚔',color:'#ff2040',tool:'personnages/tamuro-terminal.html',dossier:'dossiers/dossier-tamuro.html',fiche:'fiches/fiche-tamuro.html'},
-  kiki:{name:'KIKI',title:'Kirikou — Nomade',ico:'🚐',color:'#ffaa00',tool:'personnages/kiki-dashboard.html',dossier:'dossiers/dossier-kiki.html',fiche:'fiches/fiche-kiki.html'},
-  keiyo:{name:'KEIYO',title:'Keiyori Murasaki — Star',ico:'🎤',color:'#ff33cc',tool:'personnages/keiyo-neogram.html',dossier:'dossiers/dossier-keiyo.html',fiche:'fiches/fiche-keiyo.html'},
+  tamuro:{name:'TAMURO',title:'La Vipère Rouge — Edgerunner',ico:'⚔',color:'#ff2040',tool:'personnages/tamuro-terminal.html',dossier:'dossiers/dossier-tamuro.html',fiche:'fiches/fiche-tamuro.html',telephone:'personnages/telephone-tamuro.html'},
+  kiki:{name:'KIKI',title:'Kirikou — Nomade',ico:'🚐',color:'#ffaa00',tool:'personnages/kiki-dashboard.html',dossier:'dossiers/dossier-kiki.html',fiche:'fiches/fiche-kiki.html',telephone:'personnages/telephone-kiki.html'},
+  keiyo:{name:'KEIYO',title:'Keiyori Murasaki — Star',ico:'🎤',color:'#ff33cc',tool:'personnages/keiyo-neogram.html',dossier:'dossiers/dossier-keiyo.html',fiche:'fiches/fiche-keiyo.html',telephone:'personnages/telephone-keiyo.html'},
   hunter:{name:'MOON',title:'Echo-9 — Netrunner',ico:'💻',color:'#00ccff',tool:'personnages/hunter-telephone.html',dossier:'dossiers/dossier-hunter.html',fiche:'fiches/fiche-moon.html'},
-  fury:{name:'FURY',title:'Frostpunk — CharcuDoc',ico:'💊',color:'#00ff88',tool:'personnages/fury-scanner.html',dossier:'dossiers/dossier-fury.html',fiche:'fiches/fiche-fury.html'}
+  fury:{name:'FURY',title:'Frostpunk — CharcuDoc',ico:'💊',color:'#00ff88',tool:'personnages/fury-scanner.html',dossier:'dossiers/dossier-fury.html',fiche:'fiches/fiche-fury.html',telephone:'personnages/telephone-fury.html'}
 };
 var EMAIL_DOMAIN='@neoparis.local';
 var authMode='login'; /* 'login' | 'signup' */
@@ -415,6 +415,7 @@ function renderPersonal(role){
     +'<a class="personal-card" href="'+c.tool+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🎮</div><div class="personal-card-title">OUTIL DE JEU</div></a>'
     +'<a class="personal-card" href="'+c.dossier+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">📖</div><div class="personal-card-title">DOSSIER PERSONNEL</div></a>'
     +(c.fiche?'<a class="personal-card" href="'+c.fiche+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🗒</div><div class="personal-card-title">FICHE DE PERSONNAGE</div></a>':'')
+    +(c.telephone?'<a class="personal-card" href="'+c.telephone+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">☎</div><div class="personal-card-title">TÉLÉPHONE</div></a>':'')
     +'</div>';
 
   function pcard(ico,label,url){return '<a class="personal-card" href="'+url+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">'+ico+'</div><div class="personal-card-title">'+label+'</div></a>';}
@@ -502,6 +503,13 @@ function renderMJ(){
     +tool('💻','Moon','Echo-9 — Netrunner évadée, en fuite.','#00ccff','dossiers/dossier-hunter.html')
     +tool('💊','Fury','Frostpunk — CharcuDoc, dépendant du CléoGel.','#00ff88','dossiers/dossier-fury.html')
     +'</div></div>';
+
+  html+='<div class="section"><div class="section-title">☎ Téléphones des personnages</div><div class="grid">'
+    +tool('⚔','Tamuro — Téléphone','Carnet de contacts — Brakko, Miho, Vercors.','#ff2040','personnages/telephone-tamuro.html'+qs)
+    +tool('🚐','Kiki — Téléphone','Carnet de contacts — Roscoe, Nadia, Doc Ferro.','#ffaa00','personnages/telephone-kiki.html'+qs)
+    +tool('🎤','Keiyo — Téléphone','Carnet de contacts — Yumi Sato, Kessler, Le Chœur.','#ff33cc','personnages/telephone-keiyo.html'+qs)
+    +tool('💊','Fury — Téléphone','Carnet de contacts — Sella, Doc Renner, Mika.','#00ff88','personnages/telephone-fury.html'+qs)
+    +'</div><div class="note">Moon gère déjà ses contacts directement dans son téléphone (SPECTRE).</div></div>';
 
   html+='<div class="section"><div class="section-title">🗒 Fiches de personnage</div><div class="grid">'
     +tool('⚔','Tamuro — Fiche complète','La Vipère Rouge — compétences, cyberware, background.','#ff2040','fiches/fiche-tamuro.html')
