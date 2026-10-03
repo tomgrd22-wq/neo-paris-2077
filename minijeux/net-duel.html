@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NET DUEL // Mini-jeu multijoueur</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:#05050a;color:#e8e8f4;font-family:'Share Tech Mono',monospace;overflow:hidden;height:100%;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:100vh;padding:14px;}
+  .title{font-family:'Orbitron',monospace;font-weight:900;letter-spacing:4px;font-size:20px;color:#ffaa00;text-shadow:0 0 14px rgba(255,170,0,.6);}
+  .sub{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.35);margin-top:-6px;}
+  .hud{display:flex;gap:26px;font-family:'Orbitron',monospace;font-size:16px;letter-spacing:2px;}
+  .hud .me{color:#00ccff;}
+  .hud .opp{color:#ff2040;}
+  .netlbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);}
+  .netlbl.on{color:#00ff88;}
+  #wrap{position:relative;}
+  canvas{background:#07070f;border:2px solid rgba(255,170,0,.35);border-radius:8px;box-shadow:0 0 30px rgba(255,170,0,.15),inset 0 0 40px rgba(0,0,0,.6);display:block;touch-action:none;}
+  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(5,5,10,.9);border-radius:8px;text-align:center;padding:20px;}
+  .overlay.off{display:none;}
+  .overlay h2{font-family:'Orbitron',monospace;letter-spacing:3px;font-size:18px;margin:0;}
+  .overlay p{font-size:11px;color:rgba(255,255,255,.55);letter-spacing:1px;margin:0;max-width:300px;line-height:1.6;}
+  .btn{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 22px;border-radius:6px;border:1px solid #ffaa00;color:#ffaa00;background:rgba(255,170,0,.08);cursor:pointer;}
+  .btn:active{background:rgba(255,170,0,.25);}
+  .btn.alt{border-color:#00ccff;color:#00ccff;background:rgba(0,204,255,.08);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  input{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:13px;text-align:center;width:180px;}
+  .back{position:fixed;top:12px;left:12px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-decoration:none;border:1px solid rgba(255,255,255,.15);padding:6px 12px;border-radius:20px;}
+  .back:hover{color:#ffaa00;border-color:#ffaa00;}
+  .hint{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);margin-top:2px;}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(window.history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="title">NET DUEL</div>
+<div class="sub">DUEL EN RÉSEAU — 2 JOUEURS</div>
+<div class="hud"><span class="me">VOUS <b id="hud-me">0</b></span><span class="opp">ADVERSAIRE <b id="hud-opp">0</b></span></div>
+<div class="netlbl" id="netlbl">● HORS LIGNE</div>
+<div id="wrap">
+  <canvas id="c" width="400" height="260"></canvas>
+  <div class="overlay" id="ov-login">
+    <h2 style="color:#ffaa00;">REJOINDRE UN DUEL</h2>
+    <p>Donne le même code de session à ton adversaire — l'un des deux doit créer la partie (HÔTE), l'autre la rejoint (INVITÉ).</p>
+    <input id="lcode" placeholder="CODE DE SESSION" autocomplete="off">
+    <div class="row">
+      <button class="btn" onclick="joinGame('host')">▶ CRÉER (HÔTE)</button>
+      <button class="btn alt" onclick="joinGame('guest')">▶ REJOINDRE (INVITÉ)</button>
+    </div>
+  </div>
+  <div class="overlay off" id="ov-wait">
+    <h2 style="color:#ffaa00;">EN ATTENTE...</h2>
+    <p id="wait-txt">En attente de l'adversaire sur le même code.</p>
+  </div>
+  <div class="overlay off" id="ov-end">
+    <h2 id="end-title" style="color:#00ff88;">VICTOIRE</h2>
+    <p>Score final : <b id="end-score">0 - 0</b></p>
+    <button class="btn" onclick="rematch()">↺ REVANCHE</button>
+  </div>
+</div>
+<div class="hint">▲ ▼ ou W/S, ou glisser le doigt — premier à 5 points</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+var W=canvas.width,H=canvas.height;
+var PADDLE_H=50,PADDLE_W=8,BALL_R=6;
+
+var mc=null,topic=null,role=null,code=null;
+var myY=H/2,oppY=H/2;
+var ball={x:W/2,y:H/2,vx:0,vy:0};
+var scoreMe=0,scoreOpp=0;
+var running=false,anim=null,opponentSeen=0,lastBroadcast=0;
+var WIN_SCORE=5;
+
+function setNet(on){
+  var el=document.getElementById('netlbl');
+  el.textContent=on?'● ADVERSAIRE CONNECTÉ':'● HORS LIGNE / EN ATTENTE';
+  el.className='netlbl'+(on?' on':'');
+}
+
+function joinGame(r){
+  var c=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!c||c.length<3){alert('Code trop court (3 caractères min).');return;}
+  role=r;code=c;
+  topic='spectre_duel_v1_'+code;
+  document.getElementById('ov-login').classList.add('off');
+  document.getElementById('ov-wait').classList.remove('off');
+  document.getElementById('wait-txt').textContent=role==='host'?'Partie créée. En attente de l\'invité…':'Connexion à l\'hôte…';
+  connectMqtt();
+}
+
+function connectMqtt(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'duel'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:3000});
+    mc.on('connect',function(){
+      mc.subscribe(topic);
+      if(role==='guest')pub({type:'hello'});
+      startLocalLoop();
+    });
+    mc.on('message',function(t,p){
+      try{var d=JSON.parse(p.toString());handleMsg(d);}catch(e){}
+    });
+  }catch(e){
+    document.getElementById('wait-txt').textContent='Réseau inaccessible.';
+  }
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+
+function handleMsg(d){
+  opponentSeen=Date.now();
+  if(d.type==='hello'&&role==='host'){
+    beginMatch();
+    pub({type:'start'});
+  }
+  else if(d.type==='start'&&role==='guest'){
+    beginMatch();
+  }
+  else if(d.type==='state'&&role==='guest'){
+    ball.x=W-d.ballX; // miroir horizontal pour l'invite (il voit son cote a gauche)
+    ball.y=d.ballY;
+    oppY=d.hostY;
+    scoreOpp=d.scoreH;scoreMe=d.scoreG;
+    updateHud();
+    if(d.ended){showEnd(d.scoreG>d.scoreH);}
+  }
+  else if(d.type==='guestY'&&role==='host'){
+    oppY=d.y;
+  }
+  else if(d.type==='rematch'){
+    if(role==='host'){resetMatch();}
+  }
+}
+
+function beginMatch(){
+  if(running)return;
+  document.getElementById('ov-wait').classList.add('off');
+  setNet(true);
+  resetMatch();
+  running=true;
+}
+function resetMatch(){
+  scoreMe=0;scoreOpp=0;myY=H/2;oppY=H/2;
+  resetBall(Math.random()<0.5?1:-1);
+  updateHud();
+  document.getElementById('ov-end').classList.add('off');
+}
+function resetBall(dir){
+  ball.x=W/2;ball.y=H/2;
+  var ang=(Math.random()*0.6-0.3);
+  ball.vx=dir*3.2*Math.cos(ang);
+  ball.vy=3.2*Math.sin(ang);
+}
+function updateHud(){
+  document.getElementById('hud-me').textContent=scoreMe;
+  document.getElementById('hud-opp').textContent=scoreOpp;
+}
+
+/* ===== Controles ===== */
+var keyUp=false,keyDown=false;
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){keyUp=true;e.preventDefault();}
+  else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){keyDown=true;e.preventDefault();}
+});
+document.addEventListener('keyup',function(e){
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')keyUp=false;
+  else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')keyDown=false;
+});
+function pointerToY(clientY){
+  var rect=canvas.getBoundingClientRect();
+  return (clientY-rect.top)*(H/rect.height);
+}
+var dragging=false;
+canvas.addEventListener('mousedown',function(e){dragging=true;myY=pointerToY(e.clientY);});
+window.addEventListener('mousemove',function(e){if(dragging)myY=pointerToY(e.clientY);});
+window.addEventListener('mouseup',function(){dragging=false;});
+canvas.addEventListener('touchstart',function(e){myY=pointerToY(e.touches[0].clientY);},{passive:true});
+canvas.addEventListener('touchmove',function(e){myY=pointerToY(e.touches[0].clientY);e.preventDefault();},{passive:false});
+
+function startLocalLoop(){
+  if(anim)return;
+  anim=requestAnimationFrame(loop);
+}
+
+function loop(ts){
+  anim=requestAnimationFrame(loop);
+  // deplacement local (clavier) pour tout le monde
+  var sp=5;
+  if(keyUp)myY-=sp;
+  if(keyDown)myY+=sp;
+  myY=Math.max(PADDLE_H/2,Math.min(H-PADDLE_H/2,myY));
+
+  if(!running){draw();return;}
+
+  if(role==='guest'){
+    // l'invite envoie juste sa position, l'hote fait toute la physique
+    pub({type:'guestY',y:myY});
+    draw();
+    return;
+  }
+
+  // ===== HOTE : physique autoritaire =====
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.y-BALL_R<0){ball.y=BALL_R;ball.vy*=-1;}
+  if(ball.y+BALL_R>H){ball.y=H-BALL_R;ball.vy*=-1;}
+
+  // raquette hote (gauche)
+  if(ball.vx<0&&ball.x-BALL_R<=PADDLE_W&&ball.x-BALL_R>0&&Math.abs(ball.y-myY)<PADDLE_H/2+BALL_R){
+    ball.x=PADDLE_W+BALL_R;
+    var rel=(ball.y-myY)/(PADDLE_H/2);
+    var speed=Math.hypot(ball.vx,ball.vy)*1.05;
+    ball.vx=Math.abs(speed*Math.cos(rel*0.6));
+    ball.vy=speed*Math.sin(rel*0.6)+rel*1.5;
+  }
+  // raquette invite (droite)
+  if(ball.vx>0&&ball.x+BALL_R>=W-PADDLE_W&&ball.x+BALL_R<W&&Math.abs(ball.y-oppY)<PADDLE_H/2+BALL_R){
+    ball.x=W-PADDLE_W-BALL_R;
+    var rel2=(ball.y-oppY)/(PADDLE_H/2);
+    var speed2=Math.hypot(ball.vx,ball.vy)*1.05;
+    ball.vx=-Math.abs(speed2*Math.cos(rel2*0.6));
+    ball.vy=speed2*Math.sin(rel2*0.6)+rel2*1.5;
+  }
+
+  var ended=false;
+  if(ball.x<0){scoreOpp++;updateHud();resetBall(1);}
+  else if(ball.x>W){scoreMe++;updateHud();resetBall(-1);}
+  if(scoreMe>=WIN_SCORE||scoreOpp>=WIN_SCORE){ended=true;running=false;}
+
+  var now=Date.now();
+  if(now-lastBroadcast>45){
+    lastBroadcast=now;
+    pub({type:'state',ballX:ball.x,ballY:ball.y,hostY:myY,scoreH:scoreMe,scoreG:scoreOpp,ended:ended});
+  }
+  if(ended){showEnd(scoreMe>scoreOpp);}
+  draw();
+}
+
+function showEnd(won){
+  running=false;
+  document.getElementById('end-title').textContent=won?'VICTOIRE':'DÉFAITE';
+  document.getElementById('end-title').style.color=won?'#00ff88':'#ff2040';
+  document.getElementById('end-score').textContent=scoreMe+' - '+scoreOpp;
+  document.getElementById('ov-end').classList.remove('off');
+}
+function rematch(){
+  pub({type:'rematch'});
+  if(role==='host')resetMatch();
+  document.getElementById('ov-end').classList.add('off');
+  running=true;
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,170,0,.15)';
+  ctx.setLineDash([6,8]);
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+  ctx.setLineDash([]);
+  // raquette gauche = "moi" si hote, sinon c'est l'adversaire affiche a gauche
+  var leftY=role==='host'?myY:oppY;
+  var rightY=role==='host'?oppY:myY;
+  ctx.fillStyle=role==='host'?'#00ccff':'#ff2040';
+  ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=8;
+  ctx.fillRect(2,leftY-PADDLE_H/2,PADDLE_W,PADDLE_H);
+  ctx.fillStyle=role==='host'?'#ff2040':'#00ccff';
+  ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=8;
+  ctx.fillRect(W-2-PADDLE_W,rightY-PADDLE_H/2,PADDLE_W,PADDLE_H);
+  ctx.shadowBlur=0;
+  // balle (l'invite voit tout en miroir pour que sa raquette soit a droite visuellement... simplifie: on affiche tel quel)
+  var bx=role==='host'?ball.x:W-ball.x;
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='#ffaa00';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.arc(bx,ball.y,BALL_R,0,7);ctx.fill();
+  ctx.shadowBlur=0;
+}
+draw();
+
+// timeout de detection adversaire perdu
+setInterval(function(){
+  if(running&&opponentSeen&&Date.now()-opponentSeen>8000){
+    setNet(false);
+  }
+},2000);
+</script>
+</body>
+</html>
