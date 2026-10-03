@@ -439,6 +439,9 @@ function renderPersonal(role){
   html+=plabel('MISSIONS');
   html+='<div class="personal-grid">'+lockableGroup('Missions')+'</div>';
 
+  html+=plabel('EN ATTENTE');
+  html+='<div class="personal-grid">'+pcard('🕹','NET-RUNNER (MINI-JEU)','minijeux/net-runner.html')+'</div>';
+
   html+='<div style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
   html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
   html+='<a class="switch-link" onclick="changeChar()">↺ CHANGER DE PERSONNAGE</a>';
@@ -510,6 +513,10 @@ function renderMJ(){
     +tool('🎤','Keiyo — Téléphone','Carnet de contacts — Yumi Sato, Kessler, Le Chœur.','#ff33cc','personnages/telephone-keiyo.html'+qs)
     +tool('💊','Fury — Téléphone','Carnet de contacts — Sella, Doc Renner, Mika.','#00ff88','personnages/telephone-fury.html'+qs)
     +'</div><div class="note">Moon gère déjà ses contacts directement dans son téléphone (SPECTRE).</div></div>';
+
+  html+='<div class="section"><div class="section-title">🕹 Pendant l\'attente</div><div class="grid">'
+    +tool('🕹','Net-Runner (mini-jeu)','Mini-jeu type Pac-Man pour occuper les temps morts en séance.','#00ccff','minijeux/net-runner.html')
+    +'</div></div>';
 
   html+='<div class="section"><div class="section-title">🗒 Fiches de personnage</div><div class="grid">'
     +tool('⚔','Tamuro — Fiche complète','La Vipère Rouge — compétences, cyberware, background.','#ff2040','fiches/fiche-tamuro.html')
