@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>NEO-PARIS 2077 — Portail de Campagne</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
-<script defer type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -164,6 +166,16 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 </div>
 
 <script>
+var firebaseConfig={
+  apiKey:"AIzaSyDugs13oZBCqi6czEVhaEbIh0JRnIjikiw",
+  authDomain:"neo-paris2077.firebaseapp.com",
+  projectId:"neo-paris2077",
+  storageBucket:"neo-paris2077.firebasestorage.app",
+  messagingSenderId:"790374737565",
+  appId:"1:790374737565:web:1f580ef1ff5f8a7b259674"
+};
+var auth=null,db=null;
+var currentUserData=null;
 var CHARACTERS={
   tamuro:{name:'TAMURO',title:'La Vipère Rouge — Edgerunner',ico:'⚔',color:'#ff2040',tool:'personnages/tamuro-terminal.html',dossier:'dossiers/dossier-tamuro.html',fiche:'fiches/fiche-tamuro.html'},
   kiki:{name:'KIKI',title:'Kirikou — Nomade',ico:'🚐',color:'#ffaa00',tool:'personnages/kiki-dashboard.html',dossier:'dossiers/dossier-kiki.html',fiche:'fiches/fiche-kiki.html'},
@@ -198,7 +210,7 @@ var LOCKABLE=[
   {key:'flashback',cat:'Outils de session',ico:'🎬',name:'Flashback Privé',desc:"Un joueur demande un souvenir — visible de toi seul.",color:'#bb44ff',url:'outils-session/flashback-prive.html'}
 ];
 function connectLocks(){
-  var code=getSessionCode(currentUser);
+  var code=getSessionCode();
   if(!code||!window.mqtt)return;
   locksTopic='spectre_locks_v1_'+code;
   try{
@@ -245,24 +257,32 @@ function closeLockModal(){
 }
 
 function toFakeEmail(username){return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'')+EMAIL_DOMAIN;}
-function isMJ(user){return !!(user&&user.app_metadata&&user.app_metadata.roles&&user.app_metadata.roles.indexOf('mj')>=0);}
-function getRole(user){return user&&user.user_metadata?user.user_metadata.role:null;}
+function isMJ(){return !!(currentUserData&&currentUserData.isMJ);}
+function getRole(){return currentUserData?currentUserData.role:null;}
 
-function getSessionCode(user){return user&&user.user_metadata?user.user_metadata.sessionCode:null;}
+function getSessionCode(){return currentUserData?currentUserData.sessionCode:null;}
 
 function render(){
   var wrap=document.getElementById('wrap');
   if(!currentUser){wrap.innerHTML=renderAuth();return;}
-  if(isMJ(currentUser)){
-    if(!getSessionCode(currentUser)){wrap.innerHTML=renderSessionPrompt();return;}
+  if(!currentUserData){wrap.innerHTML='<div class="loading">CHARGEMENT...</div>';return;}
+  if(!currentUserData.approved){wrap.innerHTML=renderPending();return;}
+  if(isMJ()){
+    if(!getSessionCode()){wrap.innerHTML=renderSessionPrompt();return;}
     if(!locksMc)connectLocks();
     wrap.innerHTML=renderMJ();return;
   }
-  var role=getRole(currentUser);
+  var role=getRole();
   if(!role){wrap.innerHTML=renderPicker();return;}
-  if(!getSessionCode(currentUser)){wrap.innerHTML=renderSessionPrompt();return;}
+  if(!getSessionCode()){wrap.innerHTML=renderSessionPrompt();return;}
   if(!locksMc)connectLocks();
   wrap.innerHTML=renderPersonal(role);
+}
+function renderPending(){
+  var html='<div class="hero"><div class="hero-eyebrow">// EN ATTENTE //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Compte en attente de validation par le MJ</div></div>';
+  html+='<div class="authbox" style="text-align:center;"><div class="authbox-msg" style="color:#ffc83c;">Ton compte a bien été créé. Reviens dans quelques minutes, le temps que le MJ le valide.</div></div>';
+  html+='<a class="switch-link" onclick="doLogout()">↺ SE DÉCONNECTER</a>';
+  return html;
 }
 
 /* ═════ AUTH SCREEN ═════ */
@@ -301,42 +321,27 @@ function submitAuth(){
   if(u.length<3){errEl.textContent='IDENTIFIANT TROP COURT (3 CARACTÈRES MIN)';return;}
   if(p.length<6){errEl.textContent='MOT DE PASSE TROP COURT (6 CARACTÈRES MIN)';return;}
   if(authMode==='signup'&&!selectedSignupRole){errEl.textContent='CHOISIS TON PERSONNAGE';return;}
-  if(!window.netlifyIdentity){errEl.textContent='SERVICE INDISPONIBLE — RECHARGE LA PAGE';return;}
-  if(!window.netlifyIdentity.gotrue){errEl.textContent='SERVICE PAS ENCORE PRÊT — ATTENDS 2 SEC ET RÉESSAIE';return;}
+  if(!window.firebase||!auth||!db){errEl.textContent='SERVICE INDISPONIBLE — RECHARGE LA PAGE';return;}
   btn.disabled=true;
   var fakeEmail=toFakeEmail(u);
   try{
     if(authMode==='signup'){
       var roleToSave=selectedSignupRole;
-      netlifyIdentity.gotrue.signup(fakeEmail,p,{username:u,role:roleToSave}).then(function(){
-        return netlifyIdentity.gotrue.login(fakeEmail,p,true);
-      }).then(function(user){
-        currentUser=user;
-        var merged=Object.assign({},currentUser.user_metadata||{},{role:roleToSave});
-        return currentUser.update({data:merged});
-      }).then(function(user){
-        currentUser=user;
-        render();
+      auth.createUserWithEmailAndPassword(fakeEmail,p).then(function(cred){
+        return db.collection('users').doc(cred.user.uid).set({
+          username:u,role:roleToSave,sessionCode:null,approved:false,isMJ:false,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
       }).catch(function(err){
         btn.disabled=false;
-        var msg=(err&&err.json&&err.json.msg)||(err&&err.message)||(typeof err==='string'?err:JSON.stringify(err));
-        if(/confirm/i.test(msg)){
-          msgEl.textContent='COMPTE CRÉÉ — EN ATTENTE DE VALIDATION PAR LE MJ. RÉESSAIE DANS UN MOMENT.';
-        } else if(/already|exists|registered/i.test(msg)){
-          errEl.textContent='CET IDENTIFIANT EXISTE DÉJÀ';
-        } else {
-          errEl.textContent='ERREUR SIGNUP : '+msg;
-        }
+        if(err&&err.code==='auth/email-already-in-use'){errEl.textContent='CET IDENTIFIANT EXISTE DÉJÀ';}
+        else if(err&&err.code==='auth/weak-password'){errEl.textContent='MOT DE PASSE TROP FAIBLE';}
+        else{errEl.textContent='ERREUR : '+(err&&err.message?err.message:err);}
       });
     } else {
-      netlifyIdentity.gotrue.login(fakeEmail,p,true).then(function(user){
-        currentUser=user;
-        render();
-      }).catch(function(err){
+      auth.signInWithEmailAndPassword(fakeEmail,p).catch(function(err){
         btn.disabled=false;
-        var msg=(err&&err.json&&err.json.msg)||(err&&err.message)||(typeof err==='string'?err:JSON.stringify(err));
-        if(/confirm/i.test(msg)){errEl.textContent='COMPTE PAS ENCORE VALIDÉ PAR LE MJ';}
-        else{errEl.textContent='IDENTIFIANT OU MOT DE PASSE INCORRECT';}
+        errEl.textContent='IDENTIFIANT OU MOT DE PASSE INCORRECT';
       });
     }
   }catch(syncErr){
@@ -359,9 +364,8 @@ function renderPicker(){
 }
 function pickChar(k){
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">ENREGISTREMENT...</div>';
-  var merged=Object.assign({},currentUser.user_metadata||{},{role:k});
-  currentUser.update({data:merged}).then(function(user){
-    currentUser=user;render();
+  db.collection('users').doc(currentUser.uid).update({role:k}).then(function(){
+    currentUserData.role=k;render();
   }).catch(function(err){
     alert('Erreur : '+(err.message||err));render();
   });
@@ -369,7 +373,7 @@ function pickChar(k){
 
 /* ═════ SESSION CODE PROMPT ═════ */
 function renderSessionPrompt(){
-  var role=getRole(currentUser);
+  var role=getRole();
   var c=role&&CHARACTERS[role]?CHARACTERS[role]:null;
   var col=c?c.color:'#ffc83c';
   var html='<div class="hero"><div class="hero-eyebrow">// DERNIÈRE ÉTAPE //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Entre le code de session donné par le MJ</div></div>';
@@ -386,26 +390,23 @@ function submitSessionCode(){
   var errEl=document.getElementById('session-err');
   if(v.length<3){errEl.textContent='CODE TROP COURT';return;}
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">ENREGISTREMENT...</div>';
-  var merged=Object.assign({},currentUser.user_metadata||{},{sessionCode:v});
-  currentUser.update({data:merged}).then(function(user){
-    currentUser=user;render();
+  db.collection('users').doc(currentUser.uid).update({sessionCode:v}).then(function(){
+    currentUserData.sessionCode=v;render();
   }).catch(function(err){
     alert('Erreur : '+(err.message||err));render();
   });
 }
 function changeSessionCode(){
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">...</div>';
-  var merged=Object.assign({},currentUser.user_metadata||{});
-  merged.sessionCode=null;
-  currentUser.update({data:merged}).then(function(user){
-    currentUser=user;render();
-  }).catch(function(err){currentUser.user_metadata.sessionCode=null;render();});
+  db.collection('users').doc(currentUser.uid).update({sessionCode:null}).then(function(){
+    currentUserData.sessionCode=null;render();
+  }).catch(function(err){currentUserData.sessionCode=null;render();});
 }
 
 /* ═════ PERSONAL LANDING ═════ */
 function renderPersonal(role){
   var c=CHARACTERS[role];
-  var code=getSessionCode(currentUser)||'';
+  var code=getSessionCode()||'';
   var qs='?code='+encodeURIComponent(code)+'&role='+role;
   var html='<div class="personal-hero"><div class="hero-eyebrow">// ESPACE PERSONNEL //</div>'
     +'<div class="personal-badge" style="--c:'+c.color+';">'+c.ico+' '+c.name+'</div>'
@@ -445,17 +446,15 @@ function renderPersonal(role){
 }
 function changeChar(){
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">...</div>';
-  var merged=Object.assign({},currentUser.user_metadata||{});
-  merged.role=null;
-  currentUser.update({data:merged}).then(function(user){
-    currentUser=user;render();
-  }).catch(function(err){currentUser.user_metadata.role=null;render();});
+  db.collection('users').doc(currentUser.uid).update({role:null}).then(function(){
+    currentUserData.role=null;render();
+  }).catch(function(err){currentUserData.role=null;render();});
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 /* ═════ MJ VIEW ═════ */
 function renderMJ(){
-  var code=getSessionCode(currentUser)||'';
+  var code=getSessionCode()||'';
   var qs='?code='+encodeURIComponent(code)+'&role=mj';
   var html='<div class="hero"><div class="hero-eyebrow">// ACCÈS MAÎTRE DU JEU //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Portail de campagne — accès complet</div></div>';
 
@@ -555,18 +554,28 @@ function tool(ico,title,desc,color,url){
 
 function doLogout(){
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">DÉCONNEXION...</div>';
-  if(window.netlifyIdentity)netlifyIdentity.logout();
-  currentUser=null;
+  if(auth)auth.signOut();
+  currentUser=null;currentUserData=null;
   setTimeout(render,300);
 }
 
-/* ═════ IDENTITY INIT (runs in background during boot animation) ═════ */
+/* ═════ FIREBASE INIT (runs in background during boot animation) ═════ */
 function identityBoot(){
-  if(!window.netlifyIdentity){setTimeout(identityBoot,150);return;}
-  netlifyIdentity.on('init',function(user){currentUser=user;render();});
-  netlifyIdentity.on('login',function(user){currentUser=user;render();});
-  netlifyIdentity.on('logout',function(){currentUser=null;render();});
-  netlifyIdentity.init();
+  if(!window.firebase){setTimeout(identityBoot,150);return;}
+  firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth();
+  db=firebase.firestore();
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      currentUser=user;
+      db.collection('users').doc(user.uid).get().then(function(snap){
+        currentUserData=snap.exists?snap.data():null;
+        render();
+      }).catch(function(){currentUserData=null;render();});
+    } else {
+      currentUser=null;currentUserData=null;render();
+    }
+  });
 }
 
 /* ═════ BOOT SEQUENCE (cyberpunk data-transfer intro) ═════ */
