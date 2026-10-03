@@ -149,11 +149,12 @@ function resetMatch(){
   updateHud();
   document.getElementById('ov-end').classList.add('off');
 }
+var BALL_BASE_SPEED=1.9, BALL_MAX_SPEED=3.6;
 function resetBall(dir){
   ball.x=W/2;ball.y=H/2;
   var ang=(Math.random()*0.6-0.3);
-  ball.vx=dir*3.2*Math.cos(ang);
-  ball.vy=3.2*Math.sin(ang);
+  ball.vx=dir*BALL_BASE_SPEED*Math.cos(ang);
+  ball.vy=BALL_BASE_SPEED*Math.sin(ang);
 }
 function updateHud(){
   document.getElementById('hud-me').textContent=scoreMe;
@@ -189,7 +190,7 @@ function startLocalLoop(){
 function loop(ts){
   anim=requestAnimationFrame(loop);
   // deplacement local (clavier) pour tout le monde
-  var sp=5;
+  var sp=3.6;
   if(keyUp)myY-=sp;
   if(keyDown)myY+=sp;
   myY=Math.max(PADDLE_H/2,Math.min(H-PADDLE_H/2,myY));
@@ -212,7 +213,7 @@ function loop(ts){
   if(ball.vx<0&&ball.x-BALL_R<=PADDLE_W&&ball.x-BALL_R>0&&Math.abs(ball.y-myY)<PADDLE_H/2+BALL_R){
     ball.x=PADDLE_W+BALL_R;
     var rel=(ball.y-myY)/(PADDLE_H/2);
-    var speed=Math.hypot(ball.vx,ball.vy)*1.05;
+    var speed=Math.min(BALL_MAX_SPEED,Math.hypot(ball.vx,ball.vy)*1.03);
     ball.vx=Math.abs(speed*Math.cos(rel*0.6));
     ball.vy=speed*Math.sin(rel*0.6)+rel*1.5;
   }
@@ -220,7 +221,7 @@ function loop(ts){
   if(ball.vx>0&&ball.x+BALL_R>=W-PADDLE_W&&ball.x+BALL_R<W&&Math.abs(ball.y-oppY)<PADDLE_H/2+BALL_R){
     ball.x=W-PADDLE_W-BALL_R;
     var rel2=(ball.y-oppY)/(PADDLE_H/2);
-    var speed2=Math.hypot(ball.vx,ball.vy)*1.05;
+    var speed2=Math.min(BALL_MAX_SPEED,Math.hypot(ball.vx,ball.vy)*1.03);
     ball.vx=-Math.abs(speed2*Math.cos(rel2*0.6));
     ball.vy=speed2*Math.sin(rel2*0.6)+rel2*1.5;
   }
