@@ -443,7 +443,11 @@ function renderPersonal(role){
   html+='<div class="personal-grid">'+lockableGroup('Missions')+'</div>';
 
   html+=plabel('EN ATTENTE');
-  html+='<div class="personal-grid">'+pcard('🕹','NET-RUNNER (MINI-JEU)','minijeux/net-runner.html')+'</div>';
+  html+='<div class="personal-grid">'
+    +pcard('🕹','NET-RUNNER (MINI-JEU)','minijeux/net-runner.html')
+    +pcard('🟩','ICE-WORM (MINI-JEU)','minijeux/ice-worm.html')
+    +pcard('🧱','FIREWALL BREAKER (MINI-JEU)','minijeux/firewall-breaker.html')
+    +'</div>';
 
   html+='<div style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
   html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
@@ -519,6 +523,8 @@ function renderMJ(){
 
   html+='<div class="section"><div class="section-title">🕹 Pendant l\'attente</div><div class="grid">'
     +tool('🕹','Net-Runner (mini-jeu)','Mini-jeu type Pac-Man pour occuper les temps morts en séance.','#00ccff','minijeux/net-runner.html')
+    +tool('🟩','Ice-Worm (mini-jeu)','Mini-jeu type Snake, le ver de données.','#00ff88','minijeux/ice-worm.html')
+    +tool('🧱','Firewall Breaker (mini-jeu)','Mini-jeu type casse-briques.','#ff33cc','minijeux/firewall-breaker.html')
     +'</div></div>';
 
   html+='<div class="section"><div class="section-title">🗒 Fiches de personnage</div><div class="grid">'

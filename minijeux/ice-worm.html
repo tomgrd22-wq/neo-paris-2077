@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ICE-WORM // Mini-jeu</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:#05050a;color:#e8e8f4;font-family:'Share Tech Mono',monospace;overflow:hidden;height:100%;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:100vh;padding:14px;}
+  .title{font-family:'Orbitron',monospace;font-weight:900;letter-spacing:4px;font-size:20px;color:#00ff88;text-shadow:0 0 14px rgba(0,255,136,.6);}
+  .sub{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.35);margin-top:-6px;}
+  .hud{display:flex;gap:22px;font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;}
+  .hud span{color:#ffaa00;}
+  .hud b{color:#fff;}
+  #wrap{position:relative;}
+  canvas{background:#07070f;border:2px solid rgba(0,255,136,.35);border-radius:8px;box-shadow:0 0 30px rgba(0,255,136,.15),inset 0 0 40px rgba(0,0,0,.6);display:block;}
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(5,5,10,.88);border-radius:8px;text-align:center;padding:20px;}
+  .overlay.on{display:flex;}
+  .overlay h2{font-family:'Orbitron',monospace;letter-spacing:3px;font-size:18px;margin:0;}
+  .overlay p{font-size:11px;color:rgba(255,255,255,.55);letter-spacing:1px;margin:0;max-width:280px;}
+  .btn{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 22px;border-radius:6px;border:1px solid #00ff88;color:#00ff88;background:rgba(0,255,136,.08);cursor:pointer;}
+  .btn:active{background:rgba(0,255,136,.25);}
+  .pad{display:none;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:6px;margin-top:4px;}
+  .pad button{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.35);border-radius:8px;color:#00ff88;font-size:20px;}
+  .pad button:active{background:rgba(0,255,136,.3);}
+  .back{position:fixed;top:12px;left:12px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-decoration:none;border:1px solid rgba(255,255,255,.15);padding:6px 12px;border-radius:20px;}
+  .back:hover{color:#00ff88;border-color:#00ff88;}
+  @media(hover:none){.pad{display:grid;}}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(window.history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="title">ICE-WORM</div>
+<div class="sub">VER DE DONNÉES — PROTOCOLE DE COLLECTE</div>
+<div class="hud"><span>SCORE</span> <b id="hud-score">0</b> &nbsp;&nbsp; <span>MEILLEUR</span> <b id="hud-best">0</b></div>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div class="overlay on" id="ov-start">
+    <h2 style="color:#00ff88;">ICE-WORM</h2>
+    <p>Guide le ver de données et absorbe les fragments pour grandir. Évite les murs et ta propre traîne de code.</p>
+    <button class="btn" onclick="startGame()">▶ LANCER</button>
+  </div>
+  <div class="overlay" id="ov-lose">
+    <h2 style="color:#ff2040;">COLLISION DÉTECTÉE</h2>
+    <p>Score final : <b id="lose-score">0</b></p>
+    <button class="btn" onclick="startGame()">↺ REJOUER</button>
+  </div>
+</div>
+<div class="pad" id="pad">
+  <div></div><button onclick="setDir(0,-1)">▲</button><div></div>
+  <button onclick="setDir(-1,0)">◀</button><div></div><button onclick="setDir(1,0)">▶</button>
+  <div></div><button onclick="setDir(0,1)">▼</button><div></div>
+</div>
+<script>
+var COLS=18,ROWS=18,CELL=20;
+var canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+function fitCanvas(){
+  var maxW=Math.min(window.innerWidth-24, COLS*22);
+  CELL=Math.max(12,Math.floor(maxW/COLS));
+  canvas.width=COLS*CELL;canvas.height=ROWS*CELL;
+}
+fitCanvas();
+window.addEventListener('resize',fitCanvas);
+
+var STEP_MS=130;
+var snake,dir,nextDir,food,score,best,acc,running,anim,lastTs=0,grow;
+
+function randEmptyCell(){
+  var tries=0;
+  while(tries<500){
+    var x=Math.floor(Math.random()*COLS),y=Math.floor(Math.random()*ROWS);
+    if(!snake.some(function(s){return s.x===x&&s.y===y;}))return {x:x,y:y};
+    tries++;
+  }
+  return {x:0,y:0};
+}
+
+function resetState(){
+  var cx=Math.floor(COLS/2),cy=Math.floor(ROWS/2);
+  snake=[{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}];
+  dir={x:1,y:0};nextDir={x:1,y:0};
+  food=randEmptyCell();
+  score=0;grow=0;
+  best=parseInt(localStorage.getItem('iceworm_best')||'0',10);
+  updateHud();
+}
+function updateHud(){
+  document.getElementById('hud-score').textContent=score;
+  document.getElementById('hud-best').textContent=best;
+}
+
+function setDir(dx,dy){
+  if(dx===-dir.x&&dy===-dir.y)return; // pas de demi-tour direct
+  nextDir={x:dx,y:dy};
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowUp'){setDir(0,-1);e.preventDefault();}
+  else if(e.key==='ArrowDown'){setDir(0,1);e.preventDefault();}
+  else if(e.key==='ArrowLeft'){setDir(-1,0);e.preventDefault();}
+  else if(e.key==='ArrowRight'){setDir(1,0);e.preventDefault();}
+});
+(function(){
+  var sx=0,sy=0;
+  canvas.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;},{passive:true});
+  canvas.addEventListener('touchend',function(e){
+    var t=e.changedTouches[0];var dx=t.clientX-sx,dy=t.clientY-sy;
+    if(Math.abs(dx)<10&&Math.abs(dy)<10)return;
+    if(Math.abs(dx)>Math.abs(dy)){setDir(dx>0?1:-1,0);}else{setDir(0,dy>0?1:-1);}
+  },{passive:true});
+})();
+
+function stepSnake(){
+  dir=nextDir;
+  var head=snake[0];
+  var nx=head.x+dir.x,ny=head.y+dir.y;
+  if(nx<0||nx>=COLS||ny<0||ny>=ROWS){endGame();return;}
+  if(snake.some(function(s){return s.x===nx&&s.y===ny;})){endGame();return;}
+  snake.unshift({x:nx,y:ny});
+  if(nx===food.x&&ny===food.y){
+    score+=10;updateHud();
+    food=randEmptyCell();
+    // le ver grandit : on ne retire pas la queue ce tour-ci
+  } else {
+    snake.pop();
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // grille discrete
+  ctx.strokeStyle='rgba(0,255,136,.06)';
+  for(var x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,ROWS*CELL);ctx.stroke();}
+  for(var y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(COLS*CELL,y*CELL);ctx.stroke();}
+  // food
+  ctx.fillStyle='#ffaa00';
+  ctx.shadowColor='#ffaa00';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL*0.3,0,7);ctx.fill();
+  ctx.shadowBlur=0;
+  // snake
+  snake.forEach(function(s,i){
+    var t=i===0?1:0.55+0.3*(1-i/snake.length);
+    ctx.fillStyle=i===0?'#00ff88':'rgba(0,255,136,'+t+')';
+    ctx.shadowColor='#00ff88';ctx.shadowBlur=i===0?8:0;
+    ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2);
+    ctx.shadowBlur=0;
+  });
+}
+
+function loop(ts){
+  if(!running)return;
+  if(!lastTs)lastTs=ts;
+  var dt=ts-lastTs;lastTs=ts;
+  if(dt>150)dt=150;
+  acc+=dt;
+  while(acc>=STEP_MS){acc-=STEP_MS;stepSnake();if(!running)break;}
+  draw();
+  if(running)anim=requestAnimationFrame(loop);
+}
+
+function endGame(){
+  running=false;
+  cancelAnimationFrame(anim);
+  if(score>best){best=score;try{localStorage.setItem('iceworm_best',String(best));}catch(e){}}
+  updateHud();
+  document.getElementById('lose-score').textContent=score;
+  document.getElementById('ov-lose').classList.add('on');
+}
+
+function startGame(){
+  document.getElementById('ov-start').classList.remove('on');
+  document.getElementById('ov-lose').classList.remove('on');
+  fitCanvas();
+  resetState();
+  running=true;acc=0;lastTs=0;
+  cancelAnimationFrame(anim);
+  anim=requestAnimationFrame(loop);
+}
+best=parseInt(localStorage.getItem('iceworm_best')||'0',10);
+updateHud();
+</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FIREWALL BREAKER // Mini-jeu</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:#05050a;color:#e8e8f4;font-family:'Share Tech Mono',monospace;overflow:hidden;height:100%;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:100vh;padding:14px;}
+  .title{font-family:'Orbitron',monospace;font-weight:900;letter-spacing:4px;font-size:20px;color:#ff33cc;text-shadow:0 0 14px rgba(255,51,204,.6);}
+  .sub{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.35);margin-top:-6px;}
+  .hud{display:flex;gap:22px;font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;}
+  .hud span{color:#ffaa00;}
+  .hud b{color:#fff;}
+  #wrap{position:relative;touch-action:none;}
+  canvas{background:#07070f;border:2px solid rgba(255,51,204,.35);border-radius:8px;box-shadow:0 0 30px rgba(255,51,204,.15),inset 0 0 40px rgba(0,0,0,.6);display:block;touch-action:none;}
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(5,5,10,.88);border-radius:8px;text-align:center;padding:20px;}
+  .overlay.on{display:flex;}
+  .overlay h2{font-family:'Orbitron',monospace;letter-spacing:3px;font-size:18px;margin:0;}
+  .overlay p{font-size:11px;color:rgba(255,255,255,.55);letter-spacing:1px;margin:0;max-width:280px;}
+  .btn{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 22px;border-radius:6px;border:1px solid #ff33cc;color:#ff33cc;background:rgba(255,51,204,.08);cursor:pointer;}
+  .btn:active{background:rgba(255,51,204,.25);}
+  .back{position:fixed;top:12px;left:12px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-decoration:none;border:1px solid rgba(255,255,255,.15);padding:6px 12px;border-radius:20px;}
+  .back:hover{color:#ff33cc;border-color:#ff33cc;}
+  .hint{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);margin-top:2px;}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(window.history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="title">FIREWALL BREAKER</div>
+<div class="sub">INTRUSION — PERCE LES COUCHES DE PROTECTION</div>
+<div class="hud"><span>SCORE</span> <b id="hud-score">0</b> &nbsp;&nbsp; <span>VIES</span> <b id="hud-lives">●●●</b></div>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div class="overlay on" id="ov-start">
+    <h2 style="color:#ff33cc;">FIREWALL BREAKER</h2>
+    <p>Renvoie le paquet de données pour détruire chaque couche du firewall. Souris / doigt pour déplacer la raquette, ou les flèches ◀▶.</p>
+    <button class="btn" onclick="startGame()">▶ LANCER L'INTRUSION</button>
+  </div>
+  <div class="overlay" id="ov-win">
+    <h2 style="color:#00ff88;">FIREWALL PERCÉ</h2>
+    <p>Score final : <b id="win-score">0</b></p>
+    <button class="btn" onclick="startGame()">↺ REJOUER</button>
+  </div>
+  <div class="overlay" id="ov-lose">
+    <h2 style="color:#ff2040;">PAQUET PERDU</h2>
+    <p>Score final : <b id="lose-score">0</b></p>
+    <button class="btn" onclick="startGame()">↺ REJOUER</button>
+  </div>
+</div>
+<div class="hint">◀ ▶ ou souris/doigt pour déplacer la raquette</div>
+<script>
+var COLS=10,ROWS=16,CELL=28;
+var canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+function fitCanvas(){
+  var maxW=Math.min(window.innerWidth-24, COLS*32);
+  CELL=Math.max(18,Math.floor(maxW/COLS));
+  canvas.width=COLS*CELL;canvas.height=ROWS*CELL;
+}
+fitCanvas();
+window.addEventListener('resize',fitCanvas);
+
+var BRICK_ROWS=5,BRICK_COLS=COLS,BRICK_H=18;
+var bricks,paddle,ball,score,lives,running,anim,bricksLeft,bricksTotal;
+var COLORS=['#ff2040','#ffaa00','#ff33cc','#bb44ff','#00ccff'];
+
+function resetState(){
+  bricks=[];
+  bricksTotal=0;
+  for(var r=0;r<BRICK_ROWS;r++){
+    bricks[r]=[];
+    for(var c=0;c<BRICK_COLS;c++){bricks[r][c]=1;bricksTotal++;}
+  }
+  bricksLeft=bricksTotal;
+  paddle={w:Math.max(50,canvas.width*0.18),x:(canvas.width-Math.max(50,canvas.width*0.18))/2,speed:canvas.width*0.018};
+  resetBall();
+  score=0;lives=3;
+  updateHud();
+}
+function resetBall(){
+  ball={x:canvas.width/2,y:canvas.height-60,r:Math.max(5,CELL*0.22),vx:canvas.width*0.0035,vy:-canvas.width*0.0045,stuck:true};
+}
+function updateHud(){
+  document.getElementById('hud-score').textContent=score;
+  document.getElementById('hud-lives').textContent='●'.repeat(Math.max(0,lives))+'○'.repeat(Math.max(0,3-lives));
+}
+
+var keyL=false,keyR=false;
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowLeft'){keyL=true;e.preventDefault();launchIfStuck();}
+  else if(e.key==='ArrowRight'){keyR=true;e.preventDefault();launchIfStuck();}
+  else if(e.key===' '){launchIfStuck();e.preventDefault();}
+});
+document.addEventListener('keyup',function(e){
+  if(e.key==='ArrowLeft')keyL=false;
+  else if(e.key==='ArrowRight')keyR=false;
+});
+function launchIfStuck(){if(ball&&ball.stuck){ball.stuck=false;}}
+function pointerMove(clientX){
+  var rect=canvas.getBoundingClientRect();
+  var x=(clientX-rect.left)*(canvas.width/rect.width);
+  paddle.x=Math.max(0,Math.min(canvas.width-paddle.w,x-paddle.w/2));
+}
+canvas.addEventListener('mousemove',function(e){pointerMove(e.clientX);});
+canvas.addEventListener('mousedown',launchIfStuck);
+canvas.addEventListener('touchstart',function(e){var t=e.touches[0];pointerMove(t.clientX);launchIfStuck();},{passive:true});
+canvas.addEventListener('touchmove',function(e){var t=e.touches[0];pointerMove(t.clientX);e.preventDefault();},{passive:false});
+
+function tick(){
+  if(keyL)paddle.x-=paddle.speed;
+  if(keyR)paddle.x+=paddle.speed;
+  paddle.x=Math.max(0,Math.min(canvas.width-paddle.w,paddle.x));
+
+  if(ball.stuck){
+    ball.x=paddle.x+paddle.w/2;
+    ball.y=canvas.height-28-ball.r;
+    return;
+  }
+
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.x-ball.r<0){ball.x=ball.r;ball.vx*=-1;}
+  if(ball.x+ball.r>canvas.width){ball.x=canvas.width-ball.r;ball.vx*=-1;}
+  if(ball.y-ball.r<0){ball.y=ball.r;ball.vy*=-1;}
+
+  // raquette
+  if(ball.vy>0&&ball.y+ball.r>=canvas.height-28&&ball.y+ball.r<=canvas.height-8&&ball.x>=paddle.x&&ball.x<=paddle.x+paddle.w){
+    var hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2); // -1..1
+    var speed=Math.hypot(ball.vx,ball.vy);
+    var ang=hit*(Math.PI/3); // max 60 deg
+    ball.vx=speed*Math.sin(ang);
+    ball.vy=-Math.abs(speed*Math.cos(ang));
+    ball.y=canvas.height-28-ball.r;
+  }
+
+  // sol = vie perdue
+  if(ball.y-ball.r>canvas.height){
+    lives--;updateHud();
+    if(lives<=0){endGame(false);return;}
+    resetBall();
+    return;
+  }
+
+  // briques
+  var bw=canvas.width/BRICK_COLS;
+  outer:
+  for(var r=0;r<BRICK_ROWS;r++){
+    for(var c=0;c<BRICK_COLS;c++){
+      if(!bricks[r][c])continue;
+      var bx=c*bw,by=20+r*BRICK_H;
+      if(ball.x+ball.r>bx&&ball.x-ball.r<bx+bw&&ball.y+ball.r>by&&ball.y-ball.r<by+BRICK_H-4){
+        bricks[r][c]=0;bricksLeft--;score+=10;updateHud();
+        // rebond simplifie : inverse la composante dominante
+        var overlapX=Math.min(ball.x+ball.r-bx,bx+bw-(ball.x-ball.r));
+        var overlapY=Math.min(ball.y+ball.r-by,by+BRICK_H-4-(ball.y-ball.r));
+        if(overlapX<overlapY)ball.vx*=-1;else ball.vy*=-1;
+        if(bricksLeft<=0){endGame(true);return;}
+        break outer;
+      }
+    }
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // briques
+  var bw=canvas.width/BRICK_COLS;
+  for(var r=0;r<BRICK_ROWS;r++){
+    for(var c=0;c<BRICK_COLS;c++){
+      if(!bricks[r][c])continue;
+      var bx=c*bw,by=20+r*BRICK_H;
+      ctx.fillStyle=COLORS[r%COLORS.length];
+      ctx.globalAlpha=.85;
+      ctx.fillRect(bx+2,by,bw-4,BRICK_H-4);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='rgba(255,255,255,.25)';
+      ctx.strokeRect(bx+2,by,bw-4,BRICK_H-4);
+    }
+  }
+  // paddle
+  ctx.fillStyle='#ff33cc';
+  ctx.shadowColor='#ff33cc';ctx.shadowBlur=10;
+  ctx.fillRect(paddle.x,canvas.height-28,paddle.w,10);
+  ctx.shadowBlur=0;
+  // ball
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='#00ccff';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,7);ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function loop(){
+  if(!running)return;
+  tick();
+  draw();
+  anim=requestAnimationFrame(loop);
+}
+
+function endGame(won){
+  running=false;
+  cancelAnimationFrame(anim);
+  if(won){document.getElementById('win-score').textContent=score;document.getElementById('ov-win').classList.add('on');}
+  else{document.getElementById('lose-score').textContent=score;document.getElementById('ov-lose').classList.add('on');}
+}
+
+function startGame(){
+  document.getElementById('ov-start').classList.remove('on');
+  document.getElementById('ov-win').classList.remove('on');
+  document.getElementById('ov-lose').classList.remove('on');
+  fitCanvas();
+  resetState();
+  running=true;
+  cancelAnimationFrame(anim);
+  anim=requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
