@@ -88,10 +88,14 @@ body{display:flex;align-items:center;justify-content:center;}
 .modal-btns .ok{border-color:#00ff88;color:#00ff88;}
 ::-webkit-scrollbar{width:6px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px;}
+.msg-toast{position:fixed;top:10px;left:50%;transform:translateX(-50%) translateY(-20px);min-width:220px;max-width:90vw;background:#0c0c12;border:1px solid rgba(255,255,255,.2);border-left:4px solid #fff;border-radius:8px;padding:10px 14px;font-size:12px;z-index:60;opacity:0;pointer-events:none;transition:all .25s;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+.msg-toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.msg-toast b{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;display:block;margin-bottom:2px;}
+.msg-toast div{color:rgba(255,255,255,.8);}
 </style>
 </head>
 <body>
-
+<div id="msg-toast" class="msg-toast"></div>
 <div id="login">
   <div class="lw">
     <div class="ltitle">💊 FURY</div>
@@ -142,9 +146,15 @@ var DEFAULT_CONTACTS=[
 ];
 var SWATCHES=['#ff2040','#ffaa00','#ff33cc','#00ccff','#00ff88','#bb44ff','#e8e8f0'];
 
+/* ═════ CONTACTS JOUEURS (messagerie entre personnages) ═════ */
+var ALL_CHARS={tamuro:{name:'TAMURO',color:'#ff2040'},kiki:{name:'KIKI',color:'#ffaa00'},keiyo:{name:'KEIYO',color:'#ff33cc'},fury:{name:'FURY',color:'#00ff88'},hunter:{name:'MOON',color:'#00ccff'}};
+var PLAYER_CONTACTS=Object.keys(ALL_CHARS).filter(function(k){return k!==CHAR;}).map(function(k){return {id:'p_'+k,name:ALL_CHARS[k].name,desc:'Contact joueur',color:ALL_CHARS[k].color,isPlayer:true,peer:k};});
+function peerTopic(otherKey){var pair=[CHAR,otherKey].sort();return 'spectre_pmsg_'+pair[0]+'_'+pair[1]+'_v1_'+sCode;}
+function findContact(id){return PLAYER_CONTACTS.find(function(x){return x.id===id;})||contacts.find(function(x){return x.id===id;});}
+
 /* ═════ ÉTAT ═════ */
 var BROKER='wss://broker.emqx.io:8084/mqtt';
-var role=null,sCode=null,mc=null,topic=null;
+var role=null,sCode=null,mc=null,topic=null,PEER_TOPIC_MAP={};
 var contacts=[],convMsgs={},selCnt=null,cntBadge=new Set();
 var modalEditId=null,modalColor=ACCENT;
 
@@ -156,10 +166,13 @@ function go(r){
   var err=document.getElementById('lerr');err.textContent='';
   if(!code||code.length<3){err.textContent='CODE TROP COURT';return;}
   role=r;sCode=code;topic='spectre_phone_'+CHAR+'_v1_'+code;
+  PEER_TOPIC_MAP={};
+  PLAYER_CONTACTS.forEach(function(pc){PEER_TOPIC_MAP[peerTopic(pc.peer)]=pc.peer;});
+  var subTopics=[topic].concat(Object.keys(PEER_TOPIC_MAP));
   err.textContent='CONNEXION...';
   mc=mqtt.connect(BROKER,{clientId:'ph'+CHAR+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:4000});
   mc.on('connect',function(){
-    mc.subscribe(topic,function(suberr){
+    mc.subscribe(subTopics,function(suberr){
       if(suberr){err.textContent='ERREUR DE CONNEXION';return;}
       document.getElementById('login').style.display='none';
       document.getElementById('app').style.display='flex';
@@ -167,44 +180,86 @@ function go(r){
       loadLocal();
       renderList();
       if(role!=='mj')pub({type:'requestState'});
+      if(role===CHAR){
+        Object.keys(PEER_TOPIC_MAP).forEach(function(t){pub2(t,{type:'preq',from:CHAR});});
+        requestNotifPermission();
+      }
     });
   });
   mc.on('message',function(t,p){
     try{
       var d=JSON.parse(p.toString());
-      if(d.type==='requestState'&&role==='mj'){pub({type:'syncAll',contacts:contacts,conv:convMsgs});return;}
-      if(d.type==='syncAll'){
-        var mergedConv=mergeConv(convMsgs,d.conv||{});
-        var mergedContacts=mergeContacts(contacts,d.contacts||[]);
-        var changed=JSON.stringify(mergedConv)!==JSON.stringify(d.conv||{})||JSON.stringify(mergedContacts)!==JSON.stringify(d.contacts||[]);
-        contacts=mergedContacts;convMsgs=mergedConv;
-        saveLocal();renderList();if(selCnt)renderConv(selCnt);
-        /* si on avait localement des messages/contacts que l'autre n'avait pas (ex: envoyés hors ligne), on les lui renvoie pour qu'ils ne se perdent pas */
-        if(changed)pub({type:'syncAll',contacts:contacts,conv:convMsgs});
-      }
-      else if(d.type==='contacts'){contacts=d.contacts;saveLocal();renderList();}
-      else if(d.type==='msg'){
-        if(!convMsgs[d.cid])convMsgs[d.cid]=[];
-        var already=d.mid&&convMsgs[d.cid].some(function(x){return x.mid===d.mid;});
-        if(!already){
-          convMsgs[d.cid].push({from:d.from,text:d.text,time:d.time,mid:d.mid});
-          saveLocal();
-          if(selCnt===d.cid){
-            /* on préserve le brouillon en cours : ne pas perdre ce que l'autre est en train d'écrire */
-            var taDraft=document.getElementById('conv-input');
-            var draftVal=taDraft?taDraft.value:'';
-            renderConv(d.cid);
-            var taAfter=document.getElementById('conv-input');
-            if(taAfter&&draftVal){taAfter.value=draftVal;taAfter.style.height='auto';taAfter.style.height=Math.min(taAfter.scrollHeight,80)+'px';}
-          }
-          else{cntBadge.add(d.cid);renderList();}
+      if(t===topic){
+        if(d.type==='requestState'&&role==='mj'){pub({type:'syncAll',contacts:contacts,conv:convMsgs});return;}
+        if(d.type==='syncAll'){
+          var mergedConv=mergeConv(convMsgs,d.conv||{});
+          var mergedContacts=mergeContacts(contacts,d.contacts||[]);
+          var changed=JSON.stringify(mergedConv)!==JSON.stringify(d.conv||{})||JSON.stringify(mergedContacts)!==JSON.stringify(d.contacts||[]);
+          contacts=mergedContacts;convMsgs=mergedConv;
+          saveLocal();renderList();if(selCnt)renderConv(selCnt);
+          /* si on avait localement des messages/contacts que l'autre n'avait pas (ex: envoyés hors ligne), on les lui renvoie pour qu'ils ne se perdent pas */
+          if(changed)pub({type:'syncAll',contacts:contacts,conv:convMsgs});
         }
+        else if(d.type==='contacts'){contacts=d.contacts;saveLocal();renderList();}
+        else if(d.type==='msg'){
+          if(!convMsgs[d.cid])convMsgs[d.cid]=[];
+          var already=d.mid&&convMsgs[d.cid].some(function(x){return x.mid===d.mid;});
+          if(!already){
+            convMsgs[d.cid].push({from:d.from,text:d.text,time:d.time,mid:d.mid});
+            saveLocal();
+            if(selCnt===d.cid){
+              /* on préserve le brouillon en cours : ne pas perdre ce que l'autre est en train d'écrire */
+              var taDraft=document.getElementById('conv-input');
+              var draftVal=taDraft?taDraft.value:'';
+              renderConv(d.cid);
+              var taAfter=document.getElementById('conv-input');
+              if(taAfter&&draftVal){taAfter.value=draftVal;taAfter.style.height='auto';taAfter.style.height=Math.min(taAfter.scrollHeight,80)+'px';}
+              playBeep();
+            }
+            else{cntBadge.add(d.cid);renderList();notifyNewMessage(findContact(d.cid),d.text);}
+          }
+        }
+      } else if(PEER_TOPIC_MAP[t]&&role===CHAR){
+        handlePeerMsg(PEER_TOPIC_MAP[t],d);
       }
     }catch(e){}
   });
   mc.on('error',function(){err.textContent='RÉSEAU INACCESSIBLE';});
 }
 function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+function pub2(t,d){if(mc&&mc.connected)mc.publish(t,JSON.stringify(d));}
+function handlePeerMsg(peerKey,d){
+  var cid='p_'+peerKey;
+  if(d.type==='preq'){
+    pub2(peerTopic(peerKey),{type:'psync',from:CHAR,msgs:convMsgs[cid]||[]});
+  } else if(d.type==='psync'){
+    var tmp=mergeConv({x:convMsgs[cid]||[]},{x:d.msgs||[]});
+    var mergedList=tmp.x;
+    var changed=JSON.stringify(mergedList)!==JSON.stringify(d.msgs||[]);
+    convMsgs[cid]=mergedList;
+    saveLocal();
+    if(selCnt===cid)renderConv(cid);else renderList();
+    if(changed)pub2(peerTopic(peerKey),{type:'psync',from:CHAR,msgs:mergedList});
+  } else if(d.type==='pmsg'){
+    if(!convMsgs[cid])convMsgs[cid]=[];
+    var already=d.mid&&convMsgs[cid].some(function(x){return x.mid===d.mid;});
+    if(!already){
+      convMsgs[cid].push({from:d.from,text:d.text,time:d.time,mid:d.mid});
+      saveLocal();
+      if(selCnt===cid){
+        var taDraft=document.getElementById('conv-input');
+        var draftVal=taDraft?taDraft.value:'';
+        renderConv(cid);
+        var taAfter=document.getElementById('conv-input');
+        if(taAfter&&draftVal){taAfter.value=draftVal;taAfter.style.height='auto';taAfter.style.height=Math.min(taAfter.scrollHeight,80)+'px';}
+        playBeep();
+      } else {
+        cntBadge.add(cid);renderList();
+        notifyNewMessage(findContact(cid),d.text);
+      }
+    }
+  }
+}
 function mergeConv(a,b){
   a=a||{};b=b||{};
   var out={};
@@ -231,6 +286,48 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function now(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
 function initials(n){return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').substr(0,2).toUpperCase();}
 
+/* ═════ NOTIFICATIONS (son, bandeau, notification navigateur, titre de l'onglet) ═════ */
+function requestNotifPermission(){
+  try{ if(window.Notification && Notification.permission==='default') Notification.requestPermission(); }catch(e){}
+}
+function playBeep(){
+  try{
+    var ctx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='sine';o.frequency.value=720;
+    g.gain.value=0.0001;
+    o.connect(g);g.connect(ctx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.12,ctx.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.22);
+    o.stop(ctx.currentTime+0.25);
+  }catch(e){}
+}
+function showToast(name,text,color){
+  var t=document.getElementById('msg-toast');
+  if(!t)return;
+  t.style.borderLeftColor=color||ACCENT;
+  t.innerHTML='<b style="color:'+(color||ACCENT)+';">'+esc(name)+'</b><div>'+esc(text.length>60?text.slice(0,60)+'…':text)+'</div>';
+  t.classList.add('on');
+  clearTimeout(t._hideT);
+  t._hideT=setTimeout(function(){t.classList.remove('on');},4000);
+}
+function notifyNewMessage(c,text){
+  if(!c)return;
+  playBeep();
+  showToast(c.name,text,c.color);
+  try{
+    if(window.Notification&&Notification.permission==='granted'&&(document.hidden||!document.hasFocus())){
+      new Notification(c.name+' — '+DISPLAY_NAME,{body:text});
+    }
+  }catch(e){}
+  updateTitleBadge();
+}
+function updateTitleBadge(){
+  var n=cntBadge.size;
+  document.title=(n>0?'('+n+') ':'')+DISPLAY_NAME+' — Téléphone';
+}
+
 function loadLocal(){
   contacts=null;convMsgs=null;
   try{contacts=JSON.parse(localStorage.getItem(storKeyC()));}catch(e){}
@@ -246,18 +343,20 @@ function saveLocal(){
 /* ═════ LISTE ═════ */
 function renderList(){
   var el=document.getElementById('screen-list');
-  if(!contacts.length){el.innerHTML='<div class="cnt-empty">AUCUN CONTACT<br>'+(role==='mj'?'Clique sur + pour en ajouter.':'Le MJ peut en ajouter.')+'</div>';return;}
+  var listAll=(role===CHAR?PLAYER_CONTACTS:[]).concat(contacts);
+  if(!listAll.length){el.innerHTML='<div class="cnt-empty">AUCUN CONTACT<br>'+(role==='mj'?'Clique sur + pour en ajouter.':'Le MJ peut en ajouter.')+'</div>';return;}
   var html='';
-  contacts.forEach(function(c){
+  listAll.forEach(function(c){
     var hasNew=cntBadge.has(c.id);
     html+='<div class="cnt-row" onclick="openConv(\''+c.id+'\')">'
       +'<div class="cnt-av" style="background:'+c.color+'22;color:'+c.color+';border:1px solid '+c.color+';">'+initials(c.name)+'</div>'
-      +'<div class="cnt-info"><div class="cnt-name" style="color:'+c.color+';">'+esc(c.name)+'</div><div class="cnt-desc">'+esc(c.desc||'')+'</div></div>'
+      +'<div class="cnt-info"><div class="cnt-name" style="color:'+c.color+';">'+esc(c.name)+(c.isPlayer?' <span style="font-size:9px;color:rgba(255,255,255,.3);">· JOUEUR</span>':'')+'</div><div class="cnt-desc">'+esc(c.desc||'')+'</div></div>'
       +(hasNew?'<div class="cnt-badge"></div>':'')
-      +(role==='mj'?'<button class="cnt-del" onclick="event.stopPropagation();delContact(\''+c.id+'\')">✕</button>':'')
+      +((role==='mj'&&!c.isPlayer)?'<button class="cnt-del" onclick="event.stopPropagation();delContact(\''+c.id+'\')">✕</button>':'')
       +'</div>';
   });
   el.innerHTML=html;
+  updateTitleBadge();
 }
 
 /* ═════ CONVERSATION ═════ */
@@ -273,32 +372,40 @@ function backToList(){
   document.getElementById('screen-list').classList.add('on');
 }
 function renderConv(id){
-  var c=contacts.find(function(x){return x.id===id;});if(!c)return;
+  var c=findContact(id);if(!c)return;
   var msgs=convMsgs[id]||[];
   var msgsHtml=msgs.length?msgs.map(function(m){
-    var mine=(role==='mj')?(m.from==='contact'):(m.from!=='contact');
+    var mine=c.isPlayer?(m.from===CHAR):((role==='mj')?(m.from==='contact'):(m.from!=='contact'));
     return '<div class="cmsg '+(mine?'me':'them')+'"><div class="cmsg-bub" style="'+(mine?'background:'+(role==='mj'?c.color:ACCENT)+';color:#07070a;':'background:rgba(255,255,255,.07);color:#fff;')+'">'+esc(m.text)+'</div><div class="cmsg-t">'+m.time+'</div></div>';
   }).join(''):'<div class="conv-empty">Aucun message pour l\'instant.</div>';
   var el=document.getElementById('screen-conv');
   el.innerHTML='<div class="conv-head"><span class="conv-back" onclick="backToList()">←</span>'
     +'<div class="conv-av" style="background:'+c.color+'22;color:'+c.color+';border:1px solid '+c.color+';">'+initials(c.name)+'</div>'
     +'<div><div class="conv-name" style="color:'+c.color+';">'+esc(c.name)+'</div><div class="conv-desc">'+esc(c.desc||'')+'</div></div>'
-    +'<div class="conv-edit'+(role==='mj'?' show':'')+'"><button onclick="openModal(\''+c.id+'\')">✎</button></div>'
+    +'<div class="conv-edit'+((role==='mj'&&!c.isPlayer)?' show':'')+'"><button onclick="openModal(\''+c.id+'\')">✎</button></div>'
     +'</div>'
     +'<div class="conv-msgs" id="conv-msgs">'+msgsHtml+'</div>'
-    +'<div class="conv-input-wrap"><textarea id="conv-input" placeholder="'+(role==='mj'?'Répondre en tant que '+esc(c.name)+'...':'Écrire un message...')+'" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg(\''+c.id+'\');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,80)+\'px\';"></textarea><button class="conv-send" onclick="sendMsg(\''+c.id+'\')">➤</button></div>';
+    +'<div class="conv-input-wrap"><textarea id="conv-input" placeholder="'+(role==='mj'&&!c.isPlayer?'Répondre en tant que '+esc(c.name)+'...':'Écrire un message...')+'" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg(\''+c.id+'\');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,80)+\'px\';"></textarea><button class="conv-send" onclick="sendMsg(\''+c.id+'\')">➤</button></div>';
   var box=document.getElementById('conv-msgs');box.scrollTop=box.scrollHeight;
 }
 function sendMsg(id){
   var ta=document.getElementById('conv-input');
   var txt=ta.value.trim();if(!txt)return;
   ta.value='';ta.style.height='auto';
-  var from=(role==='mj')?'contact':'player';
   var mid='m'+Date.now()+Math.random().toString(36).slice(2,7);
-  var m={from:from,text:txt,time:now(),mid:mid};
-  if(!convMsgs[id])convMsgs[id]=[];
-  convMsgs[id].push(m);saveLocal();
-  pub({type:'msg',cid:id,from:from,text:txt,time:m.time,mid:mid});
+  if(id.indexOf('p_')===0){
+    var peerKey=id.slice(2);
+    var pm={from:CHAR,text:txt,time:now(),mid:mid};
+    if(!convMsgs[id])convMsgs[id]=[];
+    convMsgs[id].push(pm);saveLocal();
+    pub2(peerTopic(peerKey),{type:'pmsg',from:CHAR,text:txt,time:pm.time,mid:mid});
+  } else {
+    var from=(role==='mj')?'contact':'player';
+    var m={from:from,text:txt,time:now(),mid:mid};
+    if(!convMsgs[id])convMsgs[id]=[];
+    convMsgs[id].push(m);saveLocal();
+    pub({type:'msg',cid:id,from:from,text:txt,time:m.time,mid:mid});
+  }
   renderConv(id);
 }
 
