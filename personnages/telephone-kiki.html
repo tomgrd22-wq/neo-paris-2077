@@ -185,10 +185,20 @@ function go(r){
       else if(d.type==='contacts'){contacts=d.contacts;saveLocal();renderList();}
       else if(d.type==='msg'){
         if(!convMsgs[d.cid])convMsgs[d.cid]=[];
-        convMsgs[d.cid].push({from:d.from,text:d.text,time:d.time});
-        saveLocal();
-        if(selCnt===d.cid)renderConv(d.cid);
-        else{cntBadge.add(d.cid);renderList();}
+        var already=d.mid&&convMsgs[d.cid].some(function(x){return x.mid===d.mid;});
+        if(!already){
+          convMsgs[d.cid].push({from:d.from,text:d.text,time:d.time,mid:d.mid});
+          saveLocal();
+          if(selCnt===d.cid){
+            /* on préserve le brouillon en cours : ne pas perdre ce que l'autre est en train d'écrire */
+            var taDraft=document.getElementById('conv-input');
+            var draftVal=taDraft?taDraft.value:'';
+            renderConv(d.cid);
+            var taAfter=document.getElementById('conv-input');
+            if(taAfter&&draftVal){taAfter.value=draftVal;taAfter.style.height='auto';taAfter.style.height=Math.min(taAfter.scrollHeight,80)+'px';}
+          }
+          else{cntBadge.add(d.cid);renderList();}
+        }
       }
     }catch(e){}
   });
@@ -203,7 +213,7 @@ function mergeConv(a,b){
     var list=(a[id]||[]).concat(b[id]||[]);
     var seen={};var merged=[];
     list.forEach(function(m){
-      var k=m.from+'|'+m.time+'|'+m.text;
+      var k=m.mid||(m.from+'|'+m.time+'|'+m.text);
       if(!seen[k]){seen[k]=1;merged.push(m);}
     });
     out[id]=merged;
@@ -284,10 +294,11 @@ function sendMsg(id){
   var txt=ta.value.trim();if(!txt)return;
   ta.value='';ta.style.height='auto';
   var from=(role==='mj')?'contact':'player';
-  var m={from:from,text:txt,time:now()};
+  var mid='m'+Date.now()+Math.random().toString(36).slice(2,7);
+  var m={from:from,text:txt,time:now(),mid:mid};
   if(!convMsgs[id])convMsgs[id]=[];
   convMsgs[id].push(m);saveLocal();
-  pub({type:'msg',cid:id,from:from,text:txt,time:m.time});
+  pub({type:'msg',cid:id,from:from,text:txt,time:m.time,mid:mid});
   renderConv(id);
 }
 
