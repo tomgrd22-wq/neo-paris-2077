@@ -183,7 +183,7 @@ function tickPlayer(){
     if(canMove(player.x,player.y,nextDir.x,nextDir.y)){dir=nextDir;}
     if(!canMove(player.x,player.y,dir.x,dir.y)){dir={x:0,y:0};}
   }
-  player.x+=dir.x*0.12;player.y+=dir.y*0.12;
+  player.x+=dir.x*0.06;player.y+=dir.y*0.06;
   // wrap tunnels
   if(player.x<0)player.x=COLS-1;
   if(player.x>=COLS)player.x=0;
@@ -191,7 +191,7 @@ function tickPlayer(){
   if(Math.abs(player.x-gx)<0.02&&Math.abs(player.y-gy)<0.02){
     player.x=gx;player.y=gy;
     if(grid[gy]&&grid[gy][gx]>0){
-      if(grid[gy][gx]===2){powerT=280;}
+      if(grid[gy][gx]===2){powerT=360;}
       grid[gy][gx]=0;score+=grid[gy]&&grid[gy][gx]===2?50:10;
       fragLeft--;
       updateHud();
@@ -219,7 +219,7 @@ function tickGhost(g){
     if(!best)best=opts[Math.floor(Math.random()*opts.length)];
     g.dir=best;
   }
-  var sp=g.scared?0.07:0.09;
+  var sp=g.scared?0.035:0.045;
   g.x+=g.dir.x*sp;g.y+=g.dir.y*sp;
   if(g.x<0)g.x=COLS-1; if(g.x>=COLS)g.x=0;
 }
