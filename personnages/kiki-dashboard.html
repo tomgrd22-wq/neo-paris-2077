@@ -820,6 +820,7 @@ function go(r){
 }
 
 function pub(topic,data){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(data));}
+function pubRetain(topic,data){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(data),{retain:true});}
 
 function handleMsg(topic,d){
   /* MJ responds to state requests from newly-connected players */
@@ -1707,7 +1708,7 @@ function loadInvLocal(c){
   invW=10;invH=10;invPlaced=[];invActiveCells=invDefaultCells();invDisplayMode='puzzle';
   try{var i=JSON.parse(localStorage.getItem(invStorageKey(c)));if(i){if(i.placed)invPlaced=i.placed;else if(Array.isArray(i))invPlaced=i;if(i.w)invW=i.w;if(i.h)invH=i.h;if(i.cells){invActiveCells=new Set(i.cells);}if(i.displayMode)invDisplayMode=i.displayMode;}}catch(e){}
 }
-function saveInv(){try{localStorage.setItem(invStorageKey(invContainer),JSON.stringify({placed:invPlaced,w:invW,h:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode}));}catch(e){}pub(invTopicFor(invContainer),{type:'inventory',placed:invPlaced,gridW:invW,gridH:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode});}
+function saveInv(){try{localStorage.setItem(invStorageKey(invContainer),JSON.stringify({placed:invPlaced,w:invW,h:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode}));}catch(e){}pubRetain(invTopicFor(invContainer),{type:'inventory',placed:invPlaced,gridW:invW,gridH:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode});}
 /* Snapshot d'un conteneur sans perturber celui actuellement chargé en mémoire (pour répondre à une requestState MJ) */
 function getInvSnapshot(c){
   if(c===invContainer)return{placed:invPlaced,gridW:invW,gridH:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode};

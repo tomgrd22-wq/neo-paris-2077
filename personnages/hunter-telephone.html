@@ -591,6 +591,7 @@ function go(r){
   setInterval(function(){var d=new Date();document.getElementById('sbar-time').textContent=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});},10000);
 }
 function pub(d,t2){if(mc&&mc.connected)mc.publish(t2||topic,JSON.stringify(d));}
+function pubRetain(d,t2){if(mc&&mc.connected)mc.publish(t2||topic,JSON.stringify(d),{retain:true});}
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function now(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function aH(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,80)+'px';}
@@ -913,7 +914,7 @@ var invSel=null,invMode=null,invMovingItem=null,invMovingRot=false,invHov=null;
 var IVC=60,IVS=61,IVG=1;
 
 function loadInvLocal(){try{var i=JSON.parse(localStorage.getItem('hunter_inv_'+sCode));if(i){if(i.placed)invPlaced=i.placed;else if(Array.isArray(i))invPlaced=i;if(i.w)invW=i.w;if(i.h)invH=i.h;if(i.cells)invActiveCells=new Set(i.cells);if(i.displayMode)invDisplayMode=i.displayMode;}}catch(e){}}
-function saveInv(){try{localStorage.setItem('hunter_inv_'+sCode,JSON.stringify({placed:invPlaced,w:invW,h:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode}));}catch(e){}pub({type:'inventory',placed:invPlaced,gridW:invW,gridH:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode},invTopic);}
+function saveInv(){try{localStorage.setItem('hunter_inv_'+sCode,JSON.stringify({placed:invPlaced,w:invW,h:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode}));}catch(e){}pubRetain({type:'inventory',placed:invPlaced,gridW:invW,gridH:invH,cells:Array.from(invActiveCells),displayMode:invDisplayMode},invTopic);}
 function invGW(it){return it.rotated?it.h:it.w;}
 function invGH(it){return it.rotated?it.w:it.h;}
 function computeCellSize(vw,vh){var main=document.querySelector('.inv-main');if(!main)return;var rect=main.getBoundingClientRect();var cw=Math.floor((rect.width-24)/(vw||invW))-1;var ch=Math.floor((rect.height-24)/(vh||invH))-1;var maxC=role==='mj'?110:200;IVC=Math.max(16,Math.min(maxC,Math.min(cw,ch)));IVS=IVC+IVG;}
