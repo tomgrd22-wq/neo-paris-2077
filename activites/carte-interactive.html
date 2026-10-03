@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>CARTE EN DIRECT — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:#07070d;color:#e8d5a8;font-family:'Share Tech Mono',monospace;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:400px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(255,170,0,.25);border-radius:6px;background:rgba(20,13,5,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#ffaa00;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(255,170,0,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lbtn{padding:12px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:1px;text-align:center;color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2);}
+.lbtn.on{background:rgba(255,170,0,.12);border-color:#ffaa00;color:#ffaa00;}
+#lgo{border-color:#ffaa00;color:#ffaa00;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(10,7,5,.95);border-bottom:1px solid rgba(255,170,0,.15);position:relative;z-index:10;}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#ffaa00;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.back{position:absolute;top:50%;left:18px;transform:translateY(-50%);font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-decoration:none;border:1px solid rgba(255,255,255,.15);padding:6px 12px;border-radius:20px;}
+.back:hover{color:#ffaa00;border-color:#ffaa00;}
+.topbar-mid{margin-left:90px;}
+
+#map-wrap{position:relative;flex:1;min-height:0;}
+#map2d{position:absolute;inset:0;background:#0a0705;}
+.hud-bar{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:10px;flex-wrap:wrap;z-index:400;pointer-events:none;}
+.hud-chip{background:rgba(0,0,0,.75);border:1px solid rgba(255,170,0,.3);border-radius:6px;padding:6px 12px;font-size:10px;letter-spacing:1px;backdrop-filter:blur(6px);}
+.hud-chip b{color:#ffaa00;}
+.map-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(255,170,0,.12);border:1px dashed rgba(255,170,0,.4);border-radius:6px;padding:8px 14px;font-size:10px;color:rgba(255,170,0,.85);letter-spacing:1px;line-height:1.6;max-width:280px;text-align:center;z-index:400;backdrop-filter:blur(6px);}
+
+.van-marker-cnt,.poi-marker-cnt,.dest-marker-cnt{background:transparent !important;border:none !important;}
+.van-marker{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#ffaa00;text-shadow:0 0 8px rgba(255,170,0,.9),0 0 4px #000,0 0 2px #000;font-weight:bold;transition:transform .15s;filter:drop-shadow(0 0 4px rgba(255,170,0,.6));line-height:1;}
+.poi-marker{width:32px;height:32px;border-radius:50%;background:#ffaa00;border:2px solid #0a0705;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.6);}
+.poi-label{position:absolute;top:34px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,.75);color:#e8d5a8;padding:2px 6px;font-size:10px;letter-spacing:1px;border-radius:3px;pointer-events:none;font-family:'Share Tech Mono',monospace;}
+.dest-marker{width:30px;height:30px;border-radius:50%;background:#ffaa00;border:3px solid #0a0705;display:flex;align-items:center;justify-content:center;color:#0a0705;font-weight:bold;font-size:14px;box-shadow:0 0 12px rgba(255,170,0,.8);animation:destBounce 1.2s ease-in-out infinite;}
+@keyframes destBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+
+.ping-marker{width:24px;height:24px;position:relative;}
+.ping-dot{position:absolute;inset:7px;border-radius:50%;background:#ffaa00;box-shadow:0 0 8px #ffaa00;}
+.ping-ring{position:absolute;inset:0;border-radius:50%;border:2px solid #ffaa00;animation:pingRing 1.4s ease-out infinite;}
+.ping-ring2{animation-delay:.5s;}
+.ping-label{position:absolute;top:26px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,.8);padding:2px 6px;font-size:9px;letter-spacing:1px;border-radius:3px;color:#ffaa00;}
+.ping-marker.from-player .ping-dot{background:#00ff88;box-shadow:0 0 8px #00ff88;}
+.ping-marker.from-player .ping-ring{border-color:#00ff88;}
+.ping-marker.from-player .ping-label{color:#00ff88;}
+@keyframes pingRing{0%{transform:scale(.4);opacity:1;}100%{transform:scale(2.2);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">🗺 CARTE EN DIRECT</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid">
+      <button class="lbtn" data-r="joueur" onclick="selRole('joueur')">JOUEUR</button>
+      <button class="lbtn" data-r="mj" onclick="selRole('mj')">MJ</button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <a class="back" href="javascript:void(0)" onclick="if(window.history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+    <div class="brand topbar-mid">🗺 CARTE EN DIRECT</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div id="map-wrap">
+    <div id="map2d"></div>
+    <div class="hud-bar">
+      <div class="hud-chip">DESTINATION : <b id="hud-dest">—</b></div>
+      <div class="hud-chip">DISTANCE : <b id="hud-dist">—</b></div>
+      <div class="hud-chip">ÉTAT : <b id="hud-state">—</b></div>
+    </div>
+    <div class="map-hint">💡 Clique sur la carte pour envoyer un <b>ping</b> à l'équipe. Le van et l'itinéraire sont gérés par Kiki / le MJ.</div>
+  </div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,charKey=null,sCode=null,mc=null,topic='';
+var WHO_LABEL={tamuro:'TAMURO',keiyo:'KEIYO',fury:'FURY',hunter:'MOON',kiki:'KIKI',mj:'MJ'};
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_carte_v3_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  setTimeout(function(){initMap();},80);
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'cv'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){
+      mc.subscribe(topic);
+      document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';
+      mc.publish(topic,JSON.stringify({type:'requestState'}));
+    });
+    mc.on('message',function(t,p){
+      try{ handleMsg(JSON.parse(p.toString())); }catch(e){}
+    });
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pub(d){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(d));}
+
+/* ═════ ÉTAT NAV (en lecture — le van est piloté par Kiki / le MJ) ═════ */
+var navPos={lat:48.8615,lng:2.2875,heading:0,speed:0};
+var navDest=null;
+var navRoute=[];
+var POIs=[];
+var poisVisible=false;
+
+var mapL=null, vanMarker=null, destMarker=null, routeLine=null, poiMarkers={};
+
+function initMap(){
+  if(mapL)return;
+  mapL=L.map('map2d',{center:[navPos.lat,navPos.lng],zoom:14,zoomControl:false,attributionControl:false});
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(mapL);
+  L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:0.65}).addTo(mapL);
+  var vanIcon=L.divIcon({className:'van-marker-cnt',html:'<div class="van-marker" id="vanmk">▲</div>',iconSize:[36,36],iconAnchor:[18,18]});
+  vanMarker=L.marker([navPos.lat,navPos.lng],{icon:vanIcon,zIndexOffset:1000}).addTo(mapL);
+  rebuildPOIMarkers();
+  updateDestMarker();
+  mapL.on('click',function(e){sendPing(e.latlng);});
+  updateVanMarker();updateHUD();
+  setTimeout(function(){mapL.invalidateSize();},200);
+  window.addEventListener('resize',function(){if(mapL)mapL.invalidateSize();});
+}
+
+function handleMsg(d){
+  if(d.type!=='navState'&&d.type!=='ping')return;
+  if(d.type==='ping'){showPing(d.ping);return;}
+  if(d.pos)navPos=d.pos;
+  if(d.dest!==undefined)navDest=d.dest;
+  if(d.pois)POIs=d.pois;
+  if(d.poisVisible!==undefined)poisVisible=d.poisVisible;
+  if(d.route)navRoute=d.route;
+  if(!d.dest)navRoute=[];
+  if(mapL){
+    rebuildPOIMarkers();
+    updateDestMarker();
+    updateVanMarker();
+  }
+  updateHUD();
+}
+
+function updateVanMarker(){
+  if(!vanMarker)return;
+  vanMarker.setLatLng([navPos.lat,navPos.lng]);
+  var el=document.getElementById('vanmk');
+  if(el)el.style.transform='rotate('+(navPos.heading*180/Math.PI)+'deg)';
+}
+function updateDestMarker(){
+  if(routeLine){mapL.removeLayer(routeLine);routeLine=null;}
+  if(destMarker){mapL.removeLayer(destMarker);destMarker=null;}
+  if(!navDest||!mapL)return;
+  var icon=L.divIcon({className:'dest-marker-cnt',html:'<div class="dest-marker">▶</div>',iconSize:[30,30],iconAnchor:[15,15]});
+  destMarker=L.marker([navDest.lat,navDest.lng],{icon:icon,zIndexOffset:500}).addTo(mapL);
+  if(navRoute&&navRoute.length>1){
+    routeLine=L.polyline(navRoute,{color:'#ffaa00',weight:4,opacity:.85}).addTo(mapL);
+  } else {
+    routeLine=L.polyline([[navPos.lat,navPos.lng],[navDest.lat,navDest.lng]],{color:'#ffaa00',weight:3,opacity:.85,dashArray:'8,6'}).addTo(mapL);
+  }
+}
+function rebuildPOIMarkers(){
+  Object.values(poiMarkers).forEach(function(m){mapL.removeLayer(m);});
+  poiMarkers={};
+  if(!poisVisible)return;
+  POIs.forEach(addPOIMarker);
+}
+function addPOIMarker(p){
+  var icon=L.divIcon({
+    className:'poi-marker-cnt',
+    html:'<div class="poi-marker" style="background:'+p.color+';">'+p.icon+'</div><div class="poi-label">'+esc(p.name)+'</div>',
+    iconSize:[32,32],iconAnchor:[16,16]
+  });
+  var m=L.marker([p.lat,p.lng],{icon:icon}).addTo(mapL);
+  poiMarkers[p.id]=m;
+}
+function distM(lat1,lng1,lat2,lng2){
+  var R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function updateHUD(){
+  document.getElementById('hud-dest').textContent=navDest?(navDest.name||'Point custom'):'—';
+  if(navDest){
+    var d=Math.round(distM(navPos.lat,navPos.lng,navDest.lat,navDest.lng));
+    document.getElementById('hud-dist').textContent=d>1000?(d/1000).toFixed(1)+' km':d+' m';
+  } else document.getElementById('hud-dist').textContent='—';
+  document.getElementById('hud-state').textContent=navPos.speed<1?'Arrêté':(navDest?'En route':'Roule');
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ═════ PINGS ═════ */
+var lastPingTime=0;
+function sendPing(latlng){
+  if(Date.now()-lastPingTime<2000)return;
+  lastPingTime=Date.now();
+  var who=role==='mj'?'MJ':(WHO_LABEL[charKey]||'JOUEUR');
+  var ping={lat:latlng.lat,lng:latlng.lng,from:charKey||role,who:who,time:Date.now()};
+  showPing(ping);
+  pub({type:'ping',ping:ping});
+}
+function showPing(ping){
+  if(!mapL)return;
+  var isFromPlayer=(ping.from!=='mj');
+  var cls='ping-marker'+(isFromPlayer?' from-player':'');
+  var html='<div class="'+cls+'"><div class="ping-dot"></div><div class="ping-ring"></div><div class="ping-ring ping-ring2"></div><div class="ping-label">📍 '+esc(ping.who||'PING')+'</div></div>';
+  var icon=L.divIcon({className:'',html:html,iconSize:[24,24],iconAnchor:[12,12]});
+  var marker=L.marker([ping.lat,ping.lng],{icon:icon,zIndexOffset:1000,interactive:false}).addTo(mapL);
+  setTimeout(function(){if(mapL&&marker)mapL.removeLayer(marker);},6000);
+}
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get('code');
+  var roleParam=params.get('role');
+  if(codeParam){var lc=document.getElementById('lcode');if(lc)lc.value=codeParam;}
+  if(roleParam){
+    charKey=roleParam;
+    selRole(roleParam==='mj'?'mj':'joueur');
+  }
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

@@ -826,15 +826,17 @@ function pub(topic,data){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(dat
 function pubRetain(topic,data){if(mc&&mc.connected)mc.publish(topic,JSON.stringify(data),{retain:true});}
 
 function handleMsg(topic,d){
-  /* MJ responds to state requests from newly-connected players */
-  if(d.type==='requestState'&&role==='mj'){
+  /* MJ (et Kiki pour la carte, dont elle est aussi source autoritaire) répond aux demandes d'état des joueurs qui viennent de se connecter */
+  if(d.type==='requestState'&&(role==='mj'||(role==='kiki'&&topic===topics.nav))){
     if(topic===topics.nav)pubNav();
     else if(topic===topics.van){pub(topics.van,{type:'state',state:vanState});Object.keys(vanSys).forEach(function(k){pub(topics.van,{type:'sysToggle',sys:k,state:vanSys[k]});});}
     else if(topic===topics.inv){var sSac=getInvSnapshot('sac');pub(topics.inv,Object.assign({type:'inventory',lib:invLib},sSac));}
     else if(topic===topics.coffre){var sCof=getInvSnapshot('coffre');pub(topics.coffre,Object.assign({type:'inventory',lib:invLib},sCof));}
     else if(topic===topics.radio){pub(topics.radio,{type:'channels',list:radioChans});pub(topics.radio,{type:'signal',level:radioSignal});}
-    pub(topics.van,{type:'netStatus',status:netStatus});
-    pub(topics.van,{type:'tabVis',hidden:Array.from(hiddenTabs)});
+    if(role==='mj'){
+      pub(topics.van,{type:'netStatus',status:netStatus});
+      pub(topics.van,{type:'tabVis',hidden:Array.from(hiddenTabs)});
+    }
     return;
   }
   if(topic===topics.nav){
