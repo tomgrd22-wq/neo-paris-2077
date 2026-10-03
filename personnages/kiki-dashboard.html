@@ -1071,7 +1071,7 @@ function saveNav(){
   try{localStorage.setItem('kiki_pois_'+sCode,JSON.stringify(POIs));}catch(e){}
   try{localStorage.setItem('kiki_navpos_'+sCode,JSON.stringify({pos:navPos,dest:navDest,speed:navTargetSpeed}));}catch(e){}
 }
-function pubNav(){pub(topics.nav,{type:'navState',pos:navPos,dest:navDest,pois:POIs,speed:navTargetSpeed,route:navRoute,routeIdx:navRouteIdx,from:role});}
+function pubNav(){pub(topics.nav,{type:'navState',pos:navPos,dest:navDest,pois:POIs,poisVisible:poisVisible,speed:navTargetSpeed,route:navRoute,routeIdx:navRouteIdx,from:role});}
 var lastExternalNavUpdate=0;
 
 function handleNavMsg(d){
@@ -1083,7 +1083,9 @@ function handleNavMsg(d){
       if(JSON.stringify(d.dest)!==JSON.stringify(navDest))destOrRouteChanged=true;
       navDest=d.dest;
     }
-    if(d.pois){POIs=d.pois;rebuildPOIMarkers();}
+    if(d.pois){POIs=d.pois;}
+    if(role!=='mj'&&d.poisVisible!==undefined&&d.poisVisible!==poisVisible){poisVisible=d.poisVisible;}
+    if(d.pois||d.poisVisible!==undefined)rebuildPOIMarkers();
     if(d.speed)navTargetSpeed=d.speed;
     if(d.route){
       if(JSON.stringify(d.route)!==JSON.stringify(navRoute))destOrRouteChanged=true;
@@ -1191,16 +1193,17 @@ function rebuildPOIMarkers(){
   poiMarkers={};
   POIs.forEach(addPOIMarker);
 }
-var poisVisible=false; /* invisible par défaut — jamais visible pour le joueur, bascule réservée au MJ */
+var poisVisible=false; /* invisible par défaut — le MJ active, et son choix est répercuté à tous les joueurs */
 function togglePOIs(){
   if(role!=='mj')return;
   poisVisible=!poisVisible;
   var btn=document.getElementById('poi-toggle-btn');
   if(btn){btn.textContent='👁 REPÈRES : '+(poisVisible?'VISIBLES':'MASQUÉS');btn.classList.toggle('act',poisVisible);}
   rebuildPOIMarkers();
+  saveNav();pubNav();
 }
 function addPOIMarker(p){
-  if(role!=='mj'||!poisVisible)return; /* les joueurs ne voient jamais les repères ; le MJ doit les activer */
+  if(!poisVisible)return; /* masqués jusqu'à ce que le MJ les active ; visibles pour tous une fois activés */
   var icon=L.divIcon({
     className:'poi-marker-cnt',
     html:'<div class="poi-marker" style="background:'+p.color+';">'+p.icon+'</div><div class="poi-label">'+esc(p.name)+'</div>',
