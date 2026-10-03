@@ -504,6 +504,7 @@ function go(r){
     mc.on('connect',function(){
       Object.values(topics).forEach(function(t){mc.subscribe(t);});
       document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';
+      if(role==='keiyo'){pub(topics.feed,{type:'requestState'});pub(topics.inv,{type:'requestState'});}
     });
     mc.on('message',function(t,p){try{var d=JSON.parse(p.toString());handleMsg(t,d);}catch(e){console.error('MSG ERROR:',e);}});
     mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
@@ -534,7 +535,6 @@ function initAll(){
   renderFeed();renderStories();
   applyNetStatus(netStatus,true);applyTabVisibility();
   setTimeout(function(){renderInv();renderInvLib();},100);
-  if(role==='keiyo'){pub(topics.feed,{type:'requestState'});pub(topics.inv,{type:'requestState'});}
 }
 function enableMJ(){
   document.getElementById('app').classList.add('is-mj');

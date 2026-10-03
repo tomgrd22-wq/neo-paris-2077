@@ -803,6 +803,8 @@ function go(r){
       Object.values(topics).forEach(function(t){mc.subscribe(t);});
       document.getElementById('conn-lbl').textContent='EN LIGNE';
       document.getElementById('conn-dot').className='cdot';
+      /* Player asks MJ to send them the current state */
+      if(role==='kiki'){pub(topics.van,{type:'requestState'});pub(topics.inv,{type:'requestState'});pub(topics.coffre,{type:'requestState'});pub(topics.radio,{type:'requestState'});pub(topics.nav,{type:'requestState'});}
     });
     mc.on('reconnect',function(){document.getElementById('conn-lbl').textContent='RECONNEXION...';document.getElementById('conn-dot').className='cdot wait';});
     mc.on('close',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
@@ -883,8 +885,6 @@ function initAll(){
   renderInv();
   renderInvLib();
   applyNetStatus(netStatus,true);applyTabVisibility();
-  /* Player asks MJ to send them the current state */
-  if(role==='kiki'){pub(topics.van,{type:'requestState'});pub(topics.inv,{type:'requestState'});pub(topics.coffre,{type:'requestState'});pub(topics.radio,{type:'requestState'});pub(topics.nav,{type:'requestState'});}
 }
 
 function enableMJ(){
