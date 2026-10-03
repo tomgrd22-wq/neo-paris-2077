@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BILAN DE SESSION — NEO-PARIS 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#07070d;color:#c8c8dc;font-family:'Share Tech Mono',monospace;min-height:100vh;}
+#login{position:fixed;inset:0;z-index:100;background:#07070d;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lw{width:460px;max-width:100%;display:flex;flex-direction:column;gap:12px;padding:30px 26px;border:1px solid rgba(0,204,255,.25);border-radius:6px;background:rgba(5,15,20,.6);}
+.ltitle{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:3px;color:#00ccff;text-align:center;}
+.lsub{font-size:10px;letter-spacing:4px;color:rgba(0,204,255,.4);text-align:center;margin-bottom:8px;}
+.llabel{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:6px;}
+#lcode{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e8e8f0;outline:none;letter-spacing:2px;}
+.lgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.lbtn{padding:10px 6px;border-radius:4px;border:1px solid;background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-align:center;}
+.lbtn b{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:block;}
+.lbtn.on{background:rgba(255,255,255,.1);}
+#lgo{border-color:#00ccff;color:#00ccff;margin-top:6px;padding:12px;}
+#lerr{font-size:10px;color:#ff2040;letter-spacing:2px;min-height:14px;text-align:center;}
+.rolecol-kiki{border-color:#ffaa00;color:#ffaa00;}
+.rolecol-hunter{border-color:#00ccff;color:#00ccff;}
+.rolecol-fury{border-color:#00ff88;color:#00ff88;}
+.rolecol-keiyo{border-color:#ff33cc;color:#ff33cc;}
+.rolecol-tamuro{border-color:#ff2040;color:#ff2040;}
+.rolecol-mj{border-color:#e8e8f0;color:#e8e8f0;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(5,15,20,.9);border-bottom:1px solid rgba(0,204,255,.15);}
+.brand{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:#00ccff;}
+.cdot{width:7px;height:7px;border-radius:50%;background:#00ff88;}
+.cdot.err{background:#ff2040;}
+.content{flex:1;padding:30px 20px 60px;max-width:600px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:18px;}
+
+.stars{display:flex;gap:8px;}
+.star{font-size:30px;cursor:pointer;color:rgba(255,255,255,.2);transition:color .15s;}
+.star.on{color:#ffaa00;}
+.fb-field{width:100%;max-width:460px;display:flex;flex-direction:column;gap:6px;}
+.fb-field label{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);}
+.fb-field textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:10px 12px;color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;min-height:70px;resize:vertical;}
+.send-btn{padding:12px 26px;border:2px solid #00ccff;border-radius:8px;background:rgba(0,204,255,.08);color:#00ccff;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:4px;}
+.sent-note{font-size:11px;color:#00ff88;letter-spacing:1px;text-align:center;}
+
+.fb-card{width:100%;max-width:560px;border-radius:10px;padding:16px 18px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);}
+.fb-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fb-card-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;}
+.fb-card-stars{font-size:13px;color:#ffaa00;}
+.fb-card-time{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1px;}
+.fb-card-sec{margin-top:8px;}
+.fb-card-sec-lbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.35);margin-bottom:3px;}
+.fb-card-sec-txt{font-size:13px;color:rgba(255,255,255,.85);line-height:1.5;white-space:pre-wrap;}
+.waiting{text-align:center;color:rgba(255,255,255,.3);font-size:12px;padding:40px 0;}
+.mj-actions{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.mj-count{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:1px;}
+.reset-btn{font-size:10px;color:rgba(255,32,64,.7);background:none;border:1px solid rgba(255,32,64,.3);border-radius:6px;padding:6px 12px;cursor:pointer;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="lw">
+    <div class="ltitle">📝 BILAN DE SESSION</div>
+    <div class="lsub">// NEO-PARIS 2077 //</div>
+    <div class="llabel">CODE DE SESSION</div>
+    <input id="lcode" type="text" placeholder="Ex : neo_paris_2077" autocomplete="off">
+    <div class="llabel">RÔLE</div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-tamuro" data-r="tamuro" onclick="selRole('tamuro')"><b>TAMURO</b></button>
+      <button class="lbtn rolecol-kiki" data-r="kiki" onclick="selRole('kiki')"><b>KIKI</b></button>
+      <button class="lbtn rolecol-fury" data-r="fury" onclick="selRole('fury')"><b>FURY</b></button>
+    </div>
+    <div class="lgrid3">
+      <button class="lbtn rolecol-hunter" data-r="hunter" onclick="selRole('hunter')"><b>MOON</b></button>
+      <button class="lbtn rolecol-keiyo" data-r="keiyo" onclick="selRole('keiyo')"><b>KEIYO</b></button>
+      <button class="lbtn rolecol-mj" data-r="mj" onclick="selRole('mj')"><b>MJ</b></button>
+    </div>
+    <button class="lbtn" id="lgo" onclick="go()">▶ ENTRER</button>
+    <div id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">📝 BILAN DE SESSION</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;"><span id="conn-lbl">CONNEXION...</span><div class="cdot" id="conn-dot"></div></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+var BROKER='wss://broker.emqx.io:8084/mqtt';
+var role=null,sCode=null,mc=null,topic='';
+var ROLE_LABELS={tamuro:'TAMURO',kiki:'KIKI',fury:'FURY',hunter:'MOON',keiyo:'KEIYO'};
+var ROLE_COLORS={tamuro:'#ff2040',kiki:'#ffaa00',fury:'#00ff88',hunter:'#00ccff',keiyo:'#ff33cc'};
+var LAYER_ORDER=['tamuro','kiki','fury','hunter','keiyo'];
+var state={feedbacks:{}};
+var myRating=0;
+
+var selectedRole=null;
+function selRole(r){selectedRole=r;document.querySelectorAll('.lbtn[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===r);});}
+function go(){
+  var code=document.getElementById('lcode').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!code||code.length<3){document.getElementById('lerr').textContent='Code trop court';return;}
+  if(!selectedRole){document.getElementById('lerr').textContent='Choisis un rôle';return;}
+  role=selectedRole;sCode=code;topic='spectre_bilan_v1_'+code;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  if(role!=='mj'&&state.feedbacks[role])myRating=state.feedbacks[role].rating||0;
+  render();
+  connectMQTT();
+}
+function connectMQTT(){
+  try{
+    mc=mqtt.connect(BROKER,{clientId:'bl'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+    mc.on('connect',function(){mc.subscribe(topic);document.getElementById('conn-lbl').textContent='EN LIGNE';document.getElementById('conn-dot').className='cdot';});
+    mc.on('message',function(t,p){
+      try{
+        var d=JSON.parse(p.toString());
+        if(d.type==='state'){
+          /* préserve le brouillon en cours si un autre joueur envoie son avis pendant qu'on écrit le sien */
+          var draft=null;
+          if(role!=='mj'){
+            var pEl=document.getElementById('fb-problems'),wEl=document.getElementById('fb-wishes'),oEl=document.getElementById('fb-other');
+            if(pEl||wEl||oEl)draft={problems:pEl?pEl.value:'',wishes:wEl?wEl.value:'',other:oEl?oEl.value:''};
+          }
+          state=d.state;
+          if(role!=='mj'&&state.feedbacks[role])myRating=state.feedbacks[role].rating||0;
+          render();
+          if(draft){
+            var pEl2=document.getElementById('fb-problems'),wEl2=document.getElementById('fb-wishes'),oEl2=document.getElementById('fb-other');
+            if(pEl2)pEl2.value=draft.problems;
+            if(wEl2)wEl2.value=draft.wishes;
+            if(oEl2)oEl2.value=draft.other;
+          }
+        }
+      }catch(e){}
+    });
+    mc.on('error',function(){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';});
+  }catch(e){document.getElementById('conn-lbl').textContent='HORS LIGNE';document.getElementById('conn-dot').className='cdot err';}
+}
+function pushState(){if(mc&&mc.connected)mc.publish(topic,JSON.stringify({type:'state',state:state}),{retain:true});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtTime(t){if(!t)return'';var d=new Date(t);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+
+function render(){
+  var c=document.getElementById('content');
+  if(role==='mj'){renderMJ(c);return;}
+  renderPlayer(c);
+}
+function renderPlayer(c){
+  var mine=state.feedbacks[role];
+  var html='<div style="text-align:center;color:rgba(255,255,255,.5);font-size:12px;max-width:460px;">Donne ton avis sur la séance — ce qui n\'a pas fonctionné, ce que tu voudrais voir ajouté ou changé. Le MJ seul peut le lire, et tu peux renvoyer un avis à tout moment pour remplacer le précédent.</div>';
+  html+='<div class="fb-field"><label>NOTE DE LA SÉANCE</label><div class="stars" id="stars"></div></div>';
+  html+='<div class="fb-field"><label>CE QUI N\'A PAS FONCTIONNÉ / T\'A GÊNÉ</label><textarea id="fb-problems" placeholder="Ex: le rythme était trop lent pendant la poursuite...">'+esc(mine?mine.problems:'')+'</textarea></div>';
+  html+='<div class="fb-field"><label>CE QUE TU VOUDRAIS VOIR AJOUTÉ OU CHANGÉ</label><textarea id="fb-wishes" placeholder="Ex: j\'aimerais plus de scènes avec mon personnage...">'+esc(mine?mine.wishes:'')+'</textarea></div>';
+  html+='<div class="fb-field"><label>AUTRE CHOSE À DIRE AU MJ</label><textarea id="fb-other" placeholder="Libre...">'+esc(mine?mine.other:'')+'</textarea></div>';
+  html+='<button class="send-btn" onclick="sendFeedback()">'+(mine?'↺ METTRE À JOUR MON AVIS':'▶ ENVOYER MON AVIS')+'</button>';
+  if(mine)html+='<div class="sent-note">✓ Avis envoyé le '+fmtTime(mine.time)+'</div>';
+  c.innerHTML=html;
+  renderStars();
+}
+function renderStars(){
+  var el=document.getElementById('stars');if(!el)return;
+  var html='';
+  for(var i=1;i<=5;i++){html+='<span class="star'+(i<=myRating?' on':'')+'" onclick="setRating('+i+')">★</span>';}
+  el.innerHTML=html;
+}
+function setRating(n){myRating=n;renderStars();}
+function sendFeedback(){
+  state.feedbacks[role]={
+    rating:myRating,
+    problems:document.getElementById('fb-problems').value.trim(),
+    wishes:document.getElementById('fb-wishes').value.trim(),
+    other:document.getElementById('fb-other').value.trim(),
+    time:Date.now()
+  };
+  pushState();render();
+}
+function renderMJ(c){
+  var keys=Object.keys(state.feedbacks);
+  var html='<div class="mj-actions"><div class="mj-count">'+keys.length+'/'+LAYER_ORDER.length+' avis reçus</div>'+(keys.length?'<button class="reset-btn" onclick="resetAll()">↺ EFFACER POUR LA PROCHAINE SESSION</button>':'')+'</div>';
+  if(!keys.length){
+    html+='<div class="waiting">En attente des avis des joueurs...</div>';
+  } else {
+    LAYER_ORDER.filter(function(k){return state.feedbacks[k];}).forEach(function(k){
+      var fb=state.feedbacks[k];
+      var stars='';for(var i=1;i<=5;i++)stars+=(i<=(fb.rating||0)?'★':'☆');
+      html+='<div class="fb-card" style="border-color:'+ROLE_COLORS[k]+'44;">'
+        +'<div class="fb-card-head"><span class="fb-card-name" style="color:'+ROLE_COLORS[k]+';">'+ROLE_LABELS[k]+'</span><span class="fb-card-stars">'+stars+'</span></div>'
+        +'<div class="fb-card-time">'+fmtTime(fb.time)+'</div>';
+      if(fb.problems)html+='<div class="fb-card-sec"><div class="fb-card-sec-lbl">CE QUI N\'A PAS FONCTIONNÉ</div><div class="fb-card-sec-txt">'+esc(fb.problems)+'</div></div>';
+      if(fb.wishes)html+='<div class="fb-card-sec"><div class="fb-card-sec-lbl">ENVIES / AJOUTS SOUHAITÉS</div><div class="fb-card-sec-txt">'+esc(fb.wishes)+'</div></div>';
+      if(fb.other)html+='<div class="fb-card-sec"><div class="fb-card-sec-lbl">AUTRE</div><div class="fb-card-sec-txt">'+esc(fb.other)+'</div></div>';
+      html+='</div>';
+    });
+  }
+  c.innerHTML=html;
+}
+function resetAll(){
+  if(!confirm('Effacer tous les avis reçus ? (Irréversible)'))return;
+  state={feedbacks:{}};
+  pushState();render();
+}
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var codeParam=params.get("code");
+  var roleParam=params.get("role");
+  if(codeParam){var lc=document.getElementById("lcode");if(lc)lc.value=codeParam;}
+  if(roleParam)selRole(roleParam);
+  if(codeParam&&roleParam){setTimeout(function(){go();},50);}
+})();
+</script>
+</body>
+</html>

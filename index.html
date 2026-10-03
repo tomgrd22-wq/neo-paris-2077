@@ -194,7 +194,7 @@ var selectedSignupRole=null;
 /* ═════ SYSTÈME DE VERROUS MJ ═════ */
 var LOCK_BROKER='wss://broker.emqx.io:8084/mqtt';
 var locksMc=null,locksTopic='';
-var currentLocks={archive:true,coffre:true,gala:true,poursuite:true}; /* true = verrouillé par défaut ; toute autre clé absente = déverrouillée */
+var currentLocks={archive:true,coffre:true,gala:true,poursuite:true,bilan:true}; /* true = verrouillé par défaut ; toute autre clé absente = déverrouillée */
 var LOCKABLE=[
   {key:'archive',cat:'Missions',ico:'📁',name:"L'Archive Fantôme",desc:"Casse collectif — 5 mini-jeux simultanés, un par joueur.",color:'#ffc83c',url:'missions/archive-fantome.html'},
   {key:'coffre',cat:'Missions',ico:'🏦',name:"Le Coffre d'EuroTech-Luxe",desc:"Infiltration — crochetage, QTE, main stable, mastermind, code.",color:'#00ccff',url:'missions/coffre-eurotech.html'},
@@ -211,7 +211,8 @@ var LOCKABLE=[
   {key:'suivi-narratif',cat:'Outils de session',ico:'📊',name:'Suivi Narratif',desc:"Réputation par faction, humanité de SPECTRE, toile de contacts.",color:'#bb44ff',url:'outils-session/suivi-narratif.html'},
   {key:'finances',cat:'Outils de session',ico:'💰',name:'Finances & Dettes',desc:"Eddies et dettes par personnage, ajustables en direct.",color:'#ffc83c',url:'outils-session/finances.html'},
   {key:'dilemme',cat:'Outils de session',ico:'⚖',name:'Dilemme Collectif',desc:"Question à choix multiples, toute la table vote en direct.",color:'#ff2040',url:'outils-session/dilemme-collectif.html'},
-  {key:'flashback',cat:'Outils de session',ico:'🎬',name:'Flashback Privé',desc:"Un joueur demande un souvenir — visible de toi seul.",color:'#bb44ff',url:'outils-session/flashback-prive.html'}
+  {key:'flashback',cat:'Outils de session',ico:'🎬',name:'Flashback Privé',desc:"Un joueur demande un souvenir — visible de toi seul.",color:'#bb44ff',url:'outils-session/flashback-prive.html'},
+  {key:'bilan',cat:'Outils de session',ico:'📝',name:'Bilan de Session',desc:"Chaque joueur donne son avis — note, ce qui n'a pas marché, ce qu'il voudrait voir ajouté. Visible du MJ seul.",color:'#00ccff',url:'outils-session/bilan-session.html'}
 ];
 function connectLocks(){
   var code=getSessionCode();
