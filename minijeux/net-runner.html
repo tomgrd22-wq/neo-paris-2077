@@ -127,6 +127,26 @@ function buildDots(){
   }
 }
 
+/* Explore toutes les cases atteignables depuis un point (4 directions,
+   avec le meme wrap horizontal que les deplacements) pour pouvoir
+   retirer les fragments places dans une poche isolee du labyrinthe. */
+function floodFillReachable(sx,sy){
+  var seen=new Set();
+  var key0=sx+','+sy;
+  seen.add(key0);
+  var stack=[[sx,sy]];
+  while(stack.length){
+    var cur=stack.pop();var x=cur[0],y=cur[1];
+    [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(function(n){
+      var nx=((n[0]%COLS)+COLS)%COLS,ny=n[1];
+      if(ny<0||ny>=ROWS||isWall(nx,ny))return;
+      var key=nx+','+ny;
+      if(!seen.has(key)){seen.add(key);stack.push([nx,ny]);}
+    });
+  }
+  return seen;
+}
+
 function findSpawns(){
   var p=null,gh=[];
   for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
@@ -147,6 +167,10 @@ var PLAYER_STEP_MS=170, GHOST_STEP_MS=230, GHOST_SCARED_STEP_MS=320, POWER_MS=60
 function resetState(){
   buildDots();
   var sp=findSpawns();
+  var reachable=floodFillReachable(sp.p.x,sp.p.y);
+  for(var ry=0;ry<ROWS;ry++)for(var rx=0;rx<COLS;rx++){
+    if(grid[ry][rx]>0&&!reachable.has(rx+','+ry))grid[ry][rx]=0;
+  }
   player={gx:sp.p.x,gy:sp.p.y,rx:sp.p.x,ry:sp.p.y,acc:0};
   var cols=['#ff2040','#bb44ff','#ff33cc','#ffaa00'];
   var fourDirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
