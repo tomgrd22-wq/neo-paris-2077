@@ -1893,7 +1893,7 @@ function invPrev(){
   var ok=invCanPlace(invHov.x,invHov.y,w,h,invMovingItem.id);
   /* Compute view offset for ghost position */
   var offX=0,offY=0;
-  if(role!=='mj'){
+  if(!(role==='mj'&&invCellEditMode)){
     var bx0=invW,by0=invH;
     invActiveCells.forEach(function(k){var p=k.split(',');var x=parseInt(p[0]),y=parseInt(p[1]);if(x<bx0)bx0=x;if(y<by0)by0=y;});
     offX=bx0;offY=by0;
