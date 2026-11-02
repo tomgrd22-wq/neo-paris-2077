@@ -467,6 +467,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 /* ═════ MJ VIEW ═════ */
 function renderMJ(){
+  setTimeout(function(){bkListSnaps();bkRefreshStatus();startAutoBackup();},300);
   var code=getSessionCode()||'';
   var qs='?code='+encodeURIComponent(code)+'&role=mj';
   var html='<div class="hero"><div class="hero-eyebrow">// ACCÈS MAÎTRE DU JEU //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Portail de campagne — accès complet</div></div>';
@@ -502,9 +503,15 @@ function renderMJ(){
     +'</div>';
 
   html+='<div class="section"><div class="section-title">💾 Sauvegarde de la session</div>'
-    +'<div class="note" style="margin-top:0;margin-bottom:12px;">Exporte tout ce que ce navigateur a gardé (messages des téléphones, inventaires, scores, états) dans un fichier. À restaurer si le serveur ou le cache efface tout. Fais-le à la fin de chaque séance.</div>'
-    +'<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="lock-open-btn" onclick="exportSession()">💾 EXPORTER LA SESSION</button>'
-    +'<button class="lock-open-btn" onclick="document.getElementById(\'restore-file\').click()">📂 RESTAURER UNE SAUVEGARDE</button></div>'
+    +'<div class="note" style="margin-top:0;margin-bottom:12px;">Sauvegarde automatique toutes les 2 minutes tant que ce portail reste ouvert : instantanés dans le navigateur (20 derniers), copie sur le serveur, et dossier de ton choix sur ton ordinateur (Chrome / Edge).</div>'
+    +'<div id="bk-status" class="note" style="margin:0 0 10px;"></div>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'
+    +'<button class="lock-open-btn" onclick="exportSession()">💾 EXPORTER UN FICHIER</button>'
+    +'<button class="lock-open-btn" onclick="document.getElementById(\'restore-file\').click()">📂 RESTAURER UN FICHIER</button>'
+    +'<button class="lock-open-btn" onclick="chooseBackupFolder()">📁 DOSSIER DE SAUVEGARDE AUTO</button>'
+    +'<button class="lock-open-btn" onclick="restoreFromServer()">☁ RESTAURER DEPUIS LE SERVEUR</button></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><select id="bk-snaps" style="background:#0b0b14;color:#e8e8f0;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:9px;font-family:inherit;max-width:100%;"></select>'
+    +'<button class="lock-open-btn" onclick="restoreSnapshot()">↩ RESTAURER CET INSTANTANÉ</button></div>'
     +'<input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="importSession(this)">'
     +'</div>';
 
@@ -668,12 +675,20 @@ function finishBoot(instant){
 identityBoot();
 runBoot();
 
-/* ── Sauvegarde / restauration de la session (tout le localStorage du site, sauf l'identité de l'appareil) ── */
+/* ── Sauvegarde / restauration de la session ── */
 var BACKUP_SKIP=['np_ident'];
+var BK_LAST='',bkTimer=null,bkMc=null,bkInfo={snap:null,folder:null,server:null};
+function bkCollect(){var data={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(BACKUP_SKIP.indexOf(k)<0&&k.indexOf('np_backup_')!==0)data[k]=localStorage.getItem(k);}return data;}
+function bkPayload(){return JSON.stringify({app:'neo-paris-2077',version:1,date:new Date().toISOString(),data:bkCollect()});}
+function bkApply(o){
+  if(!o||o.app!=='neo-paris-2077'||!o.data)throw new Error('fichier non reconnu');
+  var n=Object.keys(o.data).length;
+  if(!confirm('Restaurer '+n+' éléments du '+(o.date||'?').replace('T',' ').slice(0,16)+' ? Les données actuelles de même nom seront remplacées.'))return false;
+  Object.keys(o.data).forEach(function(k){if(BACKUP_SKIP.indexOf(k)<0)localStorage.setItem(k,o.data[k]);});
+  alert('Sauvegarde restaurée. Rouvre les téléphones et outils : ils se resynchroniseront avec les joueurs.');return true;
+}
 function exportSession(){
-  var data={};
-  try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(BACKUP_SKIP.indexOf(k)<0)data[k]=localStorage.getItem(k);}}catch(e){alert('Export impossible : '+e.message);return;}
-  var blob=new Blob([JSON.stringify({app:'neo-paris-2077',version:1,date:new Date().toISOString(),data:data})],{type:'application/json'});
+  var blob=new Blob([bkPayload()],{type:'application/json'});
   var a=document.createElement('a');var d=new Date();
   a.href=URL.createObjectURL(blob);a.download='neo-paris-sauvegarde-'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
   document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
@@ -681,18 +696,85 @@ function exportSession(){
 function importSession(inp){
   var f=inp.files&&inp.files[0];if(!f)return;
   var r=new FileReader();
-  r.onload=function(){
-    try{
-      var o=JSON.parse(r.result);
-      if(!o||o.app!=='neo-paris-2077'||!o.data)throw new Error('fichier non reconnu');
-      var n=Object.keys(o.data).length;
-      if(!confirm('Restaurer '+n+' éléments du '+(o.date||'?').slice(0,10)+' ? Les données actuelles de même nom seront remplacées.'))return;
-      Object.keys(o.data).forEach(function(k){if(BACKUP_SKIP.indexOf(k)<0)localStorage.setItem(k,o.data[k]);});
-      alert('Sauvegarde restaurée. Rouvre les téléphones et outils : ils se resynchroniseront avec les joueurs.');
-    }catch(e){alert('Restauration impossible : '+e.message);}
-    inp.value='';
-  };
+  r.onload=function(){try{bkApply(JSON.parse(r.result));}catch(e){alert('Restauration impossible : '+e.message);}inp.value='';};
   r.readAsText(f);
+}
+/* IndexedDB : instantanés + poignée du dossier */
+function bkDB(){return new Promise(function(res,rej){var q=indexedDB.open('np_backup',1);q.onupgradeneeded=function(){var d=q.result;d.createObjectStore('snaps',{keyPath:'ts'});d.createObjectStore('kv');};q.onsuccess=function(){res(q.result);};q.onerror=function(){rej(q.error);};});}
+function bkTx(store,mode,fn){return bkDB().then(function(db){return new Promise(function(res,rej){var t=db.transaction(store,mode),s=t.objectStore(store),r=fn(s);t.oncomplete=function(){res(r&&r.result);};t.onerror=function(){rej(t.error);};});});}
+function bkSnapshot(){
+  var p=bkPayload(),core=JSON.stringify(bkCollect());
+  if(core===BK_LAST||core==='{}')return Promise.resolve();
+  BK_LAST=core;
+  return bkTx('snaps','readwrite',function(s){s.put({ts:Date.now(),payload:p});}).then(function(){
+    return bkTx('snaps','readwrite',function(s){return s.getAllKeys();});
+  }).then(function(keys){
+    var old=keys.sort(function(a,b){return b-a;}).slice(20);
+    if(old.length)return bkTx('snaps','readwrite',function(s){old.forEach(function(k){s.delete(k);});});
+  }).then(function(){bkInfo.snap=new Date();});
+}
+function bkListSnaps(){
+  var sel=document.getElementById('bk-snaps');if(!sel)return;
+  bkTx('snaps','readonly',function(s){return s.getAll();}).then(function(all){
+    all.sort(function(a,b){return b.ts-a.ts;});
+    sel.innerHTML=all.length?all.map(function(x){var d=new Date(x.ts);return '<option value="'+x.ts+'">'+d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' — '+Math.round(x.payload.length/1024)+' Ko</option>';}).join(''):'<option value="">Aucun instantané pour l\'instant</option>';
+  }).catch(function(){sel.innerHTML='<option value="">Instantanés indisponibles</option>';});
+}
+function restoreSnapshot(){
+  var sel=document.getElementById('bk-snaps');if(!sel||!sel.value)return;
+  bkTx('snaps','readonly',function(s){return s.get(+sel.value);}).then(function(x){if(x)try{bkApply(JSON.parse(x.payload));}catch(e){alert('Restauration impossible : '+e.message);}});
+}
+/* Dossier sur l'ordinateur (File System Access API) */
+function chooseBackupFolder(){
+  if(!window.showDirectoryPicker){alert('Ton navigateur ne gère pas les dossiers automatiques. Utilise Chrome ou Edge sur ordinateur, ou « Exporter un fichier ».');return;}
+  window.showDirectoryPicker({mode:'readwrite'}).then(function(h){return bkTx('kv','readwrite',function(s){s.put(h,'dir');}).then(function(){return bkFolderWrite(true);});}).catch(function(){});
+}
+function bkFolderWrite(ask){
+  return bkTx('kv','readonly',function(s){return s.get('dir');}).then(function(h){
+    if(!h)return;
+    return h.queryPermission({mode:'readwrite'}).then(function(p){
+      if(p!=='granted'){if(!ask){bkInfo.folder='permission';bkRefreshStatus();return;}return h.requestPermission({mode:'readwrite'}).then(function(p2){if(p2!=='granted')return;return bkFolderDo(h);});}
+      return bkFolderDo(h);
+    });
+  }).catch(function(){});
+}
+function bkFolderDo(h){
+  var d=new Date(),day=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2),p=bkPayload();
+  function put(name){return h.getFileHandle(name,{create:true}).then(function(f){return f.createWritable();}).then(function(w){return w.write(p).then(function(){return w.close();});});}
+  return put('neo-paris-auto.json').then(function(){return put('neo-paris-'+day+'.json');}).then(function(){bkInfo.folder=new Date();bkRefreshStatus();});
+}
+/* Copie sur le serveur (message retenu, si la taille reste raisonnable) */
+function bkServerPush(){
+  var code=getSessionCode();if(!code||!window.mqtt)return;
+  var p=bkPayload();if(p.length>400000){bkInfo.server='trop gros';return;}
+  function send(){bkMc.publish('spectre_backup_v1_'+code,p,{retain:true,qos:1});bkInfo.server=new Date();bkRefreshStatus();}
+  if(!bkMc){bkMc=mqtt.connect(LOCK_BROKER,{clientId:'bk'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});bkMc.on('connect',send);}
+  else if(bkMc.connected)send();
+}
+function restoreFromServer(){
+  var code=getSessionCode();if(!code||!window.mqtt){alert('Code de session introuvable.');return;}
+  var c=mqtt.connect(LOCK_BROKER,{clientId:'bkr'+Date.now(),clean:true,connectTimeout:8000}),got=false;
+  var to=setTimeout(function(){if(!got){c.end();alert('Aucune sauvegarde trouvée sur le serveur pour ce code.');}},6000);
+  c.on('connect',function(){c.subscribe('spectre_backup_v1_'+code);});
+  c.on('message',function(t,m){got=true;clearTimeout(to);c.end();try{bkApply(JSON.parse(m.toString()));}catch(e){alert('Restauration impossible : '+e.message);}});
+}
+function bkRefreshStatus(){
+  var el=document.getElementById('bk-status');if(!el)return;
+  function t(d){return d instanceof Date?d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):d;}
+  var parts=[];
+  parts.push('Instantané navigateur : '+(bkInfo.snap?t(bkInfo.snap):'en attente'));
+  parts.push('Serveur : '+(bkInfo.server?t(bkInfo.server):'en attente'));
+  parts.push('Dossier : '+(bkInfo.folder==='permission'?'<a href="#" onclick="bkFolderWrite(true);return false;" style="color:#ffc83c;">cliquer pour réautoriser</a>':bkInfo.folder?t(bkInfo.folder):(window.showDirectoryPicker?'non choisi':'non disponible ici')));
+  el.innerHTML=parts.join(' · ');
+}
+function bkTick(){
+  bkSnapshot().then(function(){bkListSnaps();}).catch(function(){});
+  bkServerPush();bkFolderWrite(false);bkRefreshStatus();
+}
+function startAutoBackup(){
+  if(bkTimer)return;
+  bkTimer=setInterval(bkTick,120000);
+  setTimeout(bkTick,4000);
 }
 </script>
 </body>
