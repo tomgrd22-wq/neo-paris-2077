@@ -501,6 +501,13 @@ function renderMJ(){
     +'<button class="lock-open-btn" onclick="openLockModal()">🔒 GÉRER LES VERROUS</button>'
     +'</div>';
 
+  html+='<div class="section"><div class="section-title">💾 Sauvegarde de la session</div>'
+    +'<div class="note" style="margin-top:0;margin-bottom:12px;">Exporte tout ce que ce navigateur a gardé (messages des téléphones, inventaires, scores, états) dans un fichier. À restaurer si le serveur ou le cache efface tout. Fais-le à la fin de chaque séance.</div>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="lock-open-btn" onclick="exportSession()">💾 EXPORTER LA SESSION</button>'
+    +'<button class="lock-open-btn" onclick="document.getElementById(\'restore-file\').click()">📂 RESTAURER UNE SAUVEGARDE</button></div>'
+    +'<input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="importSession(this)">'
+    +'</div>';
+
   html+='<div class="section"><div class="section-title">🛠 Outils de session en direct</div><div class="grid">'
     +tool('🛠','Outils de Table','Jauge de tension, journal de session, calendrier, générateur de PNJ.','#00ff88','outils-session/outils-mj.html'+qs)
     +tool('📊','Suivi Narratif','Réputation par faction, humanité de SPECTRE, toile de contacts.','#bb44ff','outils-session/suivi-narratif.html'+qs)
@@ -660,6 +667,33 @@ function finishBoot(instant){
 
 identityBoot();
 runBoot();
+
+/* ── Sauvegarde / restauration de la session (tout le localStorage du site, sauf l'identité de l'appareil) ── */
+var BACKUP_SKIP=['np_ident'];
+function exportSession(){
+  var data={};
+  try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(BACKUP_SKIP.indexOf(k)<0)data[k]=localStorage.getItem(k);}}catch(e){alert('Export impossible : '+e.message);return;}
+  var blob=new Blob([JSON.stringify({app:'neo-paris-2077',version:1,date:new Date().toISOString(),data:data})],{type:'application/json'});
+  var a=document.createElement('a');var d=new Date();
+  a.href=URL.createObjectURL(blob);a.download='neo-paris-sauvegarde-'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
+  document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+function importSession(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var o=JSON.parse(r.result);
+      if(!o||o.app!=='neo-paris-2077'||!o.data)throw new Error('fichier non reconnu');
+      var n=Object.keys(o.data).length;
+      if(!confirm('Restaurer '+n+' éléments du '+(o.date||'?').slice(0,10)+' ? Les données actuelles de même nom seront remplacées.'))return;
+      Object.keys(o.data).forEach(function(k){if(BACKUP_SKIP.indexOf(k)<0)localStorage.setItem(k,o.data[k]);});
+      alert('Sauvegarde restaurée. Rouvre les téléphones et outils : ils se resynchroniseront avec les joueurs.');
+    }catch(e){alert('Restauration impossible : '+e.message);}
+    inp.value='';
+  };
+  r.readAsText(f);
+}
 </script>
 </body>
 </html>
