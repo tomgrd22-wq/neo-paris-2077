@@ -111,6 +111,57 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .switch-link:hover{color:rgba(255,255,255,.6);}
 .loading{text-align:center;padding:80px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.3);}
 
+
+/* ═════ HABILLAGE PORTAIL : bandeau supérieur + connexion ═════ */
+#np-topbar{position:fixed;top:0;left:0;right:0;height:34px;z-index:800;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:linear-gradient(180deg,rgba(7,7,15,.94),rgba(7,7,15,.78));border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.55);}
+#np-topbar::after{content:'';position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:linear-gradient(90deg,transparent,#ff33cc,#00ccff,transparent);background-size:200% 100%;animation:tbSweep 6s linear infinite;opacity:.8;}
+@keyframes tbSweep{from{background-position:200% 0;}to{background-position:-200% 0;}}
+#np-topbar .tb-brand{font-family:'Orbitron',monospace;font-weight:900;letter-spacing:3px;color:#ff33cc;white-space:nowrap;text-shadow:0 0 10px rgba(255,51,204,.5);}
+#np-topbar .tb-tick{flex:1;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+#np-topbar .tb-tick span{display:inline-block;padding-left:100%;animation:tbTick 70s linear infinite;color:rgba(0,204,255,.6);}
+@keyframes tbTick{to{transform:translateX(-100%);}}
+#np-topbar .tb-r{display:flex;align-items:center;gap:12px;white-space:nowrap;}
+#np-topbar .tb-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:tbDot 2s ease-in-out infinite;}
+#np-topbar .tb-dot.off{background:#ff2040;box-shadow:0 0 8px #ff2040;}
+@keyframes tbDot{50%{opacity:.35;}}
+#np-topbar .tb-who{color:#ffc83c;}
+@media(max-width:640px){#np-topbar .tb-tick,#np-topbar .tb-who{display:none;}#np-topbar{justify-content:space-between;}}
+.wrap{padding-top:84px!important;}
+
+.hero-ring{position:relative;width:86px;height:86px;margin:0 auto 22px;}
+.hero-ring i,.hero-ring b,.hero-ring em{position:absolute;inset:0;border-radius:50%;border:1px solid transparent;}
+.hero-ring i{border-top-color:#ff33cc;border-bottom-color:#00ccff;animation:ringA 6s linear infinite;box-shadow:0 0 18px rgba(255,51,204,.25);}
+.hero-ring b{inset:9px;border-left-color:#00ff88;border-right-color:#ffaa00;animation:ringA 4s linear infinite reverse;}
+.hero-ring em{inset:20px;border:1px dashed rgba(255,255,255,.3);animation:ringA 14s linear infinite;}
+.hero-ring::after{content:'';position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;box-shadow:0 0 18px #ff33cc,0 0 36px #00ccff;animation:ringPulse 2.4s ease-in-out infinite;}
+@keyframes ringA{to{transform:rotate(360deg);}}
+@keyframes ringPulse{50%{transform:scale(.6);opacity:.7;}}
+.hero-type{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid #00ccff;max-width:100%;animation:typeIn 2.4s steps(40,end) .4s both,caret .8s step-end infinite;}
+@keyframes typeIn{from{width:0;}to{width:100%;}}
+@keyframes caret{50%{border-color:transparent;}}
+.hero-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px;}
+.hero-chip{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.5);animation:chipIn .6s ease both;}
+.hero-chip:nth-child(2){animation-delay:.15s}.hero-chip:nth-child(3){animation-delay:.3s}
+.hero-chip b{color:#00ff88;font-weight:400;}
+@keyframes chipIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+.authbox{max-width:380px!important;padding:32px 28px!important;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.01))!important;border-color:rgba(255,200,60,.22)!important;}
+.authbox::before,.authbox::after{content:'';position:absolute;width:18px;height:18px;border:2px solid #ffc83c;opacity:.8;pointer-events:none;}
+.authbox::before{left:8px;top:8px;border-right:none;border-bottom:none;border-radius:4px 0 0 0;}
+.authbox::after{right:8px;bottom:8px;border-left:none;border-top:none;border-radius:0 0 4px 0;}
+.authbox .auth-scan{position:absolute;left:0;right:0;top:-40px;height:40px;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,200,60,.08),transparent);animation:authScan 5s linear infinite;}
+@keyframes authScan{to{transform:translateY(520px);}}
+.authbox input{transition:border-color .2s ease,box-shadow .2s ease,background .2s ease!important;}
+.authbox input:focus{border-color:#ffc83c!important;box-shadow:0 0 0 3px rgba(255,200,60,.12),0 0 18px rgba(255,200,60,.15);background:rgba(255,200,60,.05)!important;}
+.authbox-tab{position:relative;transition:all .25s ease!important;}
+.authbox-tab.on{box-shadow:inset 0 -2px 0 #ffc83c,0 0 16px rgba(255,200,60,.12);}
+.authbox-btn{position:relative;overflow:hidden;letter-spacing:3px!important;}
+.authbox-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.25),transparent);transform:skewX(-20deg);animation:btnSheen 3.2s ease-in-out infinite;}
+@keyframes btnSheen{0%,60%{left:-60%;}100%{left:130%;}}
+.authbox>*:not(.auth-scan){position:relative;}
+
 /* ═════ BOOT SEQUENCE ═════ */
 #boot{position:fixed;inset:0;z-index:9000;background:#020204;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;transition:opacity .5s ease,visibility .5s;}
 #boot.hide{opacity:0;visibility:hidden;pointer-events:none;}
@@ -144,6 +195,7 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 <link rel="stylesheet" href="assets/fx.css"><script defer src="assets/fx.js"></script>
 </head>
 <body>
+<div id="np-topbar"><span class="tb-brand">⚡ NEO-PARIS 2077</span><div class="tb-tick"><span id="tb-tick"></span></div><div class="tb-r"><span class="tb-who" id="tb-who"></span><span id="tb-clock">--:--</span><span class="tb-dot" id="tb-dot" title="Connexion"></span></div></div>
 
 <div id="boot">
   <div id="boot-glow"></div>
@@ -294,8 +346,8 @@ function renderPending(){
 
 /* ═════ AUTH SCREEN ═════ */
 function renderAuth(){
-  var html='<div class="hero"><div class="hero-eyebrow">// OPÉRATION CABARET FANTÔME //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Connecte-toi pour accéder à ton espace</div></div>';
-  html+='<div class="authbox">';
+  var html='<div class="hero"><div class="hero-ring"><i></i><b></b><em></em></div><div class="hero-eyebrow">// OPÉRATION CABARET FANTÔME //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub"><span class="hero-type">Connecte-toi pour accéder à ton espace</span></div><div class="hero-chips"><span class="hero-chip">RÉSEAU NOIR · <b>EN LIGNE</b></span><span class="hero-chip">CANAL CHIFFRÉ · <b>ACTIF</b></span><span class="hero-chip">SESSION · <b>PRIVÉE</b></span></div></div>';
+  html+='<div class="authbox"><div class="auth-scan"></div>';
   html+='<div class="authbox-tabs"><button class="authbox-tab '+(authMode==='login'?'on':'')+'" onclick="setAuthMode(\'login\')">SE CONNECTER</button><button class="authbox-tab '+(authMode==='signup'?'on':'')+'" onclick="setAuthMode(\'signup\')">CRÉER UN COMPTE</button></div>';
   html+='<div class="authbox-lbl">IDENTIFIANT</div><input type="text" id="auth-username" placeholder="Ex: kiki_le_nomade" autocomplete="off">';
   html+='<div class="authbox-lbl">MOT DE PASSE</div><input type="password" id="auth-password" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')submitAuth();">';
@@ -777,6 +829,20 @@ function startAutoBackup(){
   bkTimer=setInterval(bkTick,120000);
   setTimeout(bkTick,4000);
 }
+
+/* ── bandeau supérieur : horloge, session, ticker ── */
+(function(){
+  var TICK=['ARASAKA — PATROUILLES RENFORCÉES SUR LES NIVEAUX BAS','EUROTECH — RÉSULTATS TRIMESTRIELS EN HAUSSE, ACTIONNAIRES RASSURÉS','MÉTÉO NEO-PARIS — PLUIE ACIDE PRÉVUE APRÈS MINUIT','RÉSEAU — LATENCE ÉLEVÉE SUR LE BASSIN OURCQ','NEON QUARTER — COUVRE-FEU LEVÉ POUR LA NUIT','CANAL NOIR — SIGNAL FAIBLE, ORIGINE NON IDENTIFIÉE','TRANSPORTS — LIGNE 7 SUSPENDUE, DÉVIATION PAR LA ZONE INDUSTRIELLE'];
+  var t=document.getElementById('tb-tick');if(t)t.textContent=TICK.join('     ///     ')+'     ///     ';
+  function tick(){
+    var c=document.getElementById('tb-clock');
+    if(c)c.textContent=new Date().toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var w=document.getElementById('tb-who');
+    if(w){try{var u=currentUserData;w.textContent=u&&u.approved?((u.isMJ?'MJ':(u.role||'').toUpperCase())+(u.sessionCode?' · '+u.sessionCode:'')):'';}catch(e){}}
+    var d=document.getElementById('tb-dot');if(d)d.className='tb-dot'+(navigator.onLine?'':' off');
+  }
+  tick();setInterval(tick,1000);
+})();
 </script>
 </body>
 </html>
