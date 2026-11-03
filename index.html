@@ -194,6 +194,13 @@ body.has-tabs .wrap{padding-top:136px!important;}
 .home-tile .ht-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--c);}
 .home-tile .ht-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;}
 .home-tile .ht-n{margin-top:6px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.35);}
+.home-about{max-width:760px;margin:0 auto 40px;padding:28px 26px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.03);line-height:1.7;color:rgba(255,255,255,.75);font-size:15px;}
+.home-about p{margin:10px 0 0;}
+.home-crews{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:12px;}
+.home-crew{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;border:1px solid var(--c);border-radius:10px;text-align:center;}
+.home-crew .ht-ico{font-size:28px;filter:drop-shadow(0 0 8px var(--c));}
+.home-crew .ht-name{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;color:var(--c);}
+.home-crew .ht-desc{font-size:11px;color:rgba(255,255,255,.5);}
 .home-info{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:-14px 0 34px;}
 .home-info span{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.55);}
 .home-info b{color:#ffc83c;font-weight:400;}
@@ -542,17 +549,10 @@ function renderPersonal(role){
     +pcard('🏆','CLASSEMENT DES MINI-JEUX','minijeux/classement.html')
     +'</div></div>';
 
-  html+='<div data-pane="accueil" style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
-  html+='<a class="switch-link" data-pane="accueil" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
-  html+='<a class="switch-link" data-pane="accueil" onclick="changeChar()">↺ CHANGER DE PERSONNAGE</a>';
-  html+='<a class="switch-link" data-pane="accueil" onclick="doLogout()">SE DÉCONNECTER</a>';
+  html+='<div style="text-align:center;margin-top:30px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
+  html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
+  html+='<a class="switch-link" onclick="doLogout()">SE DÉCONNECTER</a>';
   return html;
-}
-function changeChar(){
-  var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">...</div>';
-  db.collection('users').doc(currentUser.uid).update({role:null}).then(function(){
-    currentUserData.role=null;render();
-  }).catch(function(err){currentUserData.role=null;render();});
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -676,9 +676,9 @@ function renderMJ(){
     +tool('🖼','Prompts Images (ChatGPT)','Toutes les scènes clés à illustrer, prompt prêt à copier pour chacune.','#bb44ff','guide/prompts-images.html')
     +'</div></div>';
 
-  html+='<a class="switch-link" data-pane="accueil" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
-  html+='<a class="switch-link" data-pane="accueil" onclick="doLogout()">SE DÉCONNECTER</a>';
-  html+='<div class="foot" data-pane="accueil">NEO-PARIS / 2077 — PORTAIL DE CAMPAGNE — MODE MJ</div>';
+  html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
+  html+='<a class="switch-link" onclick="doLogout()">SE DÉCONNECTER</a>';
+  html+='<div class="foot">NEO-PARIS / 2077 — PORTAIL DE CAMPAGNE — MODE MJ</div>';
   return html;
 }
 function tool(ico,title,desc,color,url){
@@ -900,14 +900,15 @@ var TILE_META={
 };
 function curTabs(){return isMJ()?NP_TABS.mj:(getRole()?NP_TABS.player:null);}
 function homeTiles(kind){
-  var tabs=NP_TABS[kind].filter(function(t){return t.id!=='accueil';});
   var code=getSessionCode()||'';
-  var info='<div class="home-info" data-pane="accueil"><span>SESSION · <b>'+esc(code)+'</b></span><span>RÔLE · <b>'+(kind==='mj'?'MAÎTRE DU JEU':esc((CHARACTERS[getRole()]||{}).name||''))+'</b></span></div>';
-  var tiles='<div class="home-tiles" data-pane="accueil">'+tabs.map(function(t){
-    var m=TILE_META[t.id]||{c:'#fff',d:{}};
-    return '<a class="home-tile" style="--c:'+m.c+';" onclick="setTab(\''+t.id+'\')"><span class="ht-ico">'+t.ico+'</span><span class="ht-name">'+t.n+'</span><span class="ht-desc">'+(m.d[kind]||'')+'</span><span class="ht-n" data-count="'+t.id+'"></span></a>';
-  }).join('')+(kind==='player'?'<a class="home-tile" style="--c:#00ff88;" href="guide-joueur.html" target="_blank"><span class="ht-ico">❓</span><span class="ht-name">GUIDE DU JOUEUR</span><span class="ht-desc">Première fois ici ? Tout comprendre en quelques minutes.</span></a>':'')+'</div>';
-  return info+tiles;
+  var crew=Object.keys(CHARACTERS).map(function(k){var c=CHARACTERS[k];
+    return '<div class="home-crew" style="--c:'+c.color+';"><span class="ht-ico">'+c.ico+'</span><span class="ht-name">'+c.name+'</span><span class="ht-desc">'+c.title.split(' — ')[1]+'</span></div>';}).join('');
+  return '<div class="home-info" data-pane="accueil"><span>CAMPAGNE · <b>NEO-PARIS 2077</b></span><span>SESSION · <b>'+esc(code)+'</b></span><span>'+(kind==='mj'?'VUE · <b>MAÎTRE DU JEU</b>':'RÔLE · <b>'+esc((CHARACTERS[getRole()]||{}).name||'')+'</b>')+'</span></div>'
+    +'<div class="home-about" data-pane="accueil"><div class="hero-eyebrow">// LA CAMPAGNE //</div>'
+    +'<p>Neo-Paris, 2077. Une métropole saturée de néons où les mégacorporations dictent leur loi et où le Bas oublie jusqu\'à la lumière du jour. Dans ce monde, on ne survit pas seul : on survit en équipe.</p>'
+    +'<p>Cinq inconnus. Une nuit. Une ville qui n\'oublie jamais rien. Des missions, des trahisons, des choix qui se paient cher — et un seul mot d\'ordre : ne jamais hésiter.</p>'
+    +'<div class="hero-eyebrow" style="margin-top:18px;">// L\'ÉQUIPE //</div><div class="home-crews">'+crew+'</div>'
+    +'<p style="margin-top:16px;opacity:.7;font-size:12px;">Cyberpunk Edgerunners · jeu de rôle sur table · chaque scène se joue à l\'oral, ce portail t\'apporte les outils, les dossiers et les missions de la table.</p></div>';
 }
 var npTab='accueil';
 function tabFromHash(){var h=(location.hash||'').replace('#','');var t=curTabs();return t&&t.some(function(x){return x.id===h;})?h:null;}
@@ -915,6 +916,10 @@ function setTab(id){
   var t=curTabs();if(!t||!t.some(function(x){return x.id===id;}))id='accueil';
   if(location.hash!=='#'+id){history.pushState(null,'','#'+id);}
   npTab=id;applyTab(true);
+  if(!isMJ()&&arguments[1]!==false){
+    var one=document.querySelectorAll('#wrap [data-pane="'+id+'"] a.personal-card[href]');
+    if(id!=='accueil'&&one.length===1){try{window.open(one[0].href,'_blank');}catch(e){}}
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function applyTab(animate){
