@@ -162,6 +162,42 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 @keyframes btnSheen{0%,60%{left:-60%;}100%{left:130%;}}
 .authbox>*:not(.auth-scan){position:relative;}
 
+
+/* ═════ NAVIGATION PAR ONGLETS ═════ */
+#np-tabs{position:fixed;top:34px;left:0;right:0;height:46px;z-index:790;display:none;align-items:stretch;justify-content:center;
+  background:rgba(7,7,15,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06);}
+body.has-tabs #np-tabs{display:flex;animation:tabsIn .5s ease both;}
+@keyframes tabsIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+body.has-tabs .wrap{padding-top:136px!important;}
+#np-tabs .tabs-in{position:relative;display:flex;gap:2px;max-width:1100px;width:100%;overflow-x:auto;scrollbar-width:none;padding:0 12px;}
+#np-tabs .tabs-in::-webkit-scrollbar{display:none;}
+#np-tabs a{position:relative;display:flex;align-items:center;gap:8px;padding:0 18px;white-space:nowrap;cursor:pointer;text-decoration:none;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.45);transition:color .2s ease,background .2s ease;}
+#np-tabs a .ti{font-size:15px;filter:grayscale(.6);transition:filter .2s ease,transform .2s ease;}
+#np-tabs a:hover{color:#fff;background:rgba(255,255,255,.04);}
+#np-tabs a:hover .ti{filter:none;transform:translateY(-1px) scale(1.1);}
+#np-tabs a.on{color:#ffc83c;text-shadow:0 0 12px rgba(255,200,60,.45);}
+#np-tabs a.on .ti{filter:none;}
+#np-tabs .tab-ind{position:absolute;bottom:0;height:2px;left:0;width:0;background:linear-gradient(90deg,#ff33cc,#ffc83c,#00ccff);box-shadow:0 0 12px rgba(255,200,60,.7);transition:left .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1);}
+@media(max-width:640px){#np-tabs{justify-content:flex-start;}#np-tabs a{padding:0 13px;font-size:10px;letter-spacing:1px;}}
+.wrap .np-off{display:none!important;}
+.np-pane-in{animation:paneIn .45s cubic-bezier(.2,.8,.2,1) both;}
+@keyframes paneIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+.home-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin:0 0 40px;}
+.home-tile{position:relative;display:flex;flex-direction:column;gap:6px;padding:24px 22px;border:1px solid var(--c);border-radius:12px;cursor:pointer;text-decoration:none;overflow:hidden;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--c) 11%,transparent),rgba(255,255,255,.015) 60%);transition:transform .25s ease,box-shadow .25s ease;}
+.home-tile::after{content:'→';position:absolute;right:20px;top:22px;font-size:18px;color:var(--c);opacity:.4;transition:transform .25s ease,opacity .25s ease;}
+.home-tile:hover{transform:translateY(-4px);box-shadow:0 14px 36px rgba(0,0,0,.5),0 0 28px color-mix(in srgb,var(--c) 30%,transparent);}
+.home-tile:hover::after{transform:translateX(6px);opacity:1;}
+.home-tile .ht-ico{font-size:34px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 0 10px var(--c));}
+.home-tile .ht-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--c);}
+.home-tile .ht-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;}
+.home-tile .ht-n{margin-top:6px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.35);}
+.home-info{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:-14px 0 34px;}
+.home-info span{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.55);}
+.home-info b{color:#ffc83c;font-weight:400;}
+
 /* ═════ BOOT SEQUENCE ═════ */
 #boot{position:fixed;inset:0;z-index:9000;background:#020204;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;transition:opacity .5s ease,visibility .5s;}
 #boot.hide{opacity:0;visibility:hidden;pointer-events:none;}
@@ -197,6 +233,7 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 <body>
 <div id="np-topbar"><span class="tb-brand">⚡ NEO-PARIS 2077</span><div class="tb-tick"><span id="tb-tick"></span></div><div class="tb-r"><span class="tb-who" id="tb-who"></span><span id="tb-clock">--:--</span><span class="tb-dot" id="tb-dot" title="Connexion"></span></div></div>
 
+<nav id="np-tabs"><div class="tabs-in" id="np-tabs-in"></div></nav>
 <div id="boot">
   <div id="boot-glow"></div>
   <div id="boot-scan"></div>
@@ -467,10 +504,11 @@ function renderPersonal(role){
   var c=CHARACTERS[role];
   var code=getSessionCode()||'';
   var qs='?code='+encodeURIComponent(code)+'&role='+role;
-  var html='<div class="personal-hero"><div class="hero-eyebrow">// ESPACE PERSONNEL //</div>'
+  var html='<div class="personal-hero" data-pane="accueil"><div class="hero-eyebrow">// ESPACE PERSONNEL //</div>'
     +'<div class="personal-badge" style="--c:'+c.color+';">'+c.ico+' '+c.name+'</div>'
     +'<div class="personal-sub">'+c.title+'</div></div>';
-  html+='<div class="personal-grid">'
+  html+=homeTiles('player');
+  html+='<div class="personal-grid" data-pane="perso">'
     +'<a class="personal-card" href="'+c.tool+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🎮</div><div class="personal-card-title">OUTIL DE JEU</div></a>'
     +'<a class="personal-card" href="'+c.dossier+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">📖</div><div class="personal-card-title">DOSSIER PERSONNEL</div></a>'
     +(c.fiche?'<a class="personal-card" href="'+c.fiche+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🗒</div><div class="personal-card-title">FICHE DE PERSONNAGE</div></a>':'')
@@ -489,25 +527,25 @@ function renderPersonal(role){
     }).join('');
   }
 
-  html+=plabel('EN SÉANCE');
-  html+='<div class="personal-grid">'+pcard('🎬','SÉQUENCE D\'INTRO','ambiance/neo-paris-intro.html'+qs)+lockableGroup('Outils de session')+'</div>';
+  html+='<div data-pane="seance">'+plabel('EN SÉANCE');
+  html+='<div class="personal-grid">'+pcard('🎬','SÉQUENCE D\'INTRO','ambiance/neo-paris-intro.html'+qs)+lockableGroup('Outils de session')+'</div></div>';
 
-  html+=plabel('ACTIVITÉS');
-  html+='<div class="personal-grid">'+lockableGroup('Activités')+'</div>';
+  html+='<div data-pane="activites">'+plabel('ACTIVITÉS');
+  html+='<div class="personal-grid">'+lockableGroup('Activités')+'</div></div>';
 
-  html+=plabel('MISSIONS');
-  html+='<div class="personal-grid">'+lockableGroup('Missions')+'</div>';
+  html+='<div data-pane="missions">'+plabel('MISSIONS');
+  html+='<div class="personal-grid">'+lockableGroup('Missions')+'</div></div>';
 
-  html+=plabel('EN ATTENTE');
+  html+='<div data-pane="arcade">'+plabel('EN ATTENTE');
   html+='<div class="personal-grid">'
     +pcard('🕹','SALLE D\'ARCADE (MINI-JEUX)','minijeux/index.html')
     +pcard('🏆','CLASSEMENT DES MINI-JEUX','minijeux/classement.html')
-    +'</div>';
+    +'</div></div>';
 
-  html+='<div style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
-  html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
-  html+='<a class="switch-link" onclick="changeChar()">↺ CHANGER DE PERSONNAGE</a>';
-  html+='<a class="switch-link" onclick="doLogout()">SE DÉCONNECTER</a>';
+  html+='<div data-pane="accueil" style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">CODE DE SESSION : '+esc(code)+'</div>';
+  html+='<a class="switch-link" data-pane="accueil" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
+  html+='<a class="switch-link" data-pane="accueil" onclick="changeChar()">↺ CHANGER DE PERSONNAGE</a>';
+  html+='<a class="switch-link" data-pane="accueil" onclick="doLogout()">SE DÉCONNECTER</a>';
   return html;
 }
 function changeChar(){
@@ -523,9 +561,10 @@ function renderMJ(){
   setTimeout(function(){bkListSnaps();bkRefreshStatus();startAutoBackup();},300);
   var code=getSessionCode()||'';
   var qs='?code='+encodeURIComponent(code)+'&role=mj';
-  var html='<div class="hero"><div class="hero-eyebrow">// ACCÈS MAÎTRE DU JEU //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Portail de campagne — accès complet</div></div>';
+  var html='<div class="hero" data-pane="accueil"><div class="hero-eyebrow">// ACCÈS MAÎTRE DU JEU //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Portail de campagne — accès complet</div></div>';
+  html+=homeTiles('mj');
 
-  html+='<div class="section"><div class="section-title">🎮 Outils des personnages</div><div class="grid">'
+  html+='<div class="section" data-pane="perso"><div class="section-title">🎮 Outils des personnages</div><div class="grid">'
     +tool('🚐','KIKI — Dashboard Van','Navigation carte réelle, radio CB, état du van, inventaire.','#ffaa00','personnages/kiki-dashboard.html'+qs)
     +tool('🩺','FURY — Scanner Médical','Silhouette de scan, blessures, implants, PNJ, inventaire.','#00ff88','personnages/fury-scanner.html'+qs)
     +tool('🎯','TAMURO — Viseur Tactique','HUD de combat, verrouillage de cibles, dégâts, armement.','#ff2040','personnages/tamuro-terminal.html'+qs)
@@ -533,7 +572,7 @@ function renderMJ(){
     +tool('📞','MOON — Téléphone','Contacts, SPECTRE, terminal de hack, inventaire.','#00ccff','personnages/hunter-telephone.html'+qs)
     +'</div><div class="note">Code de session actuel : <code>'+esc(code)+'</code></div></div>';
 
-  html+='<div class="section"><div class="section-title">🎯 Missions collectives</div><div class="grid">'
+  html+='<div class="section" data-pane="missions"><div class="section-title">🎯 Missions collectives</div><div class="grid">'
     +tool('📁',"L'Archive Fantôme",'Casse collectif — 5 mini-jeux simultanés, un par joueur.','#ffc83c','missions/archive-fantome.html'+qs)
     +tool('🏦',"Le Coffre d'EuroTech-Luxe",'Infiltration — crochetage, QTE, main stable, mastermind, code.','#00ccff','missions/coffre-eurotech.html'+qs)
     +tool('🥂',"Le Gala d'EuroTech-Luxe",'Soirée mondaine — objet caché, doublon, bluff, pare-feu, rythme.','#ff33cc','missions/gala-eurotech.html'+qs)
@@ -541,7 +580,7 @@ function renderMJ(){
     +tool('⭕',"L'Encerclement",'Arasaka ferme le cordon — chaque joueur défend un secteur avec une épreuve différente, contre la montre.','#ff2040','missions/encerclement-arasaka.html'+qs)
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">🎲 Activités & Mini-jeux</div><div class="grid">'
+  html+='<div class="section" data-pane="activites"><div class="section-title">🎲 Activités & Mini-jeux</div><div class="grid">'
     +tool('🔓','Crochetage Réaliste','Serrure à faire tourner, zone idéale étroite, outils et temps limités.','#ffc83c','activites/crochetage-realiste.html'+qs)
     +tool('🎭',"Interrogatoire à Deux Visages",'Jauge de confiance/suspicion, visible du MJ et des joueurs.','#ff2040','activites/interrogatoire.html'+qs)
     +tool('🌐','Piratage en Relais','Chaque joueur pirate un segment à tour de rôle — l\'échec complique le suivant.','#00ccff','activites/piratage-relais.html'+qs)
@@ -550,12 +589,12 @@ function renderMJ(){
     +tool('🎲','Oracle de Complications','Tirage aléatoire : complication, PNJ improvisé ou lieu, pour ne jamais rester sec.','#00ccff','activites/oracle-complications.html'+qs)
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">🔒 Contrôle d\'accès</div>'
+  html+='<div class="section" data-pane="session"><div class="section-title">🔒 Contrôle d\'accès</div>'
     +'<div class="note" style="margin-top:0;margin-bottom:12px;">Verrouille ou débloque n\'importe quel outil, activité ou mission pour tes joueurs.</div>'
     +'<button class="lock-open-btn" onclick="openLockModal()">🔒 GÉRER LES VERROUS</button>'
     +'</div>';
 
-  html+='<div class="section"><div class="section-title">💾 Sauvegarde de la session</div>'
+  html+='<div class="section" data-pane="session"><div class="section-title">💾 Sauvegarde de la session</div>'
     +'<div class="note" style="margin-top:0;margin-bottom:12px;">Sauvegarde automatique toutes les 2 minutes tant que ce portail reste ouvert : instantanés dans le navigateur (20 derniers), copie sur le serveur, et dossier de ton choix sur ton ordinateur (Chrome / Edge).</div>'
     +'<div id="bk-status" class="note" style="margin:0 0 10px;"></div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'
@@ -568,7 +607,7 @@ function renderMJ(){
     +'<input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="importSession(this)">'
     +'</div>';
 
-  html+='<div class="section"><div class="section-title">🛠 Outils de session en direct</div><div class="grid">'
+  html+='<div class="section" data-pane="session"><div class="section-title">🛠 Outils de session en direct</div><div class="grid">'
     +tool('🛠','Outils de Table','Jauge de tension, journal de session, calendrier, générateur de PNJ.','#00ff88','outils-session/outils-mj.html'+qs)
     +tool('📊','Suivi Narratif','Réputation par faction, humanité de SPECTRE, toile de contacts.','#bb44ff','outils-session/suivi-narratif.html'+qs)
     +tool('💰','Finances & Dettes','Eddies et dettes par personnage, ajustables en direct.','#ffc83c','outils-session/finances.html'+qs)
@@ -576,7 +615,7 @@ function renderMJ(){
     +tool('🎬','Flashback Privé','Un joueur demande un souvenir — visible de toi seul.','#bb44ff','outils-session/flashback-prive.html'+qs)
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">📖 Dossiers personnels des personnages</div><div class="grid">'
+  html+='<div class="section" data-pane="perso"><div class="section-title">📖 Dossiers personnels des personnages</div><div class="grid">'
     +tool('⚔','La Vipère Rouge','Tamuro Ayashi — Edgerunner, ex-garde Arasaka.','#ff2040','dossiers/dossier-tamuro.html')
     +tool('🚐','Kiki','Kirikou — Nomade, lignée de pilotes et mécaniciens.','#ffaa00','dossiers/dossier-kiki.html')
     +tool('🎤','Keiyo','Keiyori Murasaki — Star indépendante, réseau bâti seule.','#ff33cc','dossiers/dossier-keiyo.html')
@@ -584,19 +623,19 @@ function renderMJ(){
     +tool('💊','Fury','Frostpunk — CharcuDoc, dépendant du CléoGel.','#00ff88','dossiers/dossier-fury.html')
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">☎ Téléphones des personnages</div><div class="grid">'
+  html+='<div class="section" data-pane="perso"><div class="section-title">☎ Téléphones des personnages</div><div class="grid">'
     +tool('⚔','Tamuro — Téléphone','Carnet de contacts — Brakko, Miho, Vercors.','#ff2040','personnages/telephone-tamuro.html'+qs)
     +tool('🚐','Kiki — Téléphone','Carnet de contacts — Roscoe, Nadia, Doc Ferro.','#ffaa00','personnages/telephone-kiki.html'+qs)
     +tool('🎤','Keiyo — Téléphone','Carnet de contacts — Yumi Sato, Kessler, Le Chœur.','#ff33cc','personnages/telephone-keiyo.html'+qs)
     +tool('💊','Fury — Téléphone','Carnet de contacts — Sella, Doc Renner, Mika.','#00ff88','personnages/telephone-fury.html'+qs)
     +'</div><div class="note">Moon gère déjà ses contacts directement dans son téléphone (SPECTRE).</div></div>';
 
-  html+='<div class="section"><div class="section-title">🕹 Pendant l\'attente</div><div class="grid">'
+  html+='<div class="section" data-pane="activites"><div class="section-title">🕹 Pendant l\'attente</div><div class="grid">'
     +tool('🕹','Salle d\'arcade (mini-jeux)','10 jeux d\'attente : endurance, arcade, réflexes, multijoueur. Scores partagés.','#ff33cc','minijeux/index.html')
     +tool('🏆','Classement des mini-jeux','Scores des joueurs par jeu et classement général. Le MJ peut tout effacer.','#ffc83c','minijeux/classement.html')
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">🗒 Fiches de personnage</div><div class="grid">'
+  html+='<div class="section" data-pane="perso"><div class="section-title">🗒 Fiches de personnage</div><div class="grid">'
     +tool('⚔','Tamuro — Fiche complète','La Vipère Rouge — compétences, cyberware, background.','#ff2040','fiches/fiche-tamuro.html')
     +tool('🚐','Kiki — Fiche complète','Kirikou — compétences, cyberware, background.','#ffaa00','fiches/fiche-kiki.html')
     +tool('🎤','Keiyo — Fiche complète','Keiyori Murasaki — compétences, cyberware, background.','#ff33cc','fiches/fiche-keiyo.html')
@@ -604,7 +643,7 @@ function renderMJ(){
     +tool('💊','Fury — Fiche complète','Frostpunk — compétences, cyberware, background.','#00ff88','fiches/fiche-fury.html')
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">🗂 Références & Lore MJ</div><div class="grid">'
+  html+='<div class="section" data-pane="univers"><div class="section-title">🗂 Références & Lore MJ</div><div class="grid">'
     +tool('👁',"Dossier L'Observateur",'Fiche MJ uniquement — le personnage que tu incarnes.','#e8e8f0','lore/mj-observateur.html')
     +tool('🌆','Lore Neo-Paris','Dossier de contexte général sur la ville et les factions.','#00ccff','lore/neo-paris-lore.html')
     +tool('🗺','Carte de Neo-Paris','Carte interactive des 7 quartiers, factions et danger.','#00ccff','lore/carte-neo-paris.html')
@@ -613,12 +652,12 @@ function renderMJ(){
     +tool('💬','Canal Chiffré SPECTRE','Chat SPECTRE ↔ Moon, historique des échanges.','#bb44ff','lore/spectre-canal-chiffre.html')
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">🎬 Présentation & Ambiance</div><div class="grid">'
+  html+='<div class="section" data-pane="univers"><div class="section-title">🎬 Présentation & Ambiance</div><div class="grid">'
     +tool('🎬',"Séquence d'Intro",'Cinématique d\'ouverture à projeter en début de session.','#ff2040','ambiance/neo-paris-intro.html')
     +tool('🗣','SPECTRE — Interface Vocale','IA façon JARVIS, voix + texte, multi-fournisseurs LLM.','#bb44ff','ambiance/spectre-voice.html')
     +'</div></div>';
 
-  html+='<div class="section"><div class="section-title">📚 Guide de campagne & récits</div><div class="grid">'
+  html+='<div class="section" data-pane="guide"><div class="section-title">📚 Guide de campagne & récits</div><div class="grid">'
     +tool('📖','Guide Complet','Toute la campagne, session par session, de A à Z.','#ffc83c','guide/GUIDE-COMPLET-CAMPAGNE.html')
     +tool('🌃','Prologue — Le Cabaret Fantôme','Déroulé complet avec dialogues et textes à lire.','#ff33cc','guide/prologue-derouler.html')
     +tool('1️⃣','Session 1 — Le Premier Contrat','Déroulé complet avec dialogues et textes à lire.','#ffaa00','guide/session-1-derouler.html')
@@ -637,9 +676,9 @@ function renderMJ(){
     +tool('🖼','Prompts Images (ChatGPT)','Toutes les scènes clés à illustrer, prompt prêt à copier pour chacune.','#bb44ff','guide/prompts-images.html')
     +'</div></div>';
 
-  html+='<a class="switch-link" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
-  html+='<a class="switch-link" onclick="doLogout()">SE DÉCONNECTER</a>';
-  html+='<div class="foot">NEO-PARIS / 2077 — PORTAIL DE CAMPAGNE — MODE MJ</div>';
+  html+='<a class="switch-link" data-pane="accueil" onclick="changeSessionCode()">↺ CHANGER LE CODE DE SESSION</a>';
+  html+='<a class="switch-link" data-pane="accueil" onclick="doLogout()">SE DÉCONNECTER</a>';
+  html+='<div class="foot" data-pane="accueil">NEO-PARIS / 2077 — PORTAIL DE CAMPAGNE — MODE MJ</div>';
   return html;
 }
 function tool(ico,title,desc,color,url){
@@ -843,6 +882,73 @@ function startAutoBackup(){
   }
   tick();setInterval(tick,1000);
 })();
+
+/* ── Navigation par onglets (accueil + pages) ── */
+var NP_TABS={
+  mj:[{id:'accueil',ico:'🏠',n:'ACCUEIL'},{id:'perso',ico:'👥',n:'PERSONNAGES'},{id:'missions',ico:'🎯',n:'MISSIONS'},{id:'activites',ico:'🎲',n:'ACTIVITÉS'},{id:'session',ico:'🛠',n:'SESSION'},{id:'univers',ico:'🗂',n:'UNIVERS'},{id:'guide',ico:'📚',n:'GUIDE'}],
+  player:[{id:'accueil',ico:'🏠',n:'ACCUEIL'},{id:'perso',ico:'🧑‍🚀',n:'MON PERSONNAGE'},{id:'seance',ico:'🎬',n:'SÉANCE'},{id:'activites',ico:'🎲',n:'ACTIVITÉS'},{id:'missions',ico:'🎯',n:'MISSIONS'},{id:'arcade',ico:'🕹',n:'ARCADE'}]
+};
+var TILE_META={
+  perso:{c:'#ffaa00',d:{mj:'Outils, téléphones, dossiers et fiches de chaque personnage.',player:'Ton outil de jeu, ton dossier, ta fiche et ton téléphone.'}},
+  seance:{c:'#00ff88',d:{player:'Outils de table et séquence d\'intro, débloqués par le MJ.'}},
+  missions:{c:'#ff2040',d:{mj:'Missions collectives : casse, infiltration, poursuite, encerclement.',player:'Missions à plusieurs, débloquées par le MJ.'}},
+  activites:{c:'#00ccff',d:{mj:'Crochetage, piratage, interrogatoire, enchères et mini-jeux.',player:'Activités de groupe débloquées par le MJ.'}},
+  session:{c:'#ffc83c',d:{mj:'Verrous, sauvegarde et outils en direct pour piloter la séance.'}},
+  univers:{c:'#bb44ff',d:{mj:'Lore, PNJ, cartes, ambiance et séquence d\'intro.'}},
+  guide:{c:'#ff33cc',d:{mj:'Guide complet de la campagne et récap des sessions jouées.'}},
+  arcade:{c:'#ff33cc',d:{player:'Mini-jeux d\'attente et classements des joueurs.'}}
+};
+function curTabs(){return isMJ()?NP_TABS.mj:(getRole()?NP_TABS.player:null);}
+function homeTiles(kind){
+  var tabs=NP_TABS[kind].filter(function(t){return t.id!=='accueil';});
+  var code=getSessionCode()||'';
+  var info='<div class="home-info" data-pane="accueil"><span>SESSION · <b>'+esc(code)+'</b></span><span>RÔLE · <b>'+(kind==='mj'?'MAÎTRE DU JEU':esc((CHARACTERS[getRole()]||{}).name||''))+'</b></span></div>';
+  var tiles='<div class="home-tiles" data-pane="accueil">'+tabs.map(function(t){
+    var m=TILE_META[t.id]||{c:'#fff',d:{}};
+    return '<a class="home-tile" style="--c:'+m.c+';" onclick="setTab(\''+t.id+'\')"><span class="ht-ico">'+t.ico+'</span><span class="ht-name">'+t.n+'</span><span class="ht-desc">'+(m.d[kind]||'')+'</span><span class="ht-n" data-count="'+t.id+'"></span></a>';
+  }).join('')+(kind==='player'?'<a class="home-tile" style="--c:#00ff88;" href="guide-joueur.html" target="_blank"><span class="ht-ico">❓</span><span class="ht-name">GUIDE DU JOUEUR</span><span class="ht-desc">Première fois ici ? Tout comprendre en quelques minutes.</span></a>':'')+'</div>';
+  return info+tiles;
+}
+var npTab='accueil';
+function tabFromHash(){var h=(location.hash||'').replace('#','');var t=curTabs();return t&&t.some(function(x){return x.id===h;})?h:null;}
+function setTab(id){
+  var t=curTabs();if(!t||!t.some(function(x){return x.id===id;}))id='accueil';
+  if(location.hash!=='#'+id){history.pushState(null,'','#'+id);}
+  npTab=id;applyTab(true);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function applyTab(animate){
+  var tabs=curTabs(),has=!!(tabs&&document.querySelector('#wrap [data-pane]'));
+  document.body.classList.toggle('has-tabs',has);
+  if(!has)return;
+  var fromHash=tabFromHash();if(fromHash)npTab=fromHash;
+  if(!tabs.some(function(x){return x.id===npTab;}))npTab='accueil';
+  var inner=document.getElementById('np-tabs-in');
+  var sig=tabs.map(function(x){return x.id;}).join(',');
+  if(inner.getAttribute('data-sig')!==sig){
+    inner.innerHTML=tabs.map(function(x){return '<a data-t="'+x.id+'" onclick="setTab(\''+x.id+'\')"><span class="ti">'+x.ico+'</span>'+x.n+'</a>';}).join('')+'<span class="tab-ind" id="tab-ind"></span>';
+    inner.setAttribute('data-sig',sig);
+  }
+  var act=null;
+  Array.prototype.forEach.call(inner.querySelectorAll('a'),function(a){var on=a.getAttribute('data-t')===npTab;a.classList.toggle('on',on);if(on)act=a;});
+  var ind=document.getElementById('tab-ind');
+  if(act&&ind){ind.style.left=act.offsetLeft+'px';ind.style.width=act.offsetWidth+'px';try{act.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});}catch(e){}}
+  var shown=0;
+  Array.prototype.forEach.call(document.querySelectorAll('#wrap [data-pane]'),function(el){
+    var on=el.getAttribute('data-pane')===npTab;
+    el.classList.toggle('np-off',!on);
+    if(on&&animate){el.classList.remove('np-pane-in');void el.offsetWidth;el.style.animationDelay=Math.min(shown,10)*0.05+'s';el.classList.add('np-pane-in');}
+    if(on)shown++;
+  });
+  /* compteurs des tuiles d'accueil */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-count]'),function(el){
+    var id=el.getAttribute('data-count'),n=document.querySelectorAll('#wrap [data-pane="'+id+'"] .card,#wrap [data-pane="'+id+'"] .personal-card:not(.locked)').length;
+    el.textContent=n?n+' ÉLÉMENT'+(n>1?'S':''):'';
+  });
+}
+window.addEventListener('hashchange',function(){npTab=tabFromHash()||'accueil';applyTab(true);});
+(function(){var r0=render;render=function(){r0.apply(this,arguments);applyTab(false);};})();
+window.addEventListener('resize',function(){applyTab(false);});
 </script>
 </body>
 </html>
