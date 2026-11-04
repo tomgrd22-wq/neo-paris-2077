@@ -249,8 +249,10 @@ function init(opts){
   function start(){if(ident)go(ident);else if(cfg.askIdent===false)go(null);else promptIdent(go);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 }
+function grantBooster(){try{var q=new URLSearchParams(location.search),r=(ident&&ident.role)||q.get('role')||'mj',k='np_boost_'+r,n=parseInt(localStorage.getItem(k)||'0',10)||0;if(n<10)localStorage.setItem(k,String(n+1));}catch(e){}}
 function submit(score){
   var game=cfg.game;
+  if(typeof score==='number'&&score>0)grantBooster();
   if(!game||!GAMES[game]||typeof score!=='number'||!isFinite(score))return {record:false,saved:false};
   if(!ident){return {record:false,saved:false};}
   var cur=(state.s[game]||{})[ident.role];

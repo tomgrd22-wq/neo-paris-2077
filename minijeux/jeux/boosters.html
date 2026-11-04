@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOOSTERS // Neo-Paris 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;background:#05050a;color:#e8e8f4;font-family:'Share Tech Mono',monospace;min-height:100%;}
+body{background:radial-gradient(ellipse at 50% 0,#1a0a2a,#05050a 60%);}
+.wrap{max-width:760px;margin:0 auto;padding:56px 14px 50px;text-align:center;}
+h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:4px;color:#ffc83c;margin:0 0 4px;text-shadow:0 0 14px rgba(255,200,60,.5);}
+.sub{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:18px;}
+.back{position:fixed;top:12px;left:12px;z-index:5;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);text-decoration:none;border:1px solid rgba(255,255,255,.1);padding:6px 10px;border-radius:4px;background:#05050a;}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px;}
+.tabs button,.btn{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 18px;border-radius:6px;border:1px solid #ffc83c;color:#ffc83c;background:rgba(255,200,60,.07);cursor:pointer;}
+.tabs button.on{background:#ffc83c;color:#05050a;}
+.btn:disabled{opacity:.35;cursor:default;}
+.info{font-size:11px;letter-spacing:1px;color:rgba(255,255,255,.55);line-height:1.8;margin:10px 0 18px;}
+.info b{color:#fff;}
+.pack{width:150px;height:210px;margin:6px auto 18px;border-radius:12px;border:2px solid #ffc83c;cursor:pointer;position:relative;
+ background:linear-gradient(135deg,#2a0a3a,#0a1a3a 55%,#3a0a2a);box-shadow:0 0 30px rgba(255,200,60,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;animation:float 3s ease-in-out infinite;}
+.pack::before{content:'';position:absolute;inset:6px;border:1px dashed rgba(255,200,60,.4);border-radius:8px;}
+.pack .t{font-family:'Orbitron',monospace;font-weight:900;font-size:15px;letter-spacing:3px;color:#ffc83c;}
+.pack .i{font-size:44px;filter:drop-shadow(0 0 12px #ffc83c);}
+.pack.off{filter:grayscale(1) brightness(.5);animation:none;cursor:default;}
+.pack.shake{animation:shake .5s;}
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes shake{20%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-8deg) scale(1.05)}80%{transform:rotate(8deg) scale(1.1)}}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;perspective:900px;}
+.card{width:128px;height:182px;position:relative;transform-style:preserve-3d;transition:transform .6s;cursor:pointer;}
+.card.up{transform:rotateY(180deg);}
+.face,.back2{position:absolute;inset:0;border-radius:10px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+.back2{border:2px solid #ffc83c;background:repeating-linear-gradient(45deg,#1a0a2a,#1a0a2a 8px,#240e38 8px,#240e38 16px);display:flex;align-items:center;justify-content:center;font-size:34px;}
+.face{transform:rotateY(180deg);border:2px solid var(--c);background:linear-gradient(160deg,color-mix(in srgb,var(--c) 22%,#0a0a14),#0a0a14 70%);display:flex;flex-direction:column;align-items:center;padding:8px 6px;gap:4px;box-shadow:0 0 18px color-mix(in srgb,var(--c) 45%,transparent);overflow:hidden;}
+.face .r{font-size:8px;letter-spacing:2px;color:var(--c);}
+.face .ico{font-size:46px;margin:6px 0 2px;filter:drop-shadow(0 0 10px var(--c));}
+.face .n{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;color:#fff;line-height:1.2;}
+.face .d{font-size:9px;color:rgba(255,255,255,.55);line-height:1.35;margin-top:auto;}
+.face .new{position:absolute;top:5px;right:5px;background:#ff2040;color:#fff;font-size:8px;padding:2px 5px;border-radius:3px;letter-spacing:1px;}
+.card.leg .face,.card.epic .face{background-size:300% 300%;background-repeat:no-repeat;animation:holo 4s ease-in-out infinite alternate;}
+.card.leg .face{background-image:linear-gradient(120deg,#ffc83c33,#ff33cc33,#00ccff33,#ffc83c33);}
+.card.epic .face{background-image:linear-gradient(120deg,#bb44ff44,#0a0a14,#bb44ff44);}
+@keyframes holo{from{background-position:0% 0%}to{background-position:100% 100%}}
+.album .card{cursor:default;transform:rotateY(180deg);width:104px;height:150px;}
+.album .face{padding:6px 4px;}.album .face .ico{font-size:34px;}.album .face .d{display:none;}
+.album .miss .face{filter:grayscale(1) brightness(.35);}
+.cnt{position:absolute;bottom:4px;right:6px;font-size:9px;color:#fff;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:8px;}
+.prog{height:8px;background:rgba(255,255,255,.08);border-radius:4px;margin:6px auto 16px;max-width:360px;overflow:hidden;}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#ffc83c,#ff33cc);}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(window.history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="wrap">
+<h1>🃏 BOOSTERS</h1>
+<div class="sub">CARTES À COLLECTIONNER — NEO-PARIS 2077</div>
+<div class="tabs"><button id="t-o" class="on" onclick="tab('o')">OUVRIR</button><button id="t-a" onclick="tab('a')">MON ALBUM</button></div>
+<div id="v"></div>
+</div>
+<script>
+var RAR={C:{n:'COMMUNE',c:'#9aa4b5',w:60},R:{n:'RARE',c:'#00ccff',w:27},E:{n:'ÉPIQUE',c:'#bb44ff',w:10},L:{n:'LÉGENDAIRE',c:'#ffc83c',w:3}};
+var CARDS=[
+['C','🔫','Pistolet Militech','Fiable, bruyant, pas cher.'],['C','🍜','Ramen de rue','Un repas chaud dans le Bas.'],['C','🔦','Lampe torche','Quand les néons s\'éteignent.'],['C','🧥','Veste renforcée','+1 contre les coups bas.'],
+['C','💊','Stim bon marché','Tient debout une heure de plus.'],['C','📱','Burner phone','Un appel, puis à la benne.'],['C','🔧','Clé à molette','Réparation de fortune.'],['C','🚬','Cigarette synthé','Calme les nerfs.'],
+['C','🥃','Whisky coupé','Courage liquide.'],['C','🔋','Batterie usée','Encore un peu de jus.'],['C','🗝','Passe-partout','Ouvre les portes fragiles.'],['C','🧢','Casquette anonyme','Cache ton visage aux caméras.'],
+['R','🦾','Bras cybernétique','Force x2, discrétion /2.'],['R','👁','Œil optique','Vision thermique intégrée.'],['R','🚁','Drone espion','Voit tout depuis le ciel.'],['R','💾','Disque corrompu','Des secrets, ou un virus.'],
+['R','🏍','Moto trafiquée','0 à 200 en cinq secondes.'],['R','🎭','Masque holographique','Change ton visage à la demande.'],['R','🧪','Cocktail de combat','Réflexes décuplés.'],['R','🛰','Brouilleur de zone','Coupe toutes les ondes.'],
+['R','📡','Antenne pirate','Écoute les fréquences Arasaka.'],['R','🔪','Lame monofilament','Tranche l\'acier.'],
+['E','⚡','Ghost Protocol','Disparais de tous les radars.'],['E','🕷','Netrunner Araignée','Trois systèmes piratés à la fois.'],['E','🛡','Armure Kiroshi','Absorbe tout, sauf la honte.'],
+['E','🐺','Meute du Bas','Quand les gangs s\'unissent.'],['E','🧬','Greffe expérimentale','Surpasse l\'humain. Effets secondaires.'],['E','🎤','Star en tournée','Le public est ton bouclier.'],
+['L','🌃','Neo-Paris la nuit','La ville qui n\'oublie rien.'],['L','🐍','La Vipère Rouge','Une légende de la rue.'],['L','👑','Directrice Arasaka','Elle tire toutes les ficelles.'],['L','🌀','Le Spectre','On ne l\'a jamais vu. Il vous voit.']
+];
+var q=new URLSearchParams(location.search),ROLE=q.get('role')||'mj',K='np_cards_'+ROLE,KB='np_boost_'+ROLE,KT='np_boost_t_'+ROLE;
+var COOL=15*60*1000,pageTab='o',opened=[];
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+var coll=ld(K,{});
+function credits(){return parseInt(ld(KB,0),10)||0;}
+function free(){var t=ld(KT,0);return Math.max(0,COOL-(Date.now()-t));}
+function pick(r){var l=CARDS.map(function(c,i){return [c,i];}).filter(function(x){return x[0][0]===r;});return l[Math.floor(Math.random()*l.length)][1];}
+function roll(minRare){var t=Math.random()*100,a=0,r='C';for(var k in RAR){a+=RAR[k].w;if(t<a){r=k;break;}}return pick(r);}
+function draw(){var out=[];for(var i=0;i<4;i++)out.push(roll());
+  var o='CREL';var hasRare=out.some(function(i){return CARDS[i][0]!=='C';});
+  var last=roll();if(!hasRare&&CARDS[last][0]==='C'){var t=Math.random()*100;last=pick(t<70?'R':t<93?'E':'L');}
+  out.push(last);return out;}
+function cardHTML(i,extra,cnt,isNew){var c=CARDS[i],R=RAR[c[0]];
+  return '<div class="card '+({E:'epic',L:'leg'}[c[0]]||'')+' '+(extra||'')+'" style="--c:'+R.c+'"><div class="back2">🃏</div><div class="face">'+(isNew?'<span class="new">NEW</span>':'')+'<div class="r">'+R.n+'</div><div class="ico">'+c[1]+'</div><div class="n">'+c[2].toUpperCase()+'</div><div class="d">'+c[3]+'</div>'+(cnt>1?'<span class="cnt">x'+cnt+'</span>':'')+'</div></div>';}
+function fmt(ms){var s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
+function tab(t){pageTab=t;document.getElementById('t-o').className=t==='o'?'on':'';document.getElementById('t-a').className=t==='a'?'on':'';render();}
+function render(){
+  var v=document.getElementById('v');
+  if(pageTab==='a'){
+    var have=Object.keys(coll).length,tot=CARDS.length;
+    var h='<div class="info">COLLECTION : <b>'+have+' / '+tot+'</b> cartes</div><div class="prog"><i style="width:'+(have/tot*100)+'%"></i></div><div class="row album">';
+    CARDS.forEach(function(c,i){h+=cardHTML(i,coll[i]?'':'miss',coll[i]||0,false).replace(coll[i]?'':'§§','');});
+    v.innerHTML=h+'</div>';return;
+  }
+  if(opened.length){
+    var h='<div class="info">Clique sur chaque carte pour la retourner.</div><div class="row" id="cr">';
+    opened.forEach(function(o){h+=cardHTML(o.i,'',coll[o.i],o.n).replace('<div class="card','<div onclick="this.classList.add(\'up\')" class="card');});
+    h+='</div><div style="margin-top:20px"><button class="btn" onclick="flipAll()">TOUT RETOURNER</button> <button class="btn" onclick="opened=[];render()">OK</button></div>';
+    v.innerHTML=h;return;
+  }
+  var f=free(),c=credits(),can=f===0||c>0;
+  v.innerHTML='<div class="pack'+(can?'':' off')+'" id="pk" onclick="openPack()"><div class="i">🎴</div><div class="t">BOOSTER</div><div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.6)">5 CARTES</div></div>'
+   +'<div class="info">Boosters gagnés en jouant : <b>'+c+'</b><br>Booster gratuit : <b>'+(f===0?'DISPONIBLE':'dans '+fmt(f))+'</b><br>Chaque partie d\'arcade avec un score te rapporte un booster (max 10).</div>'
+   +'<button class="btn" onclick="openPack()" '+(can?'':'disabled')+'>OUVRIR UN BOOSTER</button>'
+   +'<div class="info" style="margin-top:18px">Probabilités : commune 60% · rare 27% · épique 10% · légendaire 3%<br>Un booster contient toujours au moins une carte rare ou mieux.</div>';
+}
+function flipAll(){Array.prototype.forEach.call(document.querySelectorAll('#cr .card'),function(c,i){setTimeout(function(){c.classList.add('up');},i*180);});}
+function openPack(){
+  var f=free(),c=credits();if(f>0&&c<=0)return;
+  if(f===0){sv(KT,Date.now());}else{sv(KB,c-1);}
+  var pk=document.getElementById('pk');if(pk)pk.classList.add('shake');
+  var d=draw();
+  setTimeout(function(){
+    opened=d.map(function(i){var n=!coll[i];coll[i]=(coll[i]||0)+1;return {i:i,n:n};});
+    sv(K,coll);render();
+  },520);
+}
+render();
+setInterval(function(){if(pageTab==='o'&&!opened.length&&free()>0)render();},1000);
+</script>
+</body>
+</html>
