@@ -70,6 +70,6 @@ function mj(c){
   setInterval(function(){put(base+'/mj',{type:'req',to:'all'},false);},45000);
   return true;
 }
-function send(to,type,data){var d=data||{};d.to=to;d.type=type;d.n=Date.now()+Math.random();put(base+'/mj',d,false);}
+function send(to,type,data){var d=data||{};d.to=to;d.type=type;d._n=Date.now()+Math.random();put(base+'/mj',d,false);}
 window.NPTools={player:player,pub:pub,event:event,mj:mj,send:send,code:function(){return code;},ROLES:ROLES};
 })();

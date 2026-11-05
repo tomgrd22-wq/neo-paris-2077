@@ -90,6 +90,7 @@ var NAMED={
 var SIDE=['Tremblements pendant 1 heure.','Vision floue pendant 10 minutes.','Soif insatiable et nausée.','Fièvre légère jusqu\'au repos.','Goût métallique, malus de -1 en Charisme.','Sursauts nerveux : -1 à la discrétion.','Aucun effet secondaire notable.','Aucun effet secondaire notable.'];
 var q=new URLSearchParams(location.search),ROLE=q.get('role')||'fury',KS='np_lab_'+ROLE;
 var st=load();
+if(!st.custom)st.custom={};Object.keys(st.custom).forEach(function(k){NAMED[k]=st.custom[k];});
 var mix=[],last=null,pageTab='s';
 function load(){try{var v=JSON.parse(localStorage.getItem(KS));if(v&&v.stock)return v;}catch(e){}var s={};ING.forEach(function(i){s[i.id]=STOCK0;});return {stock:s,syr:[],known:{}};}
 function save(){try{localStorage.setItem(KS,JSON.stringify(st));}catch(e){}}
@@ -173,10 +174,17 @@ function render(){
   });
   view(h3+'</div>');
 }
-function furyState(){return {stock:st.stock,ing:ING.map(function(g){return {id:g.id,n:g.n,ico:g.ico};}),syr:st.syr,known:st.known,total:Object.keys(NAMED).length,pending:!!st.pending,lastFail:last&&last.fail?last.txt:null,mix:mix.map(function(i){return ing(i).n;})};}
+function furyState(){return {stock:st.stock,ing:ING.map(function(g){return {id:g.id,n:g.n,ico:g.ico};}),syr:st.syr,known:st.known,total:Object.keys(NAMED).length,recipes:Object.keys(NAMED).map(function(k){return {k:k,n:NAMED[k].n,e:NAMED[k].e,known:!!st.known[k],custom:!!st.custom[k]};}),pending:!!st.pending,lastFail:last&&last.fail?last.txt:null,mix:mix.map(function(i){return ing(i).n;})};}
 function furyCmd(d){
   if(d.type==='restock'){if(d.ok){ING.forEach(function(i){st.stock[i.id]=Math.min(8,(st.stock[i.id]||0)+2);});st.pending=false;save();render();NPTools.event('réapprovisionnement accordé par le MJ');}else{st.pending=false;save();render();NPTools.event('réapprovisionnement refusé');}}
   if(d.type==='give'){st.stock[d.id]=Math.min(12,(st.stock[d.id]||0)+(d.q||1));save();render();NPTools.event('reçoit '+(d.q||1)+' x '+(ing(d.id)||{n:d.id}).n+' du MJ');}
+  if(d.type==='stock'){st.stock[d.id]=Math.max(0,Math.min(12,d.q|0));save();render();NPTools.event('stock '+(ing(d.id)||{n:d.id}).n+' fixé à '+(d.q|0)+' par le MJ');}
+  if(d.type==='addSyr'){var sy={id:Date.now()+Math.floor(Math.random()*1000),n:d.n||'Seringue du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin',pot:Math.max(0,Math.min(5,d.pot|0||3)),side:d.side||'Aucun effet secondaire notable.',tested:!!d.tested,mix:'Fournie par le MJ',unstable:false,named:false};st.syr.push(sy);save();render();NPTools.event('reçoit une seringue du MJ : « '+sy.n+' »');}
+  if(d.type==='delSyr'){st.syr=st.syr.filter(function(x){return x.id!==d.id;});save();render();NPTools.event('une seringue est retirée par le MJ');}
+  if(d.type==='revealSyr'){st.syr.forEach(function(x){if(x.id===d.id)x.tested=true;});save();render();NPTools.event('effet secondaire révélé par le MJ');}
+  if(d.type==='recipe'&&d.ids&&d.ids.length>=2){var key=d.ids.slice().sort().join('+');st.custom[key]={n:d.n||'Recette du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin'};NAMED[key]=st.custom[key];save();render();NPTools.event('nouvelle recette ajoutée par le MJ : « '+(d.n||'?')+' »');}
+  if(d.type==='delRecipe'&&st.custom[d.key]){delete st.custom[d.key];delete NAMED[d.key];delete st.known[d.key];save();render();NPTools.event('une recette est supprimée par le MJ');}
+  if(d.type==='resetLab'){ING.forEach(function(i){st.stock[i.id]=STOCK0;});st.syr=[];st.known={};st.pending=false;save();render();NPTools.event('laboratoire réinitialisé par le MJ');}
   NPTools.pub();
 }
 if(window.NPTools)NPTools.player({role:ROLE,getState:furyState,onCmd:furyCmd});

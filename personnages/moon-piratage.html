@@ -34,6 +34,7 @@ h2{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:rgba
 .cell.ok:hover{background:rgba(255,233,74,.18);}
 .cell.used{opacity:.18;cursor:default;border-style:dashed;}
 .cell.dim{opacity:.35;cursor:default;}
+.cell.ice{color:#ff2040;border-color:rgba(255,32,64,.5);background:repeating-linear-gradient(45deg,rgba(255,32,64,.12),rgba(255,32,64,.12) 4px,transparent 4px,transparent 8px);}
 .cell.hint{background:rgba(255,51,204,.25);}
 .buf{display:flex;gap:6px;flex-wrap:wrap;}
 .slot{width:38px;height:38px;border:1px solid rgba(0,204,255,.35);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#ffe94a;}
@@ -107,7 +108,8 @@ function home(){
   clearInterval(tm);
   var h='<h2>CHOISIS UNE CIBLE</h2><div class="targets">';
   TARGETS.forEach(function(t,i){h+='<button class="tg" onclick="start('+i+')"><span style="font-size:26px">'+t.ico+'</span><b>'+t.n.toUpperCase()+'</b><small>'+t.d+'</small><span class="lv">SÉCURITÉ '+'■'.repeat(t.lv)+'□'.repeat(5-t.lv)+'</span></button>';});
-  h+='</div><h2>RÈGLES</h2><div class="box" style="font-size:11px;line-height:1.8;color:rgba(255,255,255,.65)">Tu disposes d\'un <b style="color:#ffe94a">tampon</b> limité. Choisis des codes dans la matrice : le premier se prend dans la <b>ligne du haut</b>, puis tu alternes <b>colonne</b> / <b>ligne</b>. Chaque <b>démon</b> dont la séquence apparaît dans ton tampon s\'active. Plus la sécurité est haute, plus la matrice est grande et le temps court.</div>';
+  h+='</div><h2>RÈGLES</h2><div class="box" style="font-size:11px;line-height:1.8;color:rgba(255,255,255,.65)">Tu disposes d\'un <b style="color:#ffe94a">tampon</b> limité. Choisis des codes dans la matrice : le premier se prend dans la <b>ligne du haut</b>, puis tu alternes <b>colonne</b> / <b>ligne</b>. Chaque <b>démon</b> dont la séquence apparaît dans ton tampon s\'active. Attention aux cases <b style="color:#ff2040">▓▓ ICE</b> : les piocher gaspille un emplacement du tampon et coûte 4 secondes. À partir de la sécurité ■■■, une fois tous les démons activés, une <b>phase de décryptage</b> (mémoire) t\'attend : réussis-la pour obtenir un <b style="color:#00ff88">code d\'accès</b> à transmettre au MJ. Plus la sécurité est haute, plus la matrice est grande et le temps court.</div>';
+  var cl=codes();if(cl.length)h+='<h2>CODES D\'ACCÈS OBTENUS</h2><div class="box log" style="color:#00ff88">'+cl.slice(0,6).map(function(x){return x.c+' — '+x.t;}).join('<br>')+'</div>';
   if(logs.length)h+='<h2>JOURNAL D\'INTRUSION</h2><div class="box log">'+logs.slice(-12).reverse().join('<br>')+'</div>';
   view(h);
 }
@@ -127,17 +129,20 @@ function gen(t){
     var p=cands[r(cands.length)];row=p[0];col=p[1];used[p[0]+','+p[1]]=1;path.push(p);
   }
   var codes=path.map(function(p){return m[p[0]][p[1]];});
+  var onPath={};path.forEach(function(p){onPath[p[0]+','+p[1]]=1;});
+  var ice=t.lv+1,guard=0;
+  while(ice>0&&guard++<200){var ri=r(n),rj=r(n);if(onPath[ri+','+rj]||m[ri][rj]==='▓▓')continue;m[ri][rj]='▓▓';ice--;}
   var dms=t.dm.map(function(d,k){
     var len=2+Math.min(2,Math.floor(k/2)+r(2)),st=r(Math.max(1,codes.length-len+1));
     return {n:d.n,e:d.e,seq:codes.slice(st,st+len),done:false};
   });
-  return {t:t,m:m,n:n,buf:[],pos:[],used:{},row:0,col:0,max:D.buf,dms:dms,time:D.time,left:D.time,over:false};
+  return {t:t,m:m,n:n,buf:[],pos:[],used:{},row:0,col:0,max:D.buf,dms:dms,time:D.time,left:D.time,over:false,pen:0,decrypted:false};
 }
 function start(i){
   S=gen(TARGETS[i]);paint();if(window.NPTools)NPTools.event('lance un piratage : '+S.t.n+' (sécurité '+S.t.lv+'/5)');
   var t0=Date.now();clearInterval(tm);
   tm=setInterval(function(){
-    S.left=Math.max(0,S.time-(Date.now()-t0)/1000);
+    S.left=Math.max(0,S.time-S.pen-(Date.now()-t0)/1000);
     var el=document.getElementById('tb');if(el)el.style.width=(S.left/S.time*100)+'%';
     var tx=document.getElementById('tt');if(tx)tx.textContent=Math.ceil(S.left)+'s';
     if(S.left<=0)finish();
@@ -153,6 +158,7 @@ function valid(i,j){
 function pick(i,j){
   if(S.over||!valid(i,j))return;
   S.buf.push(S.m[i][j]);S.used[i+','+j]=1;S.row=i;S.col=j;
+  if(S.m[i][j]==='▓▓'){S.pen+=4;S.left=Math.max(0,S.left-4);}
   check();
   if(window.NPTools&&S.buf.length%2===0)NPTools.pub();
   if(S.buf.length>=S.max||S.dms.every(function(d){return d.done;}))finish();else paint();
@@ -165,7 +171,7 @@ function paint(){
   var h='<div class="hud"><span>CIBLE : '+S.t.ico+' '+S.t.n.toUpperCase()+'</span><div class="timer"><i id="tb" style="width:'+(S.left/S.time*100)+'%"></i></div><span id="tt">'+Math.ceil(S.left)+'s</span></div><div class="game"><div class="box"><h3>MATRICE DE CODES</h3><div class="mx" style="grid-template-columns:repeat('+S.n+',1fr)">';
   for(var i=0;i<S.n;i++)for(var j=0;j<S.n;j++){
     var u=S.used[i+','+j],v=valid(i,j);
-    h+='<button class="cell '+(u?'used':v?'ok':'dim')+'" onclick="pick('+i+','+j+')">'+S.m[i][j]+'</button>';
+    h+='<button class="cell '+(u?'used':v?(S.m[i][j]==='▓▓'?'ok ice':'ok'):'dim')+'" onclick="pick('+i+','+j+')">'+S.m[i][j]+'</button>';
   }
   h+='</div></div><div><div class="box"><h3>TAMPON ('+S.buf.length+'/'+S.max+')</h3><div class="buf">';
   for(var k=0;k<S.max;k++)h+='<div class="slot '+(S.buf[k]?'f':'')+'">'+(S.buf[k]||'')+'</div>';
@@ -177,21 +183,66 @@ function paint(){
   h+='</div><div style="margin-top:12px;text-align:center"><button class="btn" onclick="finish()">VALIDER LE TAMPON</button> <button class="btn" style="border-color:#666;color:#999" onclick="home()">ABANDONNER</button></div></div></div>';
   view(h);
 }
+function hash(str){var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;return h;}
+function mkCode(t){
+  var stamp=Math.floor(Date.now()/60000)%46656,st36=('00'+stamp.toString(36)).slice(-3).toUpperCase();
+  var sc=(window.NPTools&&NPTools.code&&NPTools.code())||'';
+  var chk=('000'+(hash(sc+'|'+t.id+'|'+st36)%46656).toString(36)).slice(-3).toUpperCase();
+  return 'MN-'+t.id.slice(0,3).toUpperCase()+'-'+st36+'-'+chk;
+}
+function saveCode(c,t){try{var l=JSON.parse(localStorage.getItem('np_moon_codes')||'[]');l.unshift({c:c,t:t.n,d:Date.now()});localStorage.setItem('np_moon_codes',JSON.stringify(l.slice(0,20)));}catch(e){}}
 function finish(){
   if(S.over)return;S.over=true;clearInterval(tm);
+  var all=S.dms.every(function(d){return d.done;});
+  if(all&&S.t.lv>=3&&!S.decrypted){decrypt();return;}
+  conclude(false);
+}
+/* phase 2 : décryptage (mémoire) pour les cibles de sécurité >= 3 */
+var DC=null;
+function decrypt(){
+  var L=S.t.lv+2,seq=[];for(var i=0;i<L;i++)seq.push(HEX[r(HEX.length)]);
+  DC={seq:seq,idx:0,show:true};
+  if(window.NPTools)NPTools.event('phase 2 : décryptage ('+L+' codes) sur '+S.t.n);
+  var h='<div class="res"><h2 style="color:#ffe94a">PHASE 2 — DÉCRYPTAGE</h2><div style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.55)">MÉMORISE LA SÉQUENCE DE '+L+' CODES</div><div class="buf" id="dcs" style="justify-content:center;margin:18px 0"></div><div id="dcg"></div></div>';
+  view(h);
+  var el=document.getElementById('dcs'),k=0;
+  var iv=setInterval(function(){
+    if(k>=seq.length){clearInterval(iv);setTimeout(function(){el.innerHTML='<span style="color:#ffe94a;font-size:12px;letter-spacing:2px">REPRODUIS LA SÉQUENCE</span>';dcGrid();},500);return;}
+    el.innerHTML='<div class="slot f" style="width:72px;height:72px;font-size:28px">'+seq[k]+'</div>';k++;
+  },900-Math.min(300,S.t.lv*50));
+}
+function dcGrid(){
+  var h='<div class="buf" style="justify-content:center;margin-top:14px">';
+  HEX.forEach(function(c){h+='<button class="cell ok" style="width:70px;height:70px;aspect-ratio:auto" onclick="dcPick(\''+c+'\')">'+c+'</button>';});
+  h+='</div><div id="dcp" style="margin-top:12px;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.5)">0 / '+DC.seq.length+'</div>';
+  document.getElementById('dcg').innerHTML=h;
+}
+function dcPick(c){
+  if(!DC)return;
+  if(c!==DC.seq[DC.idx]){DC=null;S.decrypted=false;conclude(true);return;}
+  DC.idx++;var p=document.getElementById('dcp');if(p)p.textContent=DC.idx+' / '+DC.seq.length;
+  if(DC.idx>=DC.seq.length){DC=null;S.decrypted=true;conclude(false);}
+}
+function conclude(decFail){
   var ok=S.dms.filter(function(d){return d.done;}),n=ok.length,t=S.dms.length;
-  var cls=n===t?'win':n>0?'part':'lose',title=n===t?'ACCÈS TOTAL':n>0?'INTRUSION PARTIELLE':'ÉCHEC — ICE ACTIVÉE';
-  logs.push(new Date().toLocaleTimeString('fr-FR')+' · '+S.t.n+' · '+n+'/'+t+' démons');
-  if(window.NPTools)NPTools.event('piratage '+S.t.n+' : '+title+' ('+n+'/'+t+')'+(n?' — '+ok.map(function(d){return d.n;}).join(', '):''));
+  var full=n===t&&(S.t.lv<3||S.decrypted);
+  var cls=full?'win':n>0?'part':'lose',title=full?'ACCÈS TOTAL':decFail?'DÉCRYPTAGE ÉCHOUÉ':n>0?'INTRUSION PARTIELLE':'ÉCHEC — ICE ACTIVÉE';
+  var code=full?mkCode(S.t):null;if(code)saveCode(code,S.t);
+  logs.push(new Date().toLocaleTimeString('fr-FR')+' · '+S.t.n+' · '+n+'/'+t+' démons'+(code?' · code '+code:''));
+  if(window.NPTools)NPTools.event('piratage '+S.t.n+' : '+title+' ('+n+'/'+t+')'+(n?' — '+ok.map(function(d){return d.n;}).join(', '):'')+(code?' — CODE : '+code:''));
   var h='<div class="res '+cls+'"><h2>'+title+'</h2><div style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.55)">'+n+' / '+t+' DÉMONS ACTIVÉS · TEMPS RESTANT '+Math.ceil(S.left)+'s</div><div class="fx">';
   if(n)ok.forEach(function(d){h+='<div><b style="color:#00ff88">'+d.n+'</b> — '+d.e+'</div>';});
   else h+='<div>Rien ne passe. Le MJ décide de la riposte du réseau (alerte, ICE, retour de flamme).</div>';
   if(n<t&&n>0)h+='<div style="color:#ffaa00">Démons non activés : '+S.dms.filter(function(d){return !d.done;}).map(function(d){return d.n;}).join(', ')+'.</div>';
+  if(decFail)h+='<div style="color:#ff6080">Le décryptage a échoué : les effets sont obtenus mais le code d\'accès reste verrouillé.</div>';
   if(n===0)h+='<div style="color:#ff6080">Conseil MJ : dégâts de feedback 1d6 sur le netrunner.</div>';
-  h+='</div><button class="btn" onclick="start('+TARGETS.indexOf(S.t)+')">REJOUER LA CIBLE</button> <button class="btn" onclick="home()">AUTRE CIBLE</button></div>';
+  h+='</div>';
+  if(code)h+='<div style="margin:16px auto;max-width:420px;border:2px solid #00ff88;border-radius:10px;padding:14px;background:rgba(0,255,136,.07)"><div style="font-size:10px;letter-spacing:3px;color:#00ff88">CODE D\'ACCÈS OBTENU — TRANSMETS-LE AU MJ</div><div style="font-family:Orbitron,monospace;font-size:26px;letter-spacing:4px;color:#fff;margin:8px 0;user-select:all" id="cdv">'+code+'</div><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\')">COPIER</button></div>';
+  h+='<button class="btn" onclick="start('+TARGETS.indexOf(S.t)+')">REJOUER LA CIBLE</button> <button class="btn" onclick="home()">AUTRE CIBLE</button></div>';
   view(h);
 }
-function moonState(){return {logs:logs.slice(-15),cur:S&&!S.over?{target:S.t.n,left:Math.ceil(S.left),buf:S.buf,max:S.max,dms:S.dms.map(function(d){return {n:d.n,e:d.e,seq:d.seq,done:d.done};})}:null};}
+function codes(){try{return JSON.parse(localStorage.getItem('np_moon_codes')||'[]');}catch(e){return [];}}
+function moonState(){return {codes:codes().slice(0,8),logs:logs.slice(-15),cur:S&&!S.over?{target:S.t.n,left:Math.ceil(S.left),buf:S.buf,max:S.max,dms:S.dms.map(function(d){return {n:d.n,e:d.e,seq:d.seq,done:d.done};})}:null};}
 if(window.NPTools)NPTools.player({role:ROLE,getState:moonState});
 home();
 </script>

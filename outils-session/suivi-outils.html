@@ -38,6 +38,16 @@ h1{font-family:'Orbitron',monospace;font-size:20px;letter-spacing:5px;color:#ffc
 .btn:hover{background:rgba(255,255,255,.08)}
 .log{font-size:10px;color:rgba(255,255,255,.55);line-height:1.6;max-height:90px;overflow:auto;}
 select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;font-family:inherit;font-size:10px;padding:3px;}
+.labp{margin-top:18px;border:1px solid rgba(0,255,136,.35);border-radius:10px;padding:14px;background:rgba(255,255,255,.02);}
+.labp h2{margin:0 0 10px;font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:#00ff88;}
+.labp h4{margin:0 0 6px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.55);}
+.labp input,.labp select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;font-family:inherit;font-size:11px;padding:6px;margin:2px 3px 2px 0;}
+.labp input[type=text],.labp input:not([type]){width:100%;}
+.forms{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;}@media(max-width:800px){.forms{grid-template-columns:1fr;}}
+.fm{border:1px dashed rgba(255,255,255,.15);border-radius:8px;padding:10px;}.fm .r{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:10px;}
+.r2{display:flex;gap:6px;}.r2 input{flex:1;}
+.stk{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:2px 4px 2px 9px;margin:2px 3px 2px 0;font-size:10px;}
+.stk button{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:50%;width:18px;height:18px;cursor:pointer;line-height:14px;padding:0;}
 .hint{text-align:center;font-size:10px;color:rgba(255,255,255,.35);margin:-8px 0 14px;}
 </style>
 </head>
@@ -48,6 +58,30 @@ select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);bord
 <div class="sub"><span class="dot" id="dot"></span><span id="st">CONNEXION…</span> · SESSION <b id="cd">—</b></div>
 <div class="hint">Chaque joueur doit avoir ouvert son outil (piratage, laboratoire, viseur 3D, convoi) pour apparaître ici.</div>
 <div class="main"><div class="cards" id="cards"></div><div><div class="sec" style="margin-top:0">FIL D'ACTIVITÉ</div><div class="feed" id="feed"><div style="color:rgba(255,255,255,.35);font-size:11px">En attente d'activité…</div></div></div></div>
+<div id="lab" class="labp">
+ <h2>⚗ GESTION DU LABO DE FURY</h2>
+ <div id="lab-dyn"><div class="hint" style="margin:0">En attente du signal de Fury…</div></div>
+ <div class="forms">
+  <div class="fm"><h4>Seringue sur mesure</h4>
+   <input id="sn" placeholder="Nom (ex : Sérum de Vérité)"><input id="se" placeholder="Effet (ex : La cible répond honnêtement)">
+   <input id="ss" placeholder="Effet secondaire (optionnel)">
+   <div class="r"><select id="sk"><option value="soin">Soin</option><option value="stim">Stimulant</option><option value="tox">Toxique</option><option value="sed">Sédatif</option></select>
+   <select id="sp"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+   <label><input type="checkbox" id="st2"> déjà testée</label></div>
+   <button class="btn" style="--c:#00ff88" onclick="giveSyr()">DONNER À FURY</button></div>
+  <div class="fm"><h4>Nouvelle recette à découvrir</h4>
+   <div class="r"><select id="r1"></select><select id="r2"></select><select id="r3"><option value="">(aucun)</option></select></div>
+   <input id="rn" placeholder="Nom de la recette"><input id="re" placeholder="Effet de la seringue">
+   <select id="rk"><option value="soin">Soin</option><option value="stim">Stimulant</option><option value="tox">Toxique</option><option value="sed">Sédatif</option></select>
+   <button class="btn" style="--c:#00ff88" onclick="addRecipe()">AJOUTER LA RECETTE</button></div>
+ </div>
+ <div style="margin-top:10px"><button class="btn" style="--c:#ff4060" onclick="if(confirm('Réinitialiser tout le labo de Fury (stock, seringues, recettes connues) ?'))sendTo('fury','resetLab',{})">↺ RÉINITIALISER LE LABO</button></div>
+</div>
+<div class="labp" style="border-color:rgba(0,204,255,.4)">
+ <h2 style="color:#00ccff">🔑 VÉRIFIER UN CODE DE MOON</h2>
+ <div class="r2"><input id="cin" placeholder="MN-XXX-000-000" style="text-transform:uppercase"><button class="btn" style="--c:#00ccff" onclick="verifyCode()">VÉRIFIER</button></div>
+ <div id="cout" style="margin-top:8px;font-size:12px"></div>
+</div>
 </div>
 <script>
 var META={tamuro:{n:'TAMURO',c:'#ff2040',ico:'🎯',t:'Viseur 3D'},kiki:{n:'KIKI',c:'#ffaa00',ico:'🚐',t:'Convoi & trafic'},hunter:{n:'MOON',c:'#00ccff',ico:'⌁',t:'Piratage'},fury:{n:'FURY',c:'#00ff88',ico:'⚗',t:'Laboratoire'}};
@@ -93,6 +127,30 @@ function body(role,d){
   }
   return h;
 }
+var INGS=[['adre','Adrénaline synthé'],['nano','Nanites médicales'],['sang','Plasma de synthèse'],['neuro','Neurotoxine'],['venin','Venin de vipère'],['cryo','Cryo-gel'],['morph','Opioïde de rue'],['stab','Stabilisant'],['eau','Eau stérile'],['psy','Psychotrope'],['acid','Acide corrosif'],['anti','Antibiotique']];
+['r1','r2','r3'].forEach(function(id){var el=document.getElementById(id);el.insertAdjacentHTML('beforeend',INGS.map(function(g){return '<option value="'+g[0]+'">'+g[1]+'</option>';}).join(''));});
+document.getElementById('r2').selectedIndex=1;
+function val(i){return document.getElementById(i).value.trim();}
+function giveSyr(){if(!val('sn')){return;}sendTo('fury','addSyr',{n:val('sn'),e:val('se'),side:val('ss')||'Aucun effet secondaire notable.',k:val('sk'),pot:+val('sp'),tested:document.getElementById('st2').checked});['sn','se','ss'].forEach(function(i){document.getElementById(i).value='';});}
+function addRecipe(){var ids=[val('r1'),val('r2'),val('r3')].filter(Boolean);if(!val('rn')||ids.length<2)return;sendTo('fury','recipe',{ids:ids,n:val('rn'),e:val('re'),k:val('rk')});['rn','re'].forEach(function(i){document.getElementById(i).value='';});}
+function labDyn(){
+  var d=data.fury,box=document.getElementById('lab-dyn');if(!d){return;}
+  var s=d.state||{},h='<div class="sec">STOCK (clique − / + pour ajuster)</div>';
+  (s.ing||[]).forEach(function(g){var q=(s.stock||{})[g.id]||0;h+='<span class="stk">'+g.ico+' '+esc(g.n)+' <b>'+q+'</b><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q-1)+'})">−</button><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q+1)+'})">+</button></span>';});
+  h+='<div class="sec">SERINGUES DE FURY</div>'+((s.syr||[]).length?(s.syr||[]).map(function(x){return '<div class="syr" style="--c:#00ff88"><b>'+esc(x.n)+'</b> · puissance '+x.pot+' <button class="btn" style="--c:#00ccff" onclick="sendTo(\'fury\',\'revealSyr\',{id:'+x.id+'})">'+(x.tested?'testée ✔':'👁 RÉVÉLER')+'</button><button class="btn" style="--c:#ff4060" onclick="sendTo(\'fury\',\'delSyr\',{id:'+x.id+'})">🗑 RETIRER</button><small>'+esc(x.e)+'</small><small>Effet secondaire : '+esc(x.side)+'</small></div>';}).join(''):'<span style="color:rgba(255,255,255,.35);font-size:10px">Aucune</span>');
+  h+='<div class="sec">RECETTES</div>'+(s.recipes||[]).map(function(r){return '<div class="syr" style="--c:'+(r.known?'#00ff88':'#666')+'"><b>'+esc(r.n)+'</b> '+(r.known?'<span class="chip g">découverte</span>':'<span class="chip">non découverte</span>')+(r.custom?'<span class="chip">MJ</span><button class="btn" style="--c:#ff4060" onclick="sendTo(\'fury\',\'delRecipe\',{key:\''+r.k+'\'})">SUPPR.</button>':'')+'<small>'+r.k.split('+').map(function(i){var f=INGS.filter(function(g){return g[0]===i;})[0];return f?f[1]:i;}).join(' + ')+' → '+esc(r.e)+'</small></div>';}).join('');
+  box.innerHTML=h;
+}
+var TMAP={CAM:['cam','Caméra de rue'],POR:['porte','Porte blindée'],DRO:['drone','Drone de sécurité'],TER:['term','Terminal Arasaka'],SER:['serv','Serveur central corpo'],PNJ:['pnj','Cyberware ennemi']};
+function hsh(str){var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;return h;}
+function verifyCode(){
+  var c=val('cin').toUpperCase(),o=document.getElementById('cout'),mt=c.match(/^MN-([A-Z]{3})-([0-9A-Z]{3})-([0-9A-Z]{3})$/);
+  if(!mt||!TMAP[mt[1]]){o.innerHTML='<span style="color:#ff4060">✖ Format invalide.</span>';return;}
+  var chk=('000'+(hsh((NPTools.code()||'')+'|'+TMAP[mt[1]][0]+'|'+mt[2])%46656).toString(36)).slice(-3).toUpperCase();
+  if(chk!==mt[3]){o.innerHTML='<span style="color:#ff4060">✖ CODE FALSIFIÉ OU D\'UNE AUTRE SESSION.</span>';return;}
+  var now=Math.floor(Date.now()/60000)%46656,st=parseInt(mt[2],36),age=(now-st+46656)%46656;
+  o.innerHTML='<span style="color:#00ff88">✔ CODE AUTHENTIQUE</span> — cible : <b>'+TMAP[mt[1]][1]+'</b> · généré il y a '+(age<120?age+' min':Math.round(age/60)+' h');
+}
 function paint(){
   var h='';
   ORDER.forEach(function(role){
@@ -100,6 +158,7 @@ function paint(){
     h+='<div class="card '+(d?'':'off')+'" style="--c:'+m.c+'"><h3><span>'+m.ico+' '+m.n+' — '+m.t.toUpperCase()+'</span><small>'+(d?'● '+ago(d.t):'hors ligne')+'</small></h3>'+(d?body(role,d):'<div style="color:rgba(255,255,255,.4);font-size:11px">Pas encore de signal. '+m.n+' n\'a pas ouvert son outil.</div>')+'</div>';
   });
   document.getElementById('cards').innerHTML=h;
+  labDyn();
 }
 function addEv(ev){
   var k=ev.t+'|'+ev.role+'|'+ev.txt;if(seen[k])return;seen[k]=1;feed.push(ev);feed.sort(function(a,b){return b.t-a.t;});if(feed.length>120)feed.length=120;
