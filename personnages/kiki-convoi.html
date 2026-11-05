@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KIKI — Convoi // Neo-Paris 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;background:#0a0703;color:#ffe3b0;font-family:'Share Tech Mono',monospace;min-height:100%;}
+body{background:radial-gradient(ellipse at 50% -10%,#2a1a04,#0a0703 60%);}
+.back{position:fixed;top:10px;left:10px;z-index:60;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.45);text-decoration:none;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:4px;background:#0a0703;}
+.wrap{max-width:980px;margin:0 auto;padding:54px 14px 40px;}
+h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#ffaa00;text-align:center;margin:0;text-shadow:0 0 16px rgba(255,170,0,.6);}
+.sub{text-align:center;font-size:10px;letter-spacing:3px;color:rgba(255,170,0,.45);margin:4px 0 14px;}
+.stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;}
+.st{border:1px solid rgba(255,170,0,.3);border-radius:8px;padding:7px 12px;font-size:11px;letter-spacing:1px;background:rgba(40,25,4,.6);min-width:110px;text-align:center;}
+.st b{display:block;font-family:'Orbitron',monospace;font-size:15px;color:#fff;margin-top:2px;}
+.st.low b{color:#ff4060;}
+.bar{height:5px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:4px;overflow:hidden;}.bar i{display:block;height:100%;background:#ffaa00;}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;}
+@media(max-width:720px){.grid{grid-template-columns:1fr;}}
+.box{border:1px solid rgba(255,170,0,.22);border-radius:8px;padding:12px;background:rgba(20,12,2,.7);margin-bottom:14px;}
+.box h3{margin:0 0 10px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:rgba(255,170,0,.75);}
+.map{position:relative;height:250px;border:1px solid rgba(255,170,0,.2);border-radius:8px;background:
+ linear-gradient(rgba(255,170,0,.05) 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,rgba(255,170,0,.05) 1px,transparent 1px) 0 0/28px 28px,#0d0903;overflow:hidden;}
+.map svg{position:absolute;inset:0;width:100%;height:100%;}
+.node{position:absolute;transform:translate(-50%,-50%);width:76px;text-align:center;cursor:pointer;font-size:9px;letter-spacing:1px;}
+.node i{display:block;width:30px;height:30px;border-radius:50%;border:2px solid var(--c);margin:0 auto 3px;background:#0d0903;line-height:26px;font-style:normal;font-size:15px;box-shadow:0 0 10px color-mix(in srgb,var(--c) 40%,transparent);}
+.node.here i{background:var(--c);box-shadow:0 0 18px var(--c);}
+.node.reach i{animation:pulse 1.4s infinite;}
+.node.far{opacity:.4;cursor:default;}
+@keyframes pulse{50%{box-shadow:0 0 22px var(--c);transform:scale(1.12);}}
+.row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;}
+.row .n{flex:1}.row .n small{display:block;font-size:9px;color:rgba(255,255,255,.4)}
+.p{min-width:56px;text-align:right;color:#fff;}
+.up{color:#00ff88}.dn{color:#ff6080}
+.btn{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;padding:6px 10px;border-radius:5px;border:1px solid #ffaa00;color:#ffaa00;background:rgba(255,170,0,.07);cursor:pointer;}
+.btn:disabled{opacity:.3;cursor:default;}
+.btn.big{padding:10px 18px;font-size:11px;}
+.evt{border:1px solid #ffaa00;border-radius:10px;padding:16px;background:rgba(255,170,0,.06);animation:in .4s ease;}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
+.evt h2{margin:0 0 8px;font-family:'Orbitron',monospace;font-size:14px;letter-spacing:3px;color:#ffaa00;}
+.evt p{font-size:12px;line-height:1.7;margin:0 0 12px;color:rgba(255,255,255,.8);}
+.evt .ch{display:flex;flex-direction:column;gap:7px;}
+.evt .ch button{text-align:left;padding:10px 12px;font-family:inherit;font-size:12px;border:1px solid rgba(255,170,0,.4);background:rgba(255,170,0,.05);color:#ffe3b0;border-radius:6px;cursor:pointer;}
+.evt .ch button:hover{background:rgba(255,170,0,.18);}
+.evt .ch small{display:block;font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;}
+.log{font-size:10px;line-height:1.7;color:rgba(255,255,255,.55);max-height:150px;overflow:auto;}
+.log div{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.hold span{display:inline-block;margin:2px 4px 2px 0;padding:3px 7px;border:1px solid rgba(255,255,255,.2);border-radius:4px;font-size:10px;}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="wrap">
+<h1>🚐 CONVOI</h1>
+<div class="sub">TRAFIC & ROUTES — KIKI // NOMADE</div>
+<div class="stats" id="stats"></div>
+<div id="v"></div>
+</div>
+<script>
+var Z=[
+ {id:'bas',n:'Le Bas',ico:'🏚',c:'#ff6633',x:18,y:72},
+ {id:'neon',n:'Quartier Néon',ico:'🌃',c:'#ff33cc',x:50,y:22},
+ {id:'docks',n:'Docks',ico:'⚓',c:'#00ccff',x:82,y:68},
+ {id:'arasaka',n:'Tour Arasaka',ico:'🏢',c:'#ff2040',x:78,y:20},
+ {id:'peri',n:'Périphérie',ico:'🏜',c:'#ffaa00',x:12,y:25},
+ {id:'marche',n:'Marché noir',ico:'🕶',c:'#00ff88',x:48,y:75}
+];
+var LINKS={bas:['marche','peri','neon'],neon:['bas','arasaka','marche','peri'],docks:['marche','arasaka'],arasaka:['neon','docks'],peri:['bas','neon'],marche:['bas','neon','docks']};
+var G=[
+ {id:'pieces',ico:'🔩',n:'Pièces détachées',b:40},{id:'stims',ico:'💉',n:'Stims médicaux',b:90},{id:'armes',ico:'🔫',n:'Armes légères',b:160},
+ {id:'bouffe',ico:'🥫',n:'Rations',b:25},{id:'data',ico:'💾',n:'Données volées',b:220},{id:'fuel',ico:'⛽',n:'Carburant (réserve)',b:55}
+];
+/* modificateurs de prix par zone : <1 = on achète pas cher ici, >1 = on vend cher */
+var MOD={
+ bas:{pieces:.7,stims:1.4,armes:1.2,bouffe:.6,data:1.0,fuel:.8},
+ neon:{pieces:1.3,stims:1.0,armes:1.3,bouffe:1.5,data:1.5,fuel:1.3},
+ docks:{pieces:.6,stims:1.2,armes:.7,bouffe:.8,data:1.1,fuel:.7},
+ arasaka:{pieces:1.6,stims:.8,armes:1.6,bouffe:1.7,data:.7,fuel:1.4},
+ peri:{pieces:1.2,stims:1.5,armes:1.4,bouffe:.7,data:1.3,fuel:.6},
+ marche:{pieces:.9,stims:.7,armes:.6,bouffe:1.1,data:.6,fuel:1.0}
+};
+var CAP=10,KEY='np_convoi_'+(new URLSearchParams(location.search).get('role')||'kiki');
+function fresh(){return {cash:600,fuel:100,hull:100,loc:'bas',hold:{},day:1,ev:null,log:[],bonus:3,profit:0,fluct:{}};}
+var S=load();
+function load(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&v.cash!==undefined)return v;}catch(e){}return fresh();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function r(n){return 1+Math.floor(Math.random()*n);}
+function zone(id){return Z.filter(function(z){return z.id===id;})[0];}
+function gd(id){return G.filter(function(g){return g.id===id;})[0];}
+function price(gid){var m=MOD[S.loc][gid],f=(S.fluct[S.loc+gid]||1);return Math.max(5,Math.round(gd(gid).b*m*f));}
+function sum(){var n=0;for(var k in S.hold)n+=S.hold[k].q;return n;}
+function lg(t){S.log.unshift('J'+S.day+' · '+t);if(S.log.length>40)S.log.pop();}
+function fluctuate(){S.fluct={};Z.forEach(function(z){G.forEach(function(g){S.fluct[z.id+g.id]=.85+Math.random()*.3;});});}
+if(!S.fluct||!Object.keys(S.fluct).length)fluctuate();
+function buy(gid){
+  var p=price(gid);if(S.cash<p||sum()>=CAP)return;
+  S.cash-=p;var h=S.hold[gid]||{q:0,paid:0};h.q++;h.paid+=p;S.hold[gid]=h;
+  if(gid==='fuel'){/* le carburant de réserve est consommé directement */}
+  save();render();
+}
+function sell(gid){
+  var h=S.hold[gid];if(!h||h.q<=0)return;
+  var p=price(gid),avg=h.paid/h.q;S.cash+=p;S.profit+=Math.round(p-avg);h.paid-=avg;h.q--;
+  if(h.q<=0)delete S.hold[gid];
+  save();render();
+}
+function refuel(){var need=100-S.fuel,c=Math.ceil(need*.6*(MOD[S.loc].fuel));if(need<=0||S.cash<=0)return;var buy=Math.min(need,Math.floor(S.cash/(.6*MOD[S.loc].fuel)));S.cash-=Math.ceil(buy*.6*MOD[S.loc].fuel);S.fuel+=buy;lg('Plein : +'+buy+' carburant.');save();render();}
+function repair(){var need=100-S.hull;if(need<=0)return;var cost=need*2,pay=Math.min(S.cash,cost),pts=Math.floor(pay/2);if(pts<=0)return;S.cash-=pts*2;S.hull+=pts;lg('Réparations : +'+pts+'% de coque.');save();render();}
+function travel(id){
+  var dist=3+r(6),cost=dist*2+4;
+  if(S.fuel<cost){lg('Pas assez de carburant pour rejoindre '+zone(id).n+'.');render();return;}
+  S.fuel-=cost;S.day++;S.loc=id;fluctuate();
+  S.ev=EVENTS[r(EVENTS.length)-1];
+  if(Math.random()<.3)S.ev=null;
+  lg('Trajet vers '+zone(id).n+' (-'+cost+' carburant).');
+  save();render();
+}
+function roll(dc){var d=r(20);return {d:d,t:d+S.bonus,ok:d===20||(d!==1&&d+S.bonus>=dc)};}
+var EVENTS=[
+ {t:'POINT DE CONTRÔLE ARASAKA',p:'Une patrouille barre la route et inspecte les véhicules.',ch:[
+  {l:'Bluffer avec de faux papiers',s:'Jet DD 13',f:function(){var x=roll(13);return x.ok?{m:'Les papiers passent. Ils te laissent filer.'}:{m:'Faux papiers repérés : amende de 120 ¢.',cash:-120};}},
+  {l:'Forcer le passage',s:'Jet DD 15 — risque de dégâts',f:function(){var x=roll(15);return x.ok?{m:'Tu fonces, les gardes plongent. Passage forcé !'}:{m:'Tirs sur la carrosserie : -20% de coque.',hull:-20};}},
+  {l:'Payer le péage',s:'-80 ¢, sans risque',f:function(){return {m:'Un garde empoche les crédits et te fait signe.',cash:-80};}}]},
+ {t:'EMBUSCADE DE GANGERS',p:'Une barricade de voitures brûlées bloque la rue. Des silhouettes sortent des ruines.',ch:[
+  {l:'Les semer en conduisant',s:'Jet DD 14',f:function(){var x=roll(14);return x.ok?{m:'Dérapage contrôlé, tu les laisses dans la poussière.'}:{m:'Ils te touchent : -25% de coque.',hull:-25};}},
+  {l:'Négocier',s:'Jet DD 12 — peut coûter une marchandise',f:function(){var x=roll(12);if(x.ok)return {m:'Un chef t\'écoute et te laisse passer pour un petit pourboire.',cash:-40};return {m:'Ils prennent une partie de ta cargaison.',steal:1};}}]},
+ {t:'PANNE MOTEUR',p:'Une alarme retentit : le moteur surchauffe en pleine rue.',ch:[
+  {l:'Réparer toi-même',s:'Jet DD 12',f:function(){var x=roll(12);return x.ok?{m:'Tu bricoles une réparation. Ça tient !',hull:5}:{m:'Tu aggraves la panne : -15% de coque.',hull:-15};}},
+  {l:'Appeler un mécano',s:'-100 ¢, répare 20%',f:function(){return {m:'Un mécano de passage te dépanne.',cash:-100,hull:20};}}]},
+ {t:'CONVOI MARCHAND',p:'Un autre nomade te hèle : il propose un échange avantageux.',ch:[
+  {l:'Accepter',s:'+150 ¢',f:function(){return {m:'Affaire conclue : tu gagnes un petit pactole.',cash:150};}},
+  {l:'Décliner poliment',s:'Rien ne se passe',f:function(){return {m:'Tu poursuis ta route.'};}}]},
+ {t:'DRONE DE SURVEILLANCE',p:'Un drone corpo te suit et prend des clichés de ta plaque.',ch:[
+  {l:'Le brouiller',s:'Jet DD 13',f:function(){var x=roll(13);return x.ok?{m:'Drone aveuglé, il s\'écrase dans une benne.'}:{m:'Il te signale : amende de 90 ¢.',cash:-90};}},
+  {l:'Rouler en zigzag dans les ruelles',s:'Jet DD 11 — consomme 6 carburant',f:function(){var x=roll(11);S.fuel=Math.max(0,S.fuel-6);return x.ok?{m:'Tu le perds dans le dédale. -6 carburant.'}:{m:'Il te colle encore : amende de 60 ¢.',cash:-60};}}]},
+ {t:'AUBAINE DANS LES DÉCOMBRES',p:'Une camionnette abandonnée gît sur le bas-côté, portes ouvertes.',ch:[
+  {l:'La fouiller',s:'Jet DD 10',f:function(){var x=roll(10);if(!x.ok)return {m:'Elle est vide, déjà pillée.'};if(sum()>=CAP)return {m:'Du butin… mais ta cargaison est pleine.'};return {m:'Tu trouves des pièces détachées en bon état !',gain:'pieces'};}},
+  {l:'Passer ton chemin',s:'Rien ne se passe',f:function(){return {m:'Prudence avant tout.'};}}]}
+];
+function resolve(i){
+  var res=S.ev.ch[i].f(),m=res.m;
+  if(res.cash)S.cash=Math.max(0,S.cash+res.cash);
+  if(res.hull)S.hull=Math.max(0,Math.min(100,S.hull+res.hull));
+  if(res.steal){var ks=Object.keys(S.hold);if(ks.length){var k=ks[r(ks.length)-1];S.hold[k].q--;S.hold[k].paid-=S.hold[k].paid/(S.hold[k].q+1);if(S.hold[k].q<=0)delete S.hold[k];m+=' ('+gd(k).n+' perdu)';}}
+  if(res.gain){var h=S.hold[res.gain]||{q:0,paid:0};h.q++;S.hold[res.gain]=h;}
+  lg(S.ev.t+' — '+m);S.ev=null;
+  if(S.hull<=0){S.ev={t:'VAN HORS D\'USAGE',p:'Ton van est détruit. Tu perds la moitié de ton argent et la cargaison, mais tu repars avec une épave réparée.',ch:[{l:'Repartir',s:'',f:function(){S.hull=40;S.hold={};S.cash=Math.floor(S.cash/2);return {m:'Épave retapée, cargaison perdue.'};}}]};}
+  save();render();
+}
+function reset(){if(confirm('Recommencer le convoi à zéro ?')){S=fresh();fluctuate();save();render();}}
+function render(){
+  document.getElementById('stats').innerHTML=
+   '<div class="st">CRÉDITS<b>'+S.cash+' ¢</b></div>'
+   +'<div class="st '+(S.fuel<20?'low':'')+'">CARBURANT<b>'+S.fuel+'</b><div class="bar"><i style="width:'+S.fuel+'%"></i></div></div>'
+   +'<div class="st '+(S.hull<30?'low':'')+'">COQUE DU VAN<b>'+S.hull+'%</b><div class="bar"><i style="width:'+S.hull+'%"></i></div></div>'
+   +'<div class="st">CARGAISON<b>'+sum()+' / '+CAP+'</b></div>'
+   +'<div class="st">JOUR<b>'+S.day+'</b></div>'
+   +'<div class="st">PROFIT<b class="'+(S.profit>=0?'up':'dn')+'">'+(S.profit>=0?'+':'')+S.profit+'</b></div>';
+  if(S.ev){
+    var e=S.ev;
+    document.getElementById('v').innerHTML='<div class="evt"><h2>⚠ '+e.t+'</h2><p>'+e.p+'</p><div class="ch">'+e.ch.map(function(c,i){return '<button onclick="resolve('+i+')">'+c.l+(c.s?'<small>'+c.s+'</small>':'')+'</button>';}).join('')+'</div></div><div class="box" style="margin-top:14px"><h3>JOURNAL</h3><div class="log">'+S.log.map(function(l){return '<div>'+l+'</div>';}).join('')+'</div></div>';
+    return;
+  }
+  var here=zone(S.loc),links=LINKS[S.loc];
+  var map='<div class="map"><svg viewBox="0 0 100 100" preserveAspectRatio="none">';
+  Object.keys(LINKS).forEach(function(a){LINKS[a].forEach(function(b){if(a<b){var A=zone(a),B=zone(b),on=(a===S.loc||b===S.loc);map+='<line x1="'+A.x+'" y1="'+A.y+'" x2="'+B.x+'" y2="'+B.y+'" stroke="'+(on?'#ffaa00':'rgba(255,170,0,.18)')+'" stroke-width="'+(on?.7:.4)+'" '+(on?'':'stroke-dasharray="1.5 1.5"')+'/>';}});});
+  map+='</svg>';
+  Z.forEach(function(z){var rc=links.indexOf(z.id)>=0,cl=z.id===S.loc?'here':rc?'reach':'far';map+='<div class="node '+cl+'" style="left:'+z.x+'%;top:'+z.y+'%;--c:'+z.c+'" '+(rc?'onclick="travel(\''+z.id+'\')"':'')+'><i>'+z.ico+'</i>'+z.n.toUpperCase()+'</div>';});
+  map+='</div>';
+  var mk='<div class="box"><h3>MARCHÉ — '+here.n.toUpperCase()+'</h3>';
+  G.forEach(function(g){var p=price(g.id),m=MOD[S.loc][g.id],h=S.hold[g.id],q=h?h.q:0;
+    mk+='<div class="row"><span style="font-size:18px">'+g.ico+'</span><div class="n">'+g.n+'<small>'+(m<=.8?'<span class="up">bon prix d\'achat</span>':m>=1.4?'<span class="up">se revend bien ici</span>':'prix moyen')+(q?' · en soute : '+q+' (payé ~'+Math.round(h.paid/q)+')':'')+'</small></div><span class="p">'+p+' ¢</span><button class="btn" onclick="buy(\''+g.id+'\')" '+(S.cash<p||sum()>=CAP?'disabled':'')+'>ACHETER</button><button class="btn" onclick="sell(\''+g.id+'\')" '+(q?'':'disabled')+'>VENDRE</button></div>';});
+  mk+='</div>';
+  var sv='<div class="box"><h3>ATELIER DU VAN</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn big" onclick="refuel()" '+(S.fuel>=100?'disabled':'')+'>⛽ FAIRE LE PLEIN</button><button class="btn big" onclick="repair()" '+(S.hull>=100?'disabled':'')+'>🔧 RÉPARER (2¢ / %)</button></div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">Chaque trajet consomme du carburant et peut déclencher une rencontre. Achète bas, vends haut.</div></div>';
+  var lgb='<div class="box"><h3>JOURNAL DE ROUTE</h3><div class="log">'+(S.log.length?S.log.map(function(l){return '<div>'+l+'</div>';}).join(''):'<div>Le voyage commence au Bas.</div>')+'</div></div>';
+  document.getElementById('v').innerHTML='<div class="grid"><div><div class="box"><h3>CARTE — CLIQUE UNE ZONE VOISINE POUR PARTIR</h3>'+map+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">Tu es au <b style="color:#ffaa00">'+here.n+'</b>.</div></div>'+sv+lgb+'<div style="text-align:center"><button class="btn" onclick="reset()" style="border-color:#555;color:#888">RECOMMENCER</button></div></div><div>'+mk+'</div></div>';
+}
+render();
+</script>
+</body>
+</html>

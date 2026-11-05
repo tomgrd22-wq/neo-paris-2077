@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FURY — Laboratoire // Neo-Paris 2077</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;background:#040a07;color:#bfe9d3;font-family:'Share Tech Mono',monospace;min-height:100%;}
+body{background:radial-gradient(ellipse at 50% -10%,#0a2a1a,#040a07 60%);}
+.back{position:fixed;top:10px;left:10px;z-index:60;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.45);text-decoration:none;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:4px;background:#040a07;}
+.wrap{max-width:980px;margin:0 auto;padding:54px 14px 40px;}
+h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00ff88;text-align:center;margin:0;text-shadow:0 0 16px rgba(0,255,136,.6);}
+.sub{text-align:center;font-size:10px;letter-spacing:3px;color:rgba(0,255,136,.45);margin:4px 0 16px;}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
+.tabs button,.btn{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;padding:9px 16px;border-radius:6px;border:1px solid #00ff88;color:#00ff88;background:rgba(0,255,136,.07);cursor:pointer;}
+.tabs button.on{background:#00ff88;color:#040a07;}
+.btn:disabled{opacity:.35;cursor:default;}
+.btn.red{border-color:#ff4060;color:#ff4060;background:rgba(255,32,64,.07);}
+.lab{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;}
+@media(max-width:720px){.lab{grid-template-columns:1fr;}}
+.box{border:1px solid rgba(0,255,136,.22);border-radius:8px;padding:12px;background:rgba(0,14,8,.7);}
+.box h3{margin:0 0 10px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:rgba(0,255,136,.7);}
+.ing{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.ig{position:relative;text-align:left;border:1px solid var(--c);background:rgba(255,255,255,.02);color:#dff;border-radius:7px;padding:8px;cursor:pointer;font-family:inherit;}
+.ig:hover:not(:disabled){background:rgba(255,255,255,.08);}
+.ig:disabled{opacity:.3;cursor:default;}
+.ig .i{font-size:22px}.ig b{display:block;font-size:10px;letter-spacing:1px;color:var(--c);margin:2px 0;}
+.ig small{font-size:9px;color:rgba(255,255,255,.5);line-height:1.4;display:block;}
+.ig .q{position:absolute;top:5px;right:7px;font-size:10px;color:#fff;}
+.mixer{display:flex;gap:10px;justify-content:center;margin:6px 0 12px;}
+.vial{width:78px;height:98px;border:2px dashed rgba(0,255,136,.35);border-radius:6px 6px 28px 28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;text-align:center;padding:4px;color:rgba(255,255,255,.4);cursor:pointer;}
+.vial.f{border-style:solid;color:#fff;background:rgba(0,255,136,.08);}
+.vial span{font-size:26px;display:block;}
+.out{text-align:center;min-height:84px;font-size:12px;line-height:1.6;}
+.syr{border:1px solid var(--c);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.02);}
+.syr .si{font-size:28px;filter:drop-shadow(0 0 8px var(--c));}
+.syr b{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;color:var(--c);}
+.syr small{display:block;font-size:10px;color:rgba(255,255,255,.6);line-height:1.5;margin-top:2px;}
+.syr .act{margin-left:auto;display:flex;flex-direction:column;gap:5px;}
+.tag{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 5px;border-radius:3px;border:1px solid;margin-right:4px;}
+.fail{color:#ff6080}
+.bubble{animation:bub .9s ease;}
+@keyframes bub{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.rec{font-size:11px;line-height:1.7;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.rec b{color:#00ff88}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="wrap">
+<h1>⚗ LABORATOIRE</h1>
+<div class="sub">TABLE DE SYNTHÈSE — FURY // CHARCUDOC</div>
+<div class="tabs"><button id="t-s" class="on" onclick="tab('s')">TABLE DE SYNTHÈSE</button><button id="t-i" onclick="tab('i')">SERINGUES</button><button id="t-j" onclick="tab('j')">JOURNAL</button></div>
+<div id="v"></div>
+</div>
+<script>
+/* propriétés : soin, stim, toxine, sedatif, instable */
+var PR={soin:{n:'SOIN',c:'#00ff88',ico:'💚'},stim:{n:'STIMULANT',c:'#ffaa00',ico:'⚡'},tox:{n:'TOXIQUE',c:'#bb44ff',ico:'☠'},sed:{n:'SÉDATIF',c:'#00ccff',ico:'💤'}};
+var ING=[
+ {id:'adre',ico:'💉',n:'Adrénaline synthé',c:'#ffaa00',p:{stim:3,instable:1},t:'Coup de fouet.'},
+ {id:'nano',ico:'🧬',n:'Nanites médicales',c:'#00ff88',p:{soin:3,instable:1},t:'Réparent les tissus.'},
+ {id:'sang',ico:'🩸',n:'Plasma de synthèse',c:'#ff4060',p:{soin:2},t:'Base de transfusion.'},
+ {id:'neuro',ico:'🐍',n:'Neurotoxine',c:'#bb44ff',p:{tox:3,sed:1,instable:1},t:'Paralyse les nerfs.'},
+ {id:'venin',ico:'🕷',n:'Venin de vipère',c:'#bb44ff',p:{tox:2,stim:1},t:'Douloureux, efficace.'},
+ {id:'cryo',ico:'🧊',n:'Cryo-gel',c:'#00ccff',p:{sed:2,soin:1},t:'Ralentit tout.'},
+ {id:'morph',ico:'😴',n:'Opioïde de rue',c:'#00ccff',p:{sed:3,tox:1},t:'Éteint la douleur.'},
+ {id:'stab',ico:'🧪',n:'Stabilisant',c:'#e8e8f4',p:{instable:-2},t:'Rend le mélange sûr.'},
+ {id:'eau',ico:'💧',n:'Eau stérile',c:'#8fd0ff',p:{},t:'Dilue : réduit la puissance.',dil:true},
+ {id:'psy',ico:'🍄',n:'Psychotrope',c:'#ff33cc',p:{stim:2,sed:1,instable:2},t:'Imprévisible.'},
+ {id:'acid',ico:'🧫',n:'Acide corrosif',c:'#aaff00',p:{tox:2,instable:2},t:'Brûle tout ce qu\'il touche.'},
+ {id:'anti',ico:'💊',n:'Antibiotique',c:'#e8e8f4',p:{soin:1,instable:-1},t:'Neutralise les infections.'}
+];
+var STOCK0=4;
+/* recettes nommées (ids triés) */
+var NAMED={
+ 'adre+nano':{n:'Sérum de Combat',e:'+2 aux actions physiques pendant 1 scène, soigne 1d6.',k:'stim'},
+ 'cryo+nano':{n:'Gel Cicatrisant',e:'Stoppe les saignements, soigne 2d6 sur 3 tours.',k:'soin'},
+ 'neuro+venin':{n:'Dard Paralysant',e:'La cible rate son prochain tour (jet de résistance).',k:'tox'},
+ 'morph+sang':{n:'Antalgique Dosé',e:'Ignore les malus de blessure pendant 1 scène.',k:'sed'},
+ 'adre+psy':{n:'Cocktail Berserk',e:'+3 en attaque, -3 en défense, impossible de battre en retraite.',k:'stim'},
+ 'cryo+neuro':{n:'Sommeil Profond',e:'La cible s\'endort pour 1d6 minutes.',k:'sed'},
+ 'nano+sang+stab':{n:'Transfusion Express',e:'Soigne 3d6 et retire un état négatif.',k:'soin'},
+ 'acid+venin':{n:'Poison Rongeur',e:'1d6 dégâts par tour pendant 4 tours.',k:'tox'},
+ 'adre+cryo+stab':{n:'Phase Zéro',e:'Réflexes figés : agit en premier à la prochaine initiative.',k:'stim'}
+};
+var SIDE=['Tremblements pendant 1 heure.','Vision floue pendant 10 minutes.','Soif insatiable et nausée.','Fièvre légère jusqu\'au repos.','Goût métallique, malus de -1 en Charisme.','Sursauts nerveux : -1 à la discrétion.','Aucun effet secondaire notable.','Aucun effet secondaire notable.'];
+var q=new URLSearchParams(location.search),ROLE=q.get('role')||'fury',KS='np_lab_'+ROLE;
+var st=load();
+var mix=[],last=null,pageTab='s';
+function load(){try{var v=JSON.parse(localStorage.getItem(KS));if(v&&v.stock)return v;}catch(e){}var s={};ING.forEach(function(i){s[i.id]=STOCK0;});return {stock:s,syr:[],known:{}};}
+function save(){try{localStorage.setItem(KS,JSON.stringify(st));}catch(e){}}
+function ing(id){return ING.filter(function(i){return i.id===id;})[0];}
+function r(n){return Math.floor(Math.random()*n);}
+function view(h){document.getElementById('v').innerHTML=h;}
+function tab(t){pageTab=t;['s','i','j'].forEach(function(x){document.getElementById('t-'+x).className=x===t?'on':'';});render();}
+function add(id){if(mix.length>=3||st.stock[id]<=0)return;mix.push(id);render();}
+function rem(i){mix.splice(i,1);render();}
+function clearMix(){mix=[];render();}
+function analyse(ids){
+  var v={soin:0,stim:0,tox:0,sed:0,instable:0},dil=0;
+  ids.forEach(function(id){var g=ing(id);if(g.dil)dil++;for(var k in g.p)v[k]+=g.p[k];});
+  return {v:v,dil:dil};
+}
+function synth(){
+  if(mix.length<2)return;
+  var ids=mix.slice();ids.forEach(function(id){st.stock[id]--;});
+  var key=ids.slice().sort().join('+'),a=analyse(ids),v=a.v;
+  /* instabilité : jet de risque */
+  var risk=Math.max(0,v.instable)*14,roll=r(100);
+  var res;
+  if(roll<risk){
+    var bad=['Le mélange mousse et explose : 1d6 dégâts à Fury.','Réaction exothermique : le labo est enfumé, tout est perdu.','Le flacon se fissure et dégage un gaz toxique : jet d\'Endurance.'];
+    res={fail:true,txt:bad[r(bad.length)]};last=res;mix=[];save();render();return;
+  }
+  var named=NAMED[key],name,eff,kind,pot;
+  var sorted=Object.keys(PR).sort(function(x,y){return v[y]-v[x];});
+  var top=sorted[0];
+  if(a.dil){pot=Math.max(1,Math.round(Math.max(v[top],1)/(1+a.dil)));}else pot=Math.max(1,Math.min(5,v[top]));
+  if(named){name=named.n;eff=named.e;kind=named.k;st.known[key]=name;}
+  else if(v[top]<=0){name='Mixture inerte';eff='Aucun effet. Dilué, sans intérêt.';kind='sed';pot=0;}
+  else{
+    kind=top;
+    var base={soin:['Sérum','Soigne '+pot+'d6 PV.'],stim:['Stimulant','+'+Math.min(pot,3)+' aux actions pendant '+pot+' tours.'],tox:['Toxine','Inflige '+pot+'d6 dégâts de poison.'],sed:['Sédatif','Endort ou ralentit : -'+Math.min(pot,3)+' à toutes les actions de la cible.']}[top];
+    var sec=sorted[1];
+    name=base[0]+' '+(['Faible','Léger','Standard','Concentré','Puissant','Pur'][Math.min(pot,5)])+(v[sec]>0&&sec!=='instable'?' / '+PR[sec].n.toLowerCase():'');
+    eff=base[1]+(v[sec]>0?' Effet secondaire marqué : '+PR[sec].n.toLowerCase()+'.':'');
+  }
+  var s={id:Date.now(),n:name,e:eff,k:kind,pot:pot,side:SIDE[r(SIDE.length)],tested:false,mix:ids.map(function(i){return ing(i).n;}).join(' + '),unstable:v.instable>=2,named:!!named};
+  st.syr.push(s);last={fail:false,syr:s};mix=[];save();render();
+}
+function testSyr(id){
+  var s=st.syr.filter(function(x){return x.id===id;})[0];if(!s)return;
+  s.tested=true;save();render();
+}
+function dropSyr(id){st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();}
+function useSyr(id){dropSyr(id);}
+function restock(){ING.forEach(function(i){st.stock[i.id]=Math.min(8,(st.stock[i.id]||0)+2);});save();render();}
+function syrHTML(s,acts){
+  var c=(PR[s.k]||PR.sed).c;
+  return '<div class="syr" style="--c:'+c+'"><div class="si">💉</div><div><b>'+s.n.toUpperCase()+'</b><small>'+s.e+'</small><small>Puissance : '+'●'.repeat(s.pot)+'○'.repeat(Math.max(0,5-s.pot))+' · '+(PR[s.k]||PR.sed).n+'</small><small>'+(s.tested?'<span style="color:#ffaa00">Effet secondaire : '+s.side+'</span>':'<span style="color:rgba(255,255,255,.35)">Effets secondaires inconnus (non testée)</span>')+'</small><small style="opacity:.5">'+s.mix+'</small></div>'+(acts?'<div class="act">'+acts+'</div>':'')+'</div>';
+}
+function render(){
+  if(pageTab==='s'){
+    var h='<div class="lab"><div class="box"><h3>INGRÉDIENTS</h3><div class="ing">';
+    ING.forEach(function(g){var q=st.stock[g.id]||0;h+='<button class="ig" style="--c:'+g.c+'" '+(q<=0||mix.length>=3?'disabled':'')+' onclick="add(\''+g.id+'\')"><span class="q">x'+q+'</span><span class="i">'+g.ico+'</span><b>'+g.n.toUpperCase()+'</b><small>'+g.t+'</small></button>';});
+    h+='</div><div style="margin-top:10px"><button class="btn" onclick="restock()">+ RÉAPPROVISIONNER (VALIDER AVEC LE MJ)</button></div></div>';
+    h+='<div class="box"><h3>TABLE DE MÉLANGE</h3><div class="mixer">';
+    for(var i=0;i<3;i++){var id=mix[i],g=id?ing(id):null;h+='<div class="vial '+(g?'f':'')+'" onclick="'+(g?'rem('+i+')':'')+'">'+(g?'<span>'+g.ico+'</span>'+g.n:'+ FIOLE '+(i+1))+'</div>';}
+    h+='</div><div style="text-align:center;margin-bottom:12px"><button class="btn" onclick="synth()" '+(mix.length<2?'disabled':'')+'>SYNTHÉTISER</button> <button class="btn red" onclick="clearMix()" '+(mix.length?'':'disabled')+'>VIDER</button></div>';
+    if(mix.length>=2){var a=analyse(mix),v=a.v;h+='<div class="out" style="color:rgba(255,255,255,.55);font-size:10px;letter-spacing:1px">ANALYSE : '+Object.keys(PR).map(function(k){return PR[k].ico+' '+Math.max(0,v[k]);}).join(' &nbsp; ')+' &nbsp; ⚠ INSTABILITÉ '+Math.max(0,v.instable)+(v.instable>=3?' (DANGEREUX)':v.instable>=1?' (RISQUÉ)':' (STABLE)')+'</div>';}
+    if(last){
+      if(last.fail)h+='<div class="out bubble fail"><b>✖ ÉCHEC DE SYNTHÈSE</b><br>'+last.txt+'<br><small>Les ingrédients sont perdus. Le MJ applique les conséquences.</small></div>';
+      else h+='<div class="out bubble"><b style="color:#00ff88">✔ NOUVELLE SERINGUE'+(last.syr.named?' — RECETTE CONNUE':'')+'</b></div>'+syrHTML(last.syr);
+    }else h+='<div class="out" style="color:rgba(255,255,255,.35)">Choisis 2 ou 3 ingrédients. Le stabilisant réduit le risque ; plus un mélange est instable, plus il peut exploser.</div>';
+    view(h+'</div></div>');return;
+  }
+  if(pageTab==='i'){
+    var h2='<div class="box"><h3>MES SERINGUES ('+st.syr.length+')</h3>';
+    if(!st.syr.length)h2+='<div class="out" style="color:rgba(255,255,255,.35)">Aucune seringue. Va à la table de synthèse.</div>';
+    st.syr.slice().reverse().forEach(function(s){h2+=syrHTML(s,(s.tested?'':'<button class="btn" onclick="testSyr('+s.id+')">TESTER</button>')+'<button class="btn" onclick="useSyr('+s.id+')">UTILISER</button><button class="btn red" onclick="dropSyr('+s.id+')">JETER</button>');});
+    view(h2+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">TESTER révèle l\'effet secondaire (sur un cobaye ou sur toi). UTILISER consomme la seringue : annonce-la au MJ.</div></div>');return;
+  }
+  var h3='<div class="box"><h3>JOURNAL DE RECHERCHE</h3>';
+  var keys=Object.keys(NAMED),n=Object.keys(st.known).length;
+  h3+='<div style="font-size:11px;margin-bottom:8px">Recettes découvertes : <b style="color:#00ff88">'+n+' / '+keys.length+'</b></div>';
+  keys.forEach(function(k){
+    var d=!!st.known[k];
+    h3+='<div class="rec">'+(d?'<b>'+NAMED[k].n+'</b> — '+k.split('+').map(function(i){return ing(i).n;}).join(' + ')+'<br><span style="color:rgba(255,255,255,.5)">'+NAMED[k].e+'</span>':'<span style="color:rgba(255,255,255,.3)">??? — recette non découverte ('+k.split('+').length+' ingrédients)</span>')+'</div>';
+  });
+  view(h3+'</div>');
+}
+render();
+</script>
+</body>
+</html>
