@@ -95,6 +95,18 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .lockctrl-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;color:#fff;}
 .lockctrl-desc{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
 .lockctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;background:transparent;flex-shrink:0;}
+.viewas-bar{position:sticky;top:0;z-index:40;display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 12px;margin:-10px -10px 14px;background:rgba(10,10,20,.95);border-bottom:2px solid var(--c);font-size:11px;letter-spacing:1px;}
+.viewas-bar span{margin-right:auto;}
+.viewas-bar button{font-family:inherit;font-size:10px;padding:5px 9px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;border-radius:4px;cursor:pointer;}
+.viewas-bar button.on{background:var(--c);color:#05050a;}
+.viewas-bar button.back{position:static;border-color:#ffc83c;color:#ffc83c;}
+.viewas-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin:0 0 30px;}
+.viewas-chips .hero-eyebrow{width:100%;text-align:center;}
+.viewas-chips button{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 16px;border:1px solid var(--c);color:var(--c);background:transparent;border-radius:6px;cursor:pointer;}
+.viewas-chips button:hover{background:rgba(255,255,255,.08);}
+.plrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;margin-bottom:8px;}
+.pl-name{flex:1;min-width:120px;font-family:'Orbitron',monospace;font-size:12px;color:#fff;}.pl-name small{display:block;font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;}
+.plrow select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:6px;font-family:inherit;font-size:11px;}
 .lockctrl-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .personal-card.done{border-color:#00ff88 !important;}
 .done-badge{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:#00ff88;margin-top:6px;}
@@ -374,7 +386,10 @@ function closeLockModal(){
 
 function toFakeEmail(username){return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'')+EMAIL_DOMAIN;}
 function isMJ(){return !!(currentUserData&&currentUserData.isMJ);}
+var viewAs=null; /* aperçu MJ : rôle d'un joueur */
+function effRole(){return (isMJ()&&viewAs)?viewAs:getRole();}
 function getRole(){return currentUserData?currentUserData.role:null;}
+function setViewAs(r){viewAs=r||null;npTab='accueil';try{history.replaceState(null,'','#accueil');}catch(e){}render();window.scrollTo(0,0);}
 
 function getSessionCode(){return currentUserData?currentUserData.sessionCode:null;}
 
@@ -386,7 +401,8 @@ function render(){
   if(isMJ()){
     if(!getSessionCode()){wrap.innerHTML=renderSessionPrompt();return;}
     if(!locksMc)connectLocks();
-    wrap.innerHTML=renderMJ();return;
+    if(viewAs){wrap.innerHTML=renderViewAsBar()+renderPersonal(viewAs);return;}
+    wrap.innerHTML=renderMJ();loadPlayers();return;
   }
   var role=getRole();
   if(!role){wrap.innerHTML=renderPicker();return;}
@@ -477,6 +493,39 @@ function renderPicker(){
   html+='</div>';
   html+='<a class="switch-link" onclick="doLogout()">↺ SE DÉCONNECTER</a>';
   return html;
+}
+function renderViewAsBar(){
+  var c=CHARACTERS[viewAs];
+  return '<div class="viewas-bar" style="--c:'+c.color+'"><span>👁 VUE JOUEUR — <b>'+c.ico+' '+c.name+'</b> · ce que voit ce joueur</span>'
+    +Object.keys(CHARACTERS).map(function(k){return '<button class="'+(k===viewAs?'on':'')+'" onclick="setViewAs(\''+k+'\')">'+CHARACTERS[k].ico+' '+CHARACTERS[k].name+'</button>';}).join('')
+    +'<button class="back" onclick="setViewAs(null)">↩ RETOUR VUE MJ</button></div>';
+}
+function viewAsChips(){
+  return '<div class="viewas-chips" data-pane="accueil"><div class="hero-eyebrow">// VOIR LE PORTAIL COMME UN JOUEUR //</div>'
+   +Object.keys(CHARACTERS).map(function(k){var c=CHARACTERS[k];return '<button style="--c:'+c.color+'" onclick="setViewAs(\''+k+'\')">'+c.ico+' '+c.name+'</button>';}).join('')+'</div>';
+}
+var playersLoaded=false;
+function loadPlayers(){
+  var box=document.getElementById('mj-players');if(!box||!db)return;
+  db.collection('users').get().then(function(qs){
+    var rows=[];qs.forEach(function(d){var u=d.data();if(u.isMJ)return;rows.push({id:d.id,u:u});});
+    rows.sort(function(a,b){return String(a.u.username).localeCompare(String(b.u.username));});
+    if(!rows.length){box.innerHTML='<div class="note">Aucun joueur inscrit.</div>';return;}
+    box.innerHTML=rows.map(function(r){
+      var u=r.u;
+      return '<div class="plrow"><div class="pl-name">'+esc(u.username)+'<small>'+(u.approved?'approuvé':'⏳ EN ATTENTE')+(u.sessionCode?' · '+esc(u.sessionCode):'')+'</small></div>'
+        +'<select onchange="setPlayerRole(\''+r.id+'\',this.value)"><option value="">— aucun (choisit lui-même) —</option>'
+        +Object.keys(CHARACTERS).map(function(k){return '<option value="'+k+'"'+(u.role===k?' selected':'')+'>'+CHARACTERS[k].ico+' '+CHARACTERS[k].name+'</option>';}).join('')+'</select>'
+        +(u.role?'<button class="lockctrl-btn off" onclick="setViewAs(\''+u.role+'\')">👁 VOIR</button>':'')
+        +(u.approved?'':'<button class="lockctrl-btn off" onclick="approvePlayer(\''+r.id+'\')">✔ APPROUVER</button>')+'</div>';
+    }).join('');
+  }).catch(function(err){box.innerHTML='<div class="note">Liste des joueurs indisponible : '+esc(err.message||err)+'<br>Les règles Firestore doivent autoriser le MJ à lire la collection « users ».</div>';});
+}
+function setPlayerRole(uid,role){
+  db.collection('users').doc(uid).update({role:role||null}).then(function(){loadPlayers();}).catch(function(err){alert('Impossible de changer le rôle : '+(err.message||err));loadPlayers();});
+}
+function approvePlayer(uid){
+  db.collection('users').doc(uid).update({approved:true}).then(function(){loadPlayers();}).catch(function(err){alert('Impossible : '+(err.message||err));});
 }
 function pickChar(k){
   var wrap=document.getElementById('wrap');wrap.innerHTML='<div class="loading">ENREGISTREMENT...</div>';
@@ -586,6 +635,7 @@ function renderMJ(){
   var qs='?code='+encodeURIComponent(code)+'&role=mj';
   var html='<div class="hero" data-pane="accueil"><div class="hero-eyebrow">// ACCÈS MAÎTRE DU JEU //</div><div class="hero-title">NEO-PARIS 2077</div><div class="hero-sub">Portail de campagne — accès complet</div></div>';
   html+=homeTiles('mj');
+  html+=viewAsChips();
 
   html+='<div class="section" data-pane="perso"><div class="section-title">🎮 Outils des personnages</div><div class="grid">'
     +tool('🚐','KIKI — Dashboard Van','Navigation carte réelle, radio CB, état du van, inventaire.','#ffaa00','personnages/kiki-dashboard.html'+qs)
@@ -611,6 +661,9 @@ function renderMJ(){
     +tool('🃏','Table Clandestine — Blackjack','Table de casino jouable, croupier MJ, jetons et mises.','#00ff88','activites/table-blackjack.html'+qs)
     +tool('🎲','Oracle de Complications','Tirage aléatoire : complication, PNJ improvisé ou lieu, pour ne jamais rester sec.','#00ccff','activites/oracle-complications.html'+qs)
     +'</div></div>';
+
+  html+='<div class="section" data-pane="session"><div class="section-title">👥 Joueurs &amp; rôles</div>'
+    +'<div class="note" style="margin-top:0;margin-bottom:12px;">Change le rôle d\'un joueur (il est mis à jour chez lui en direct), approuve un compte ou ouvre sa vue.</div><div id="mj-players"><div class="note">Chargement…</div></div></div>';
 
   html+='<div class="section" data-pane="session"><div class="section-title">🔒 Contrôle d\'accès</div>'
     +'<div class="note" style="margin-top:0;margin-bottom:12px;">Verrouille ou débloque n\'importe quel outil, activité ou mission pour tes joueurs.</div>'
@@ -728,6 +781,12 @@ function identityBoot(){
       db.collection('users').doc(user.uid).get().then(function(snap){
         currentUserData=snap.exists?snap.data():null;
         render();
+        if(currentUserData&&!currentUserData.isMJ&&!window._selfSub){
+          window._selfSub=db.collection('users').doc(user.uid).onSnapshot(function(sn){
+            if(!sn.exists)return;var nd=sn.data();
+            if(currentUserData&&(nd.role!==currentUserData.role||nd.approved!==currentUserData.approved)){currentUserData=nd;npTab='accueil';render();}
+          },function(){});
+        }
       }).catch(function(){currentUserData=null;render();});
     } else {
       currentUser=null;currentUserData=null;render();
@@ -922,12 +981,12 @@ var TILE_META={
   guide:{c:'#ff33cc',d:{mj:'Guide complet de la campagne et récap des sessions jouées.'}},
   arcade:{c:'#ff33cc',d:{player:'Mini-jeux d\'attente et classements des joueurs.'}}
 };
-function curTabs(){return isMJ()?NP_TABS.mj:(getRole()?NP_TABS.player:null);}
+function curTabs(){return (isMJ()&&!viewAs)?NP_TABS.mj:(effRole()?NP_TABS.player:null);}
 function homeTiles(kind){
   var code=getSessionCode()||'';
   var crew=Object.keys(CHARACTERS).map(function(k){var c=CHARACTERS[k];
     return '<div class="home-crew" style="--c:'+c.color+';"><span class="ht-ico">'+c.ico+'</span><span class="ht-name">'+c.name+'</span><span class="ht-desc">'+c.title.split(' — ')[1]+'</span></div>';}).join('');
-  return '<div class="home-info" data-pane="accueil"><span>CAMPAGNE · <b>NEO-PARIS 2077</b></span><span>SESSION · <b>'+esc(code)+'</b></span><span>'+(kind==='mj'?'VUE · <b>MAÎTRE DU JEU</b>':'RÔLE · <b>'+esc((CHARACTERS[getRole()]||{}).name||'')+'</b>')+'</span></div>'
+  return '<div class="home-info" data-pane="accueil"><span>CAMPAGNE · <b>NEO-PARIS 2077</b></span><span>SESSION · <b>'+esc(code)+'</b></span><span>'+(kind==='mj'?'VUE · <b>MAÎTRE DU JEU</b>':'RÔLE · <b>'+esc((CHARACTERS[effRole()]||{}).name||'')+'</b>')+'</span></div>'
     +'<div class="home-about" data-pane="accueil"><div class="hero-eyebrow">// LA CAMPAGNE //</div>'
     +'<p>Neo-Paris, 2077. Une métropole saturée de néons où les mégacorporations dictent leur loi et où le Bas oublie jusqu\'à la lumière du jour. Dans ce monde, on ne survit pas seul : on survit en équipe.</p>'
     +'<p>Cinq inconnus. Une nuit. Une ville qui n\'oublie jamais rien. Des missions, des trahisons, des choix qui se paient cher — et un seul mot d\'ordre : ne jamais hésiter.</p>'
@@ -940,7 +999,7 @@ function setTab(id){
   var t=curTabs();if(!t||!t.some(function(x){return x.id===id;}))id='accueil';
   if(location.hash!=='#'+id){history.pushState(null,'','#'+id);}
   npTab=id;applyTab(true);
-  if(!isMJ()&&arguments[1]!==false){
+  if((!isMJ()||viewAs)&&arguments[1]!==false){
     var one=document.querySelectorAll('#wrap [data-pane="'+id+'"] a.personal-card[href]');
     if(id!=='accueil'&&one.length===1){try{window.open(one[0].href,'_blank');}catch(e){}}
   }
