@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMJ() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isMJ == true;
+    }
+
+    match /users/{uid} {
+      // Un joueur lit son propre compte ; le MJ lit tous les comptes.
+      allow read: if request.auth != null && (request.auth.uid == uid || isMJ());
+
+      // Inscription : le compte démarre non approuvé et non MJ.
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.isMJ == false
+        && request.resource.data.approved == false;
+
+      // Le MJ peut tout modifier (rôle, approbation, code de session).
+      // Un joueur ne peut modifier que son code de session, et son rôle
+      // uniquement tant qu'il n'en a pas (role == null) : le choix est ensuite verrouillé.
+      allow update: if isMJ()
+        || (request.auth != null && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sessionCode', 'role'])
+            && (!('role' in request.resource.data.diff(resource.data).affectedKeys()) || resource.data.role == null));
+
+      allow delete: if isMJ();
+    }
+  }
+}
