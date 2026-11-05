@@ -50,6 +50,8 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#ffa
 .log div{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
 .hold span{display:inline-block;margin:2px 4px 2px 0;padding:3px 7px;border:1px solid rgba(255,255,255,.2);border-radius:4px;font-size:10px;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
 </head>
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
@@ -97,13 +99,13 @@ function fluctuate(){S.fluct={};Z.forEach(function(z){G.forEach(function(g){S.fl
 if(!S.fluct||!Object.keys(S.fluct).length)fluctuate();
 function buy(gid){
   var p=price(gid);if(S.cash<p||sum()>=CAP)return;
-  S.cash-=p;var h=S.hold[gid]||{q:0,paid:0};h.q++;h.paid+=p;S.hold[gid]=h;
+  S.cash-=p;if(window.NPTools)NPTools.event('achète 1 '+gd(gid).n+' à '+p+' ¢');var h=S.hold[gid]||{q:0,paid:0};h.q++;h.paid+=p;S.hold[gid]=h;
   if(gid==='fuel'){/* le carburant de réserve est consommé directement */}
   save();render();
 }
 function sell(gid){
   var h=S.hold[gid];if(!h||h.q<=0)return;
-  var p=price(gid),avg=h.paid/h.q;S.cash+=p;S.profit+=Math.round(p-avg);h.paid-=avg;h.q--;
+  var p=price(gid),avg=h.paid/h.q;S.cash+=p;S.profit+=Math.round(p-avg);if(window.NPTools)NPTools.event('vend 1 '+gd(gid).n+' à '+p+' ¢ ('+(p-avg>=0?'+':'')+Math.round(p-avg)+')');h.paid-=avg;h.q--;
   if(h.q<=0)delete S.hold[gid];
   save();render();
 }
@@ -115,7 +117,7 @@ function travel(id){
   S.fuel-=cost;S.day++;S.loc=id;fluctuate();
   S.ev=EVENTS[r(EVENTS.length)-1];
   if(Math.random()<.3)S.ev=null;
-  lg('Trajet vers '+zone(id).n+' (-'+cost+' carburant).');
+  lg('Trajet vers '+zone(id).n+' (-'+cost+' carburant).');if(window.NPTools)NPTools.event('part pour '+zone(id).n+' (-'+cost+' carburant)'+(S.ev?' — rencontre : '+S.ev.t:''));
   save();render();
 }
 function roll(dc){var d=r(20);return {d:d,t:d+S.bonus,ok:d===20||(d!==1&&d+S.bonus>=dc)};}
@@ -146,7 +148,7 @@ function resolve(i){
   if(res.hull)S.hull=Math.max(0,Math.min(100,S.hull+res.hull));
   if(res.steal){var ks=Object.keys(S.hold);if(ks.length){var k=ks[r(ks.length)-1];S.hold[k].q--;S.hold[k].paid-=S.hold[k].paid/(S.hold[k].q+1);if(S.hold[k].q<=0)delete S.hold[k];m+=' ('+gd(k).n+' perdu)';}}
   if(res.gain){var h=S.hold[res.gain]||{q:0,paid:0};h.q++;S.hold[res.gain]=h;}
-  lg(S.ev.t+' — '+m);S.ev=null;
+  lg(S.ev.t+' — '+m);if(window.NPTools)NPTools.event(S.ev.t+' : '+S.ev.ch[i].l+' → '+m);S.ev=null;
   if(S.hull<=0){S.ev={t:'VAN HORS D\'USAGE',p:'Ton van est détruit. Tu perds la moitié de ton argent et la cargaison, mais tu repars avec une épave réparée.',ch:[{l:'Repartir',s:'',f:function(){S.hull=40;S.hold={};S.cash=Math.floor(S.cash/2);return {m:'Épave retapée, cargaison perdue.'};}}]};}
   save();render();
 }
@@ -178,6 +180,13 @@ function render(){
   var lgb='<div class="box"><h3>JOURNAL DE ROUTE</h3><div class="log">'+(S.log.length?S.log.map(function(l){return '<div>'+l+'</div>';}).join(''):'<div>Le voyage commence au Bas.</div>')+'</div></div>';
   document.getElementById('v').innerHTML='<div class="grid"><div><div class="box"><h3>CARTE — CLIQUE UNE ZONE VOISINE POUR PARTIR</h3>'+map+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">Tu es au <b style="color:#ffaa00">'+here.n+'</b>.</div></div>'+sv+lgb+'<div style="text-align:center"><button class="btn" onclick="reset()" style="border-color:#555;color:#888">RECOMMENCER</button></div></div><div>'+mk+'</div></div>';
 }
+function kikiState(){var h={};for(var k in S.hold)h[gd(k).n]=S.hold[k].q;return {cash:S.cash,fuel:S.fuel,hull:S.hull,loc:zone(S.loc).n,day:S.day,profit:S.profit,hold:h,cap:CAP,ev:S.ev?S.ev.t:null,log:S.log.slice(0,12)};}
+function kikiCmd(d){
+  if(d.type==='adjust'){if(d.cash)S.cash=Math.max(0,S.cash+d.cash);if(d.fuel)S.fuel=Math.max(0,Math.min(100,S.fuel+d.fuel));if(d.hull)S.hull=Math.max(0,Math.min(100,S.hull+d.hull));lg('Le MJ ajuste : '+(d.cash?d.cash+' ¢ ':'')+(d.fuel?d.fuel+' carburant ':'')+(d.hull?d.hull+'% coque':''));save();render();NPTools.event('ajustement MJ : '+(d.cash?d.cash+' ¢ ':'')+(d.fuel?d.fuel+' carburant ':'')+(d.hull?d.hull+'% coque':''));}
+  if(d.type==='event'){var e=EVENTS[(d.i||0)%EVENTS.length];S.ev=e;save();render();NPTools.event('le MJ déclenche : '+e.t);}
+}
+if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'kiki',getState:kikiState,onCmd:kikiCmd});
+var _r0=render;render=function(){_r0();if(window.NPTools)NPTools.pub();};
 render();
 </script>
 </body>

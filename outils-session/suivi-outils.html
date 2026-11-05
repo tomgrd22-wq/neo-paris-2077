@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SUIVI DES OUTILS // MJ</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;background:#06060c;color:#e8e8f4;font-family:'Share Tech Mono',monospace;min-height:100%;}
+.back{position:fixed;top:10px;left:10px;z-index:60;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.45);text-decoration:none;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:4px;background:#06060c;}
+.wrap{max-width:1200px;margin:0 auto;padding:54px 14px 40px;}
+h1{font-family:'Orbitron',monospace;font-size:20px;letter-spacing:5px;color:#ffc83c;text-align:center;margin:0;}
+.sub{text-align:center;font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.4);margin:4px 0 16px;}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff2040;margin-right:6px;}.dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
+.main{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:14px;}
+@media(max-width:900px){.main{grid-template-columns:1fr;}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;align-content:start;}
+.card{border:1px solid var(--c);border-radius:10px;background:rgba(255,255,255,.02);padding:12px;}
+.card h3{margin:0 0 8px;font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:var(--c);display:flex;justify-content:space-between;align-items:center;}
+.card h3 small{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);}
+.off{opacity:.45}
+.kv{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;}
+.kv b{color:#fff;}
+.bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin:2px 0 6px;}.bar i{display:block;height:100%;background:var(--c);}
+.sec{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.35);margin:10px 0 4px;}
+.chip{display:inline-block;font-size:10px;padding:2px 7px;border:1px solid rgba(255,255,255,.2);border-radius:10px;margin:2px 3px 2px 0;}
+.chip.g{border-color:#00ff88;color:#00ff88}.chip.r{border-color:#ff4060;color:#ff4060}
+.syr{font-size:10px;border-left:2px solid var(--c);padding:3px 8px;margin:4px 0;line-height:1.5;}
+.syr small{display:block;color:rgba(255,255,255,.45)}
+.feed{border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;max-height:78vh;overflow:auto;background:rgba(255,255,255,.02);}
+.ev{font-size:11px;line-height:1.5;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);animation:in .4s;}
+@keyframes in{from{background:rgba(255,200,60,.25)}}
+.ev b{color:var(--c)}.ev small{color:rgba(255,255,255,.35);margin-right:6px}
+.btn{font-family:inherit;font-size:10px;letter-spacing:1px;padding:5px 9px;border-radius:4px;border:1px solid var(--c);color:var(--c);background:transparent;cursor:pointer;margin:2px 3px 2px 0;}
+.btn:hover{background:rgba(255,255,255,.08)}
+.log{font-size:10px;color:rgba(255,255,255,.55);line-height:1.6;max-height:90px;overflow:auto;}
+select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;font-family:inherit;font-size:10px;padding:3px;}
+.hint{text-align:center;font-size:10px;color:rgba(255,255,255,.35);margin:-8px 0 14px;}
+</style>
+</head>
+<body>
+<a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
+<div class="wrap">
+<h1>📡 SUIVI DES OUTILS EN DIRECT</h1>
+<div class="sub"><span class="dot" id="dot"></span><span id="st">CONNEXION…</span> · SESSION <b id="cd">—</b></div>
+<div class="hint">Chaque joueur doit avoir ouvert son outil (piratage, laboratoire, viseur 3D, convoi) pour apparaître ici.</div>
+<div class="main"><div class="cards" id="cards"></div><div><div class="sec" style="margin-top:0">FIL D'ACTIVITÉ</div><div class="feed" id="feed"><div style="color:rgba(255,255,255,.35);font-size:11px">En attente d'activité…</div></div></div></div>
+</div>
+<script>
+var META={tamuro:{n:'TAMURO',c:'#ff2040',ico:'🎯',t:'Viseur 3D'},kiki:{n:'KIKI',c:'#ffaa00',ico:'🚐',t:'Convoi & trafic'},hunter:{n:'MOON',c:'#00ccff',ico:'⌁',t:'Piratage'},fury:{n:'FURY',c:'#00ff88',ico:'⚗',t:'Laboratoire'}};
+var ORDER=['kiki','fury','hunter','tamuro'],data={},feed=[],seen={};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ago(t){var s=Math.round((Date.now()-t)/1000);return s<60?s+'s':s<3600?Math.round(s/60)+' min':Math.round(s/3600)+' h';}
+function bar(v,m,c){return '<div class="bar" style="--c:'+c+'"><i style="width:'+Math.max(0,Math.min(100,v/m*100))+'%"></i></div>';}
+function sendTo(role,type,data){NPTools.send(role,type,data);flash();}
+function flash(){var s=document.getElementById('st');var o=s.textContent;s.textContent='COMMANDE ENVOYÉE';setTimeout(function(){s.textContent=o;},1200);}
+
+function body(role,d){
+  var s=d.state||{},h='';
+  if(role==='kiki'){
+    h+='<div class="kv"><span>Position</span><b>'+esc(s.loc)+' · jour '+s.day+'</b></div>';
+    h+='<div class="kv"><span>Crédits</span><b>'+s.cash+' ¢</b></div><div class="kv"><span>Profit total</span><b>'+(s.profit>=0?'+':'')+s.profit+'</b></div>';
+    h+='<div class="kv"><span>Carburant</span><b>'+s.fuel+'</b></div>'+bar(s.fuel,100,'#ffaa00');
+    h+='<div class="kv"><span>Coque</span><b>'+s.hull+'%</b></div>'+bar(s.hull,100,'#ff4060');
+    var hold=Object.keys(s.hold||{});h+='<div class="sec">CARGAISON</div>'+(hold.length?hold.map(function(k){return '<span class="chip">'+esc(k)+' ×'+s.hold[k]+'</span>';}).join(''):'<span style="color:rgba(255,255,255,.35);font-size:10px">Soute vide</span>');
+    if(s.ev)h+='<div class="sec">RENCONTRE EN COURS</div><span class="chip r">⚠ '+esc(s.ev)+'</span>';
+    h+='<div class="sec">ACTIONS MJ</div><button class="btn" onclick="sendTo(\'kiki\',\'adjust\',{cash:100})">+100 ¢</button><button class="btn" onclick="sendTo(\'kiki\',\'adjust\',{cash:-100})">-100 ¢</button><button class="btn" onclick="sendTo(\'kiki\',\'adjust\',{fuel:25})">+25 carb.</button><button class="btn" onclick="sendTo(\'kiki\',\'adjust\',{hull:20})">+20% coque</button><button class="btn" onclick="sendTo(\'kiki\',\'adjust\',{hull:-20})">-20% coque</button><br><select id="kev">'+['Contrôle Arasaka','Embuscade','Panne moteur','Convoi marchand','Drone','Aubaine'].map(function(n,i){return '<option value="'+i+'">'+n+'</option>';}).join('')+'</select><button class="btn" onclick="sendTo(\'kiki\',\'event\',{i:+document.getElementById(\'kev\').value})">⚠ DÉCLENCHER</button>';
+    h+='<div class="sec">JOURNAL DE ROUTE</div><div class="log">'+(s.log||[]).map(esc).join('<br>')+'</div>';
+  }
+  if(role==='fury'){
+    h+='<div class="kv"><span>Recettes découvertes</span><b>'+Object.keys(s.known||{}).length+' / '+s.total+'</b></div>';
+    if(s.pending)h+='<div class="sec">DEMANDE EN ATTENTE</div><span class="chip r">⏳ Réapprovisionnement demandé</span><br><button class="btn" onclick="sendTo(\'fury\',\'restock\',{ok:true})">✔ ACCORDER (+2 chacun)</button><button class="btn" onclick="sendTo(\'fury\',\'restock\',{ok:false})">✖ REFUSER</button>';
+    if(s.mix&&s.mix.length)h+='<div class="sec">SUR LA TABLE</div>'+s.mix.map(function(m){return '<span class="chip">'+esc(m)+'</span>';}).join('');
+    if(s.lastFail)h+='<div class="sec">DERNIER ÉCHEC</div><span class="chip r">'+esc(s.lastFail)+'</span>';
+    h+='<div class="sec">STOCK D\'INGRÉDIENTS</div>'+(s.ing||[]).map(function(g){var q=(s.stock||{})[g.id]||0;return '<span class="chip '+(q===0?'r':'')+'">'+g.ico+' '+esc(g.n)+' ×'+q+'</span>';}).join('');
+    h+='<div class="sec">SERINGUES ('+(s.syr||[]).length+')</div>'+((s.syr||[]).length?(s.syr||[]).map(function(x){return '<div class="syr"><b>'+esc(x.n)+'</b> · puissance '+x.pot+'<small>'+esc(x.e)+'</small><small>'+(x.tested?'Secondaire : '+esc(x.side):'Effet secondaire inconnu : '+esc(x.side)+' (non testée)')+'</small><small>'+esc(x.mix)+'</small></div>';}).join(''):'<span style="color:rgba(255,255,255,.35);font-size:10px">Aucune</span>');
+    h+='<div class="sec">DONNER UN INGRÉDIENT</div><select id="fgi">'+(s.ing||[]).map(function(g){return '<option value="'+g.id+'">'+esc(g.n)+'</option>';}).join('')+'</select><button class="btn" onclick="sendTo(\'fury\',\'give\',{id:document.getElementById(\'fgi\').value,q:2})">+2</button>';
+    h+='<div class="sec">RECETTES CONNUES</div>'+(Object.keys(s.known||{}).map(function(k){return '<span class="chip g">'+esc(s.known[k])+'</span>';}).join('')||'<span style="color:rgba(255,255,255,.35);font-size:10px">Aucune</span>');
+  }
+  if(role==='hunter'){
+    if(s.cur){var c=s.cur;h+='<div class="sec">INTRUSION EN COURS</div><div class="kv"><span>Cible</span><b>'+esc(c.target)+'</b></div><div class="kv"><span>Temps restant</span><b>'+c.left+'s</b></div><div class="kv"><span>Tampon</span><b>'+(c.buf||[]).join(' ')+' ('+(c.buf||[]).length+'/'+c.max+')</b></div>'+(c.dms||[]).map(function(x){return '<div class="syr" style="--c:'+(x.done?'#00ff88':'#00ccff')+'"><b>'+(x.done?'✔ ':'')+esc(x.n)+'</b> <span class="chip">'+x.seq.join(' ')+'</span><small>'+esc(x.e)+'</small></div>';}).join('');}
+    else h+='<div style="color:rgba(255,255,255,.4);font-size:11px">Aucune intrusion en cours.</div>';
+    h+='<div class="sec">HISTORIQUE</div><div class="log">'+(s.logs||[]).slice().reverse().map(esc).join('<br>')+'</div>';
+  }
+  if(role==='tamuro'){
+    h+='<div class="kv"><span>Cible</span><b>'+esc(s.target)+'</b></div><div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040');
+    h+='<div class="kv"><span>Arme</span><b>'+esc(s.weapon)+'</b></div><div class="kv"><span>Distance / couvert</span><b>'+esc(s.dist)+' · '+esc(s.cover)+'</b></div><div class="kv"><span>Bonus</span><b>+'+s.bonus+'</b></div>';
+    h+='<div class="sec">ZONES</div>'+(s.zones||[]).map(function(z){return '<div class="kv"><span>'+esc(z.n)+'</span><b>'+z.d+' / '+z.max+(z.d>=z.max?' ✖':'')+'</b></div>'+bar(z.d,z.max,'#ff2040');}).join('');
+    h+='<div class="sec">DERNIERS TIRS</div><div class="log">'+(s.shots||[]).map(esc).join('<br>')+'</div>';
+  }
+  return h;
+}
+function paint(){
+  var h='';
+  ORDER.forEach(function(role){
+    var m=META[role],d=data[role];
+    h+='<div class="card '+(d?'':'off')+'" style="--c:'+m.c+'"><h3><span>'+m.ico+' '+m.n+' — '+m.t.toUpperCase()+'</span><small>'+(d?'● '+ago(d.t):'hors ligne')+'</small></h3>'+(d?body(role,d):'<div style="color:rgba(255,255,255,.4);font-size:11px">Pas encore de signal. '+m.n+' n\'a pas ouvert son outil.</div>')+'</div>';
+  });
+  document.getElementById('cards').innerHTML=h;
+}
+function addEv(ev){
+  var k=ev.t+'|'+ev.role+'|'+ev.txt;if(seen[k])return;seen[k]=1;feed.push(ev);feed.sort(function(a,b){return b.t-a.t;});if(feed.length>120)feed.length=120;
+  var m=META[ev.role]||{n:ev.role,c:'#fff'};
+  document.getElementById('feed').innerHTML=feed.map(function(e){var mm=META[e.role]||{n:e.role,c:'#fff'};return '<div class="ev" style="--c:'+mm.c+'"><small>'+new Date(e.t).toLocaleTimeString('fr-FR')+'</small><b>'+mm.n+'</b> '+esc(e.txt)+'</div>';}).join('');
+}
+var ok=NPTools.mj({
+  onStatus:function(on){document.getElementById('dot').className='dot'+(on?' on':'');document.getElementById('st').textContent=on?'CONNECTÉ':'RECONNEXION…';},
+  onState:function(role,d){
+    data[role]=d;(d.events||[]).forEach(addEv);
+    clearTimeout(window._pt);window._pt=setTimeout(paint,80);
+  },
+  onEvent:function(ev){addEv(ev);}
+});
+document.getElementById('cd').textContent=NPTools.code()||'—';
+if(!ok){document.getElementById('st').textContent='CODE DE SESSION MANQUANT (ouvre cette page depuis le portail)';}
+paint();setInterval(paint,5000);
+</script>
+</body>
+</html>

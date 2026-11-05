@@ -57,6 +57,8 @@ h2{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:rgba
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:11px;}
 .row select,.row input{background:#06121c;color:#bfeaff;border:1px solid rgba(0,204,255,.3);border-radius:4px;padding:7px 8px;font-family:inherit;font-size:12px;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
 </head>
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
@@ -132,7 +134,7 @@ function gen(t){
   return {t:t,m:m,n:n,buf:[],pos:[],used:{},row:0,col:0,max:D.buf,dms:dms,time:D.time,left:D.time,over:false};
 }
 function start(i){
-  S=gen(TARGETS[i]);paint();
+  S=gen(TARGETS[i]);paint();if(window.NPTools)NPTools.event('lance un piratage : '+S.t.n+' (sécurité '+S.t.lv+'/5)');
   var t0=Date.now();clearInterval(tm);
   tm=setInterval(function(){
     S.left=Math.max(0,S.time-(Date.now()-t0)/1000);
@@ -152,6 +154,7 @@ function pick(i,j){
   if(S.over||!valid(i,j))return;
   S.buf.push(S.m[i][j]);S.used[i+','+j]=1;S.row=i;S.col=j;
   check();
+  if(window.NPTools&&S.buf.length%2===0)NPTools.pub();
   if(S.buf.length>=S.max||S.dms.every(function(d){return d.done;}))finish();else paint();
 }
 function check(){
@@ -179,6 +182,7 @@ function finish(){
   var ok=S.dms.filter(function(d){return d.done;}),n=ok.length,t=S.dms.length;
   var cls=n===t?'win':n>0?'part':'lose',title=n===t?'ACCÈS TOTAL':n>0?'INTRUSION PARTIELLE':'ÉCHEC — ICE ACTIVÉE';
   logs.push(new Date().toLocaleTimeString('fr-FR')+' · '+S.t.n+' · '+n+'/'+t+' démons');
+  if(window.NPTools)NPTools.event('piratage '+S.t.n+' : '+title+' ('+n+'/'+t+')'+(n?' — '+ok.map(function(d){return d.n;}).join(', '):''));
   var h='<div class="res '+cls+'"><h2>'+title+'</h2><div style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.55)">'+n+' / '+t+' DÉMONS ACTIVÉS · TEMPS RESTANT '+Math.ceil(S.left)+'s</div><div class="fx">';
   if(n)ok.forEach(function(d){h+='<div><b style="color:#00ff88">'+d.n+'</b> — '+d.e+'</div>';});
   else h+='<div>Rien ne passe. Le MJ décide de la riposte du réseau (alerte, ICE, retour de flamme).</div>';
@@ -187,6 +191,8 @@ function finish(){
   h+='</div><button class="btn" onclick="start('+TARGETS.indexOf(S.t)+')">REJOUER LA CIBLE</button> <button class="btn" onclick="home()">AUTRE CIBLE</button></div>';
   view(h);
 }
+function moonState(){return {logs:logs.slice(-15),cur:S&&!S.over?{target:S.t.n,left:Math.ceil(S.left),buf:S.buf,max:S.max,dms:S.dms.map(function(d){return {n:d.n,e:d.e,seq:d.seq,done:d.done};})}:null};}
+if(window.NPTools)NPTools.player({role:ROLE,getState:moonState});
 home();
 </script>
 </body>

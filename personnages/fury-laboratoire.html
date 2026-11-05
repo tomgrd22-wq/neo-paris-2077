@@ -46,6 +46,8 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00f
 .rec{font-size:11px;line-height:1.7;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
 .rec b{color:#00ff88}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
 </head>
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
@@ -112,7 +114,7 @@ function synth(){
   var res;
   if(roll<risk){
     var bad=['Le mélange mousse et explose : 1d6 dégâts à Fury.','Réaction exothermique : le labo est enfumé, tout est perdu.','Le flacon se fissure et dégage un gaz toxique : jet d\'Endurance.'];
-    res={fail:true,txt:bad[r(bad.length)]};last=res;mix=[];save();render();return;
+    res={fail:true,txt:bad[r(bad.length)]};last=res;mix=[];save();render();if(window.NPTools)NPTools.event('ÉCHEC de synthèse ('+ids.map(function(i){return ing(i).n;}).join(' + ')+') : '+res.txt);return;
   }
   var named=NAMED[key],name,eff,kind,pot;
   var sorted=Object.keys(PR).sort(function(x,y){return v[y]-v[x];});
@@ -128,15 +130,15 @@ function synth(){
     eff=base[1]+(v[sec]>0?' Effet secondaire marqué : '+PR[sec].n.toLowerCase()+'.':'');
   }
   var s={id:Date.now(),n:name,e:eff,k:kind,pot:pot,side:SIDE[r(SIDE.length)],tested:false,mix:ids.map(function(i){return ing(i).n;}).join(' + '),unstable:v.instable>=2,named:!!named};
-  st.syr.push(s);last={fail:false,syr:s};mix=[];save();render();
+  st.syr.push(s);last={fail:false,syr:s};mix=[];save();render();if(window.NPTools)NPTools.event('synthétise « '+s.n+' » ('+s.mix+')');
 }
 function testSyr(id){
   var s=st.syr.filter(function(x){return x.id===id;})[0];if(!s)return;
-  s.tested=true;save();render();
+  s.tested=true;save();render();if(window.NPTools)NPTools.event('teste « '+s.n+' » → '+s.side);
 }
-function dropSyr(id){st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();}
-function useSyr(id){dropSyr(id);}
-function restock(){ING.forEach(function(i){st.stock[i.id]=Math.min(8,(st.stock[i.id]||0)+2);});save();render();}
+function dropSyr(id){var _s=st.syr.filter(function(x){return x.id===id;})[0];if(window.NPTools&&_s)NPTools.event('jette « '+_s.n+' »');st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();}
+function useSyr(id){var _s=st.syr.filter(function(x){return x.id===id;})[0];st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();if(window.NPTools&&_s)NPTools.event('UTILISE « '+_s.n+' » — '+_s.e);}
+function restock(){st.pending=true;save();render();if(window.NPTools)NPTools.event('demande un réapprovisionnement');}
 function syrHTML(s,acts){
   var c=(PR[s.k]||PR.sed).c;
   return '<div class="syr" style="--c:'+c+'"><div class="si">💉</div><div><b>'+s.n.toUpperCase()+'</b><small>'+s.e+'</small><small>Puissance : '+'●'.repeat(s.pot)+'○'.repeat(Math.max(0,5-s.pot))+' · '+(PR[s.k]||PR.sed).n+'</small><small>'+(s.tested?'<span style="color:#ffaa00">Effet secondaire : '+s.side+'</span>':'<span style="color:rgba(255,255,255,.35)">Effets secondaires inconnus (non testée)</span>')+'</small><small style="opacity:.5">'+s.mix+'</small></div>'+(acts?'<div class="act">'+acts+'</div>':'')+'</div>';
@@ -145,7 +147,7 @@ function render(){
   if(pageTab==='s'){
     var h='<div class="lab"><div class="box"><h3>INGRÉDIENTS</h3><div class="ing">';
     ING.forEach(function(g){var q=st.stock[g.id]||0;h+='<button class="ig" style="--c:'+g.c+'" '+(q<=0||mix.length>=3?'disabled':'')+' onclick="add(\''+g.id+'\')"><span class="q">x'+q+'</span><span class="i">'+g.ico+'</span><b>'+g.n.toUpperCase()+'</b><small>'+g.t+'</small></button>';});
-    h+='</div><div style="margin-top:10px"><button class="btn" onclick="restock()">+ RÉAPPROVISIONNER (VALIDER AVEC LE MJ)</button></div></div>';
+    h+='</div><div style="margin-top:10px"><button class="btn" onclick="restock()" '+(st.pending?'disabled':'')+'>'+(st.pending?'⏳ DEMANDE ENVOYÉE AU MJ':'+ DEMANDER UN RÉAPPROVISIONNEMENT')+'</button></div></div>';
     h+='<div class="box"><h3>TABLE DE MÉLANGE</h3><div class="mixer">';
     for(var i=0;i<3;i++){var id=mix[i],g=id?ing(id):null;h+='<div class="vial '+(g?'f':'')+'" onclick="'+(g?'rem('+i+')':'')+'">'+(g?'<span>'+g.ico+'</span>'+g.n:'+ FIOLE '+(i+1))+'</div>';}
     h+='</div><div style="text-align:center;margin-bottom:12px"><button class="btn" onclick="synth()" '+(mix.length<2?'disabled':'')+'>SYNTHÉTISER</button> <button class="btn red" onclick="clearMix()" '+(mix.length?'':'disabled')+'>VIDER</button></div>';
@@ -171,6 +173,13 @@ function render(){
   });
   view(h3+'</div>');
 }
+function furyState(){return {stock:st.stock,ing:ING.map(function(g){return {id:g.id,n:g.n,ico:g.ico};}),syr:st.syr,known:st.known,total:Object.keys(NAMED).length,pending:!!st.pending,lastFail:last&&last.fail?last.txt:null,mix:mix.map(function(i){return ing(i).n;})};}
+function furyCmd(d){
+  if(d.type==='restock'){if(d.ok){ING.forEach(function(i){st.stock[i.id]=Math.min(8,(st.stock[i.id]||0)+2);});st.pending=false;save();render();NPTools.event('réapprovisionnement accordé par le MJ');}else{st.pending=false;save();render();NPTools.event('réapprovisionnement refusé');}}
+  if(d.type==='give'){st.stock[d.id]=Math.min(12,(st.stock[d.id]||0)+(d.q||1));save();render();NPTools.event('reçoit '+(d.q||1)+' x '+(ing(d.id)||{n:d.id}).n+' du MJ');}
+  NPTools.pub();
+}
+if(window.NPTools)NPTools.player({role:ROLE,getState:furyState,onCmd:furyCmd});
 render();
 </script>
 </body>

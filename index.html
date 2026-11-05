@@ -89,12 +89,15 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .personal-card.locked .personal-card-title{color:rgba(255,255,255,.4);}
 .lock-badge{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:#ff2040;margin-top:6px;}
 
-.lockctrl-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.02);margin-bottom:10px;}
+.lockctrl-row{flex-wrap:wrap;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.02);margin-bottom:10px;}
 .lockctrl-info{display:flex;align-items:center;gap:12px;}
 .lockctrl-ico{font-size:20px;}
 .lockctrl-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:1px;color:#fff;}
 .lockctrl-desc{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
 .lockctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;background:transparent;flex-shrink:0;}
+.lockctrl-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.personal-card.done{border-color:#00ff88 !important;}
+.done-badge{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:#00ff88;margin-top:6px;}
 .lockctrl-btn.on{border-color:#ff2040;color:#ff2040;}
 .lockctrl-btn.off{border-color:#00ff88;color:#00ff88;}
 .lock-open-btn{padding:12px 22px;border-radius:6px;border:1px solid #ffc83c;color:#ffc83c;background:rgba(255,200,60,.08);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;}
@@ -292,6 +295,7 @@ var selectedSignupRole=null;
 var LOCK_BROKER='wss://broker.emqx.io:8084/mqtt';
 var locksMc=null,locksTopic='';
 var currentLocks={archive:true,coffre:true,gala:true,poursuite:true,encerclement:true,bilan:true}; /* true = verrouillé par défaut ; toute autre clé absente = déverrouillée */
+var currentHidden={},currentDone={};
 var LOCKABLE=[
   {key:'archive',cat:'Missions',ico:'📁',name:"L'Archive Fantôme",desc:"Casse collectif — 5 mini-jeux simultanés, un par joueur.",color:'#ffc83c',url:'missions/archive-fantome.html'},
   {key:'coffre',cat:'Missions',ico:'🏦',name:"Le Coffre d'EuroTech-Luxe",desc:"Infiltration — crochetage, QTE, main stable, mastermind, code.",color:'#00ccff',url:'missions/coffre-eurotech.html'},
@@ -312,6 +316,10 @@ var LOCKABLE=[
   {key:'flashback',cat:'Outils de session',ico:'🎬',name:'Flashback Privé',desc:"Un joueur demande un souvenir — visible de toi seul.",color:'#bb44ff',url:'outils-session/flashback-prive.html'},
   {key:'bilan',cat:'Outils de session',ico:'📝',name:'Bilan de Session',desc:"Chaque joueur donne son avis — note, ce qui n'a pas marché, ce qu'il voudrait voir ajouté. Visible du MJ seul.",color:'#00ccff',url:'outils-session/bilan-session.html'}
 ];
+Object.keys(CHARACTERS).forEach(function(k){var c=CHARACTERS[k];
+  LOCKABLE.push({key:'dossier_'+k,cat:'Dossiers',ico:'📖',name:'Dossier — '+c.name,desc:'Le dossier personnel de '+c.name+' (visible uniquement par ce joueur).',color:c.color,url:c.dossier,role:k});
+  if(c.fiche)LOCKABLE.push({key:'fiche_'+k,cat:'Dossiers',ico:'🗒',name:'Fiche — '+c.name,desc:'La fiche de personnage de '+c.name+'.',color:c.color,url:c.fiche,role:k});
+});
 function connectLocks(){
   var code=getSessionCode();
   if(!code||!window.mqtt)return;
@@ -320,26 +328,31 @@ function connectLocks(){
     locksMc=mqtt.connect(LOCK_BROKER,{clientId:'lk'+Date.now(),clean:true,connectTimeout:8000,reconnectPeriod:5000});
     locksMc.on('connect',function(){locksMc.subscribe(locksTopic);});
     locksMc.on('message',function(t,p){
-      try{var d=JSON.parse(p.toString());if(d.type==='locks'){currentLocks=d.locks;render();refreshLockModal();}}catch(e){}
+      try{var d=JSON.parse(p.toString());if(d.type==='locks'){currentLocks=d.locks;currentHidden=d.hidden||{};currentDone=d.done||{};render();refreshLockModal();}}catch(e){}
     });
   }catch(e){}
 }
-function toggleLock(key){
-  currentLocks[key]=!currentLocks[key];
+function pushLocks(){
   if(locksMc&&locksMc.connected){
-    locksMc.publish(locksTopic,JSON.stringify({type:'locks',locks:currentLocks}),{retain:true});
+    locksMc.publish(locksTopic,JSON.stringify({type:'locks',locks:currentLocks,hidden:currentHidden,done:currentDone}),{retain:true});
   }
   render();
   refreshLockModal();
 }
+function toggleLock(key){currentLocks[key]=!currentLocks[key];pushLocks();}
+function toggleHide(key){if(currentHidden[key])delete currentHidden[key];else currentHidden[key]=true;pushLocks();}
+function toggleDone(key){if(currentDone[key])delete currentDone[key];else currentDone[key]=true;pushLocks();}
 function renderLockModalBody(){
   var html='';
-  ['Missions','Activités','Outils de session'].forEach(function(catName){
+  ['Missions','Activités','Outils de session','Dossiers'].forEach(function(catName){
     html+='<div class="lock-modal-cat">'+catName.toUpperCase()+'</div>';
     LOCKABLE.filter(function(item){return item.cat===catName;}).forEach(function(item){
       var isLocked=!!currentLocks[item.key];
       html+='<div class="lockctrl-row"><div class="lockctrl-info"><span class="lockctrl-ico">'+item.ico+'</span><div><div class="lockctrl-name">'+item.name+'</div><div class="lockctrl-desc">'+item.desc+'</div></div></div>'
-        +'<button class="lockctrl-btn '+(isLocked?'off':'on')+'" onclick="toggleLock(\''+item.key+'\')">'+(isLocked?'🔓 DÉVERROUILLER':'🔒 VERROUILLER')+'</button></div>';
+        +'<div class="lockctrl-btns">'
+        +(item.cat==='Missions'||item.cat==='Activités'?'<button class="lockctrl-btn '+(currentDone[item.key]?'off':'')+'" style="'+(currentDone[item.key]?'':'border-color:#ffc83c;color:#ffc83c')+'" onclick="toggleDone(\''+item.key+'\')">'+(currentDone[item.key]?'✔ FAITE — ANNULER':'✔ VALIDER (FAITE)')+'</button>':'')
+        +'<button class="lockctrl-btn '+(currentHidden[item.key]?'off':'')+'" style="'+(currentHidden[item.key]?'':'border-color:#bb44ff;color:#bb44ff')+'" onclick="toggleHide(\''+item.key+'\')">'+(currentHidden[item.key]?'👁 MONTRER':'🙈 CACHER')+'</button>'
+        +'<button class="lockctrl-btn '+(isLocked?'off':'on')+'" onclick="toggleLock(\''+item.key+'\')">'+(isLocked?'🔓 DÉVERROUILLER':'🔒 VERROUILLER')+'</button></div></div>';
     });
   });
   var body=document.getElementById('lock-modal-body');
@@ -507,6 +520,11 @@ function changeSessionCode(){
 }
 
 /* ═════ PERSONAL LANDING ═════ */
+function dossierCard(key,url,ico,name,color){
+  if(currentHidden[key])return '';
+  if(currentLocks[key])return '<div class="personal-card locked" style="--c:'+color+';"><div class="personal-card-ico">🔒</div><div class="personal-card-title">'+name+'</div><div class="lock-badge">VERROUILLÉ PAR LE MJ</div></div>';
+  return '<a class="personal-card" href="'+url+'" target="_blank" style="--c:'+color+';"><div class="personal-card-ico">'+ico+'</div><div class="personal-card-title">'+name+'</div></a>';
+}
 function renderPersonal(role){
   var c=CHARACTERS[role];
   var code=getSessionCode()||'';
@@ -517,21 +535,25 @@ function renderPersonal(role){
   html+=homeTiles('player');
   html+='<div class="personal-grid" data-pane="perso">'
     +'<a class="personal-card" href="'+c.tool+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🎮</div><div class="personal-card-title">OUTIL DE JEU</div></a>'
-    +'<a class="personal-card" href="'+c.dossier+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">📖</div><div class="personal-card-title">DOSSIER PERSONNEL</div></a>'
-    +(c.fiche?'<a class="personal-card" href="'+c.fiche+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">🗒</div><div class="personal-card-title">FICHE DE PERSONNAGE</div></a>':'')
+    +dossierCard('dossier_'+role,c.dossier,'📖','DOSSIER PERSONNEL',c.color)
+    +(c.fiche?dossierCard('fiche_'+role,c.fiche,'🗒','FICHE DE PERSONNAGE',c.color):'')
     +(c.telephone?'<a class="personal-card" href="'+c.telephone+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">☎</div><div class="personal-card-title">TÉLÉPHONE</div></a>':'')
     +(c.extra?'<a class="personal-card" href="'+c.extra.url+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">'+c.extra.ico+'</div><div class="personal-card-title">'+c.extra.name+'</div></a>':'')
     +'</div>';
 
   function pcard(ico,label,url){return '<a class="personal-card" href="'+url+qs+'" target="_blank" style="--c:'+c.color+';"><div class="personal-card-ico">'+ico+'</div><div class="personal-card-title">'+label+'</div></a>';}
   function plabel(txt){return '<div style="text-align:center;margin-top:22px;font-family:\'Share Tech Mono\',monospace;font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.25);">'+txt+'</div>';}
+  function itemCard(item,href){
+    if(currentHidden[item.key])return '';
+    if(currentLocks[item.key]){
+      return '<div class="personal-card locked" style="--c:'+item.color+';"><div class="personal-card-ico">🔒</div><div class="personal-card-title">'+item.name+'</div><div class="lock-badge">VERROUILLÉ PAR LE MJ</div></div>';
+    }
+    var dn=currentDone[item.key];
+    return '<a class="personal-card'+(dn?' done':'')+'" href="'+href+'" target="_blank" style="--c:'+item.color+';"><div class="personal-card-ico">'+item.ico+'</div><div class="personal-card-title">'+item.name+'</div>'+(dn?'<div class="done-badge">✔ ACCOMPLIE</div>':'')+'</a>';
+  }
   function lockableGroup(catName){
     return LOCKABLE.filter(function(item){return item.cat===catName;}).map(function(item){
-      var isLocked=!!currentLocks[item.key];
-      if(isLocked){
-        return '<div class="personal-card locked" style="--c:'+item.color+';"><div class="personal-card-ico">🔒</div><div class="personal-card-title">'+item.name+'</div><div class="lock-badge">VERROUILLÉ PAR LE MJ</div></div>';
-      }
-      return '<a class="personal-card" href="'+item.url+qs+'" target="_blank" style="--c:'+item.color+';"><div class="personal-card-ico">'+item.ico+'</div><div class="personal-card-title">'+item.name+'</div></a>';
+      return itemCard(item,item.url+qs);
     }).join('');
   }
 
@@ -614,6 +636,7 @@ function renderMJ(){
     +tool('💰','Finances & Dettes','Eddies et dettes par personnage, ajustables en direct.','#ffc83c','outils-session/finances.html'+qs)
     +tool('⚖','Dilemme Collectif','Question à choix multiples, toute la table vote en direct.','#ff2040','outils-session/dilemme-collectif.html'+qs)
     +tool('🎬','Flashback Privé','Un joueur demande un souvenir — visible de toi seul.','#bb44ff','outils-session/flashback-prive.html'+qs)
+    +tool('📡','Suivi des Outils en Direct','Piratage de Moon, laboratoire de Fury, viseur de Tamuro, convoi de Kiki : tout voir en direct et intervenir.','#ffc83c','outils-session/suivi-outils.html'+qs)
     +'</div></div>';
 
   html+='<div class="section" data-pane="perso"><div class="section-title">📖 Dossiers personnels des personnages</div><div class="grid">'

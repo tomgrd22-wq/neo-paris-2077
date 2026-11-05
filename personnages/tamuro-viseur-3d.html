@@ -37,6 +37,8 @@ label{display:block;font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.4);
 .zl{font-size:10px;display:flex;justify-content:space-between;margin:2px 0;}
 .small{font-size:9px;color:rgba(255,255,255,.35);line-height:1.6;margin-top:8px;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
 </head>
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
@@ -157,6 +159,7 @@ function shoot(zone,point){
   var hit=document.getElementById('hit');hit.classList.remove('on');void hit.offsetWidth;
   if(!ok){
     hit.textContent=dr===1?'MALADRESSE':'RATÉ';hit.style.color='#ff6080';hit.classList.add('on');
+    rec((dr===1?'MALADRESSE':'rate')+' '+z.n+' de '+e.n+' (d20 '+dr+' → '+tot+' vs '+diff+')');
     log('<b class="m">RATÉ</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+(dr===1?' (maladresse : l\'arme s\'enraye)':'')+'.');return;
   }
   var crit=dr===20,dmg=w.dmg[2];for(var i=0;i<w.dmg[0];i++)dmg+=r(w.dmg[1]);
@@ -166,6 +169,7 @@ function shoot(zone,point){
   var brk=zd[zone]>=Math.max(1,e.hp*z.hp);
   hit.textContent=(crit?'CRITIQUE ':'TOUCHÉ ')+dmg;hit.style.color=crit?'#ffc83c':'#00ff88';hit.classList.add('on');
   log('<b class="'+(crit?'c':'h')+'">'+(crit?'CRITIQUE':'TOUCHÉ')+'</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(st.hp[st.en]<=0?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':''));
+  rec((crit?'CRITIQUE ':'touche ')+z.n+' de '+e.n+' : '+dmg+' dégâts ('+w.n+', d20 '+dr+')'+(brk?' — zone brisée':'')+(st.hp[st.en]<=0?' — CIBLE NEUTRALISÉE':''));
   paintEnemy();ui();
 }
 function sg(n){return (n>=0?'+':'')+n;}
@@ -187,6 +191,10 @@ function ui(){
 document.getElementById('bm').onclick=function(){st.bonus=Math.max(-5,st.bonus-1);ui();};
 document.getElementById('bp').onclick=function(){st.bonus=Math.min(15,st.bonus+1);ui();};
 document.getElementById('rs').onclick=function(){reset();paintEnemy();ui();log('Cible réinitialisée.');};
+function tamState(){var e=ENEMIES[st.en];return {target:e.n,hp:st.hp[st.en],max:e.hp,zones:Object.keys(ZONES).map(function(k){return {n:ZONES[k].n,d:st.zd[st.en][k],max:Math.max(1,Math.round(e.hp*ZONES[k].hp))};}),weapon:WEAPONS[st.wp].n,dist:DIST[st.ds].n,cover:COVER[st.cv].n,bonus:st.bonus,all:ENEMIES.map(function(x,i){return {n:x.n,hp:st.hp[i],max:x.hp};}),shots:shots.slice(0,10)};}
+var shots=[];
+function rec(t){shots.unshift(t);if(shots.length>20)shots.pop();if(window.NPTools)NPTools.event(t);}
+if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState});
 ui();paintEnemy();loop();
 </script>
 </body>
