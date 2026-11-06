@@ -140,9 +140,8 @@ function paintEnemy(){
   for(var k in mats){
     var d=st.zd[st.en][k],mx=Math.max(1,e.hp*ZONES[k].hp),f=Math.min(1,d/mx);
     if(modelOn){
-      mats[k].color.copy(new THREE.Color(0xffffff).lerp(new THREE.Color(0xff2a3a),f*.85));
-      mats[k].emissive.copy(new THREE.Color(0xff1030)).multiplyScalar(f*.35);
-      mats[k].opacity=f>=1?.4:1;
+      mats[k].uniforms.uColor.value.copy(new THREE.Color(HOLO).lerp(new THREE.Color(0xff1030),f));
+      mats[k].uniforms.uAlpha.value=f>=1?.25:1;
     }else{
       var c=new THREE.Color(HOLO).lerp(new THREE.Color(0xff1030),f);
       mats[k].color.copy(c);
@@ -154,6 +153,41 @@ function paintEnemy(){
 /* ───────── Modèle 3D personnalisé (assets/tamuro-silhouette.glb) ─────────
    Le maillage est découpé automatiquement en 6 zones de tir selon la position des triangles.
    Si le fichier ne se charge pas, la silhouette holographique reste en secours. */
+var fxT=[];
+function glowTex(){var c=document.createElement('canvas');c.width=c.height=64;var x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(160,220,255,.8)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);}
+/* matériau hologramme : lueur sur les bords (fresnel), relief du modèle, balayage lumineux */
+function holoMat(map,y0,H){
+  return new THREE.ShaderMaterial({
+    uniforms:{uColor:{value:new THREE.Color(HOLO)},uAlpha:{value:1},uMap:{value:map},uT:{value:0},uY0:{value:y0},uH:{value:H}},
+    vertexShader:'varying vec3 vN;varying vec3 vV;varying vec2 vUv;varying float vY;uniform float uY0;uniform float uH;void main(){vUv=uv;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vY=(position.y-uY0)/uH;gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'varying vec3 vN;varying vec3 vV;varying vec2 vUv;varying float vY;uniform vec3 uColor;uniform float uAlpha;uniform sampler2D uMap;uniform float uT;void main(){float f=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.2);float l=dot(texture2D(uMap,vUv).rgb,vec3(.333));float band=smoothstep(.06,0.,abs(vY-fract(uT*.22)));vec3 c=uColor*(.28+f*1.5+l*.55)+vec3(.55,.85,1.)*band*.6;float a=(.3+f*.75+l*.35+band*.4)*uAlpha;gl_FragColor=vec4(c,clamp(a,0.,1.));}',
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+}
+function holoScene(mdl,geo,sc,cx,cz,y0){
+  /* particules sur le corps */
+  var pos=geo.attributes.position,N=1500,arr=new Float32Array(N*3);
+  for(var i=0;i<N;i++){var v=Math.floor(Math.random()*pos.count);arr[i*3]=(pos.getX(v)-cx)*sc;arr[i*3+1]=(pos.getY(v)-y0)*sc;arr[i*3+2]=(pos.getZ(v)-cz)*sc;}
+  var pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  var pm=new THREE.PointsMaterial({size:.04,map:glowTex(),color:0xbfe8ff,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending});
+  var pts=new THREE.Points(pg,pm);pts.raycast=function(){};mdl.add(pts);
+  /* anneaux lumineux autour du personnage */
+  var rings=[];
+  [0,.85,1.7,2.55].forEach(function(h,i){
+    var g=new THREE.RingGeometry(1.05,1.09,64,1,0,5.3),m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x35b6ff,side:THREE.DoubleSide,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));
+    var g2=new THREE.RingGeometry(1.0,1.2,64,1,0,5.3),m2=new THREE.Mesh(g2,new THREE.MeshBasicMaterial({color:0x1d7dff,side:THREE.DoubleSide,transparent:true,opacity:.18,blending:THREE.AdditiveBlending,depthWrite:false}));
+    var gr=new THREE.Group();gr.add(m);gr.add(m2);gr.rotation.x=-Math.PI/2;gr.position.y=h+.02;mdl.add(gr);rings.push(gr);
+  });
+  /* rayons verticaux */
+  var lp=[],lc=[];for(var k=0;k<40;k++){var an=Math.random()*6.283,rr=1.0+Math.random()*.35,x=Math.cos(an)*rr,z=Math.sin(an)*rr,h=2.2+Math.random()*2.2,b=.25+Math.random()*.75;
+    lp.push(x,0,z,x,h/2,z,x,h/2,z,x,h,z);lc.push(0,.55*b,b,0,.75*b,1.4*b>1?1:1.4*b,0,.75*b,1,0,0,0);}
+  var lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));lg.setAttribute('color',new THREE.Float32BufferAttribute(lc,3));
+  var beams=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));beams.raycast=function(){};mdl.add(beams);
+  fxT.push(function(t){
+    rings.forEach(function(r,i){r.rotation.z=t*(i%2?.5:-.4)+i;r.children[0].material.opacity=.55+.3*Math.sin(t*2+i);});
+    beams.material.opacity=.6+.3*Math.sin(t*1.3);pm.opacity=.7+.25*Math.sin(t*3);
+    for(var k in mats)mats[k].uniforms.uT.value=t;
+  });
+}
 function zoneOf(x,h){
   if(h>=.86)return 'head';
   if(h<.42)return x<0?'legL':'legR';
@@ -181,12 +215,13 @@ function loadModel(){
       var gg=new THREE.BufferGeometry();
       for(var n in geo.attributes)gg.setAttribute(n,geo.attributes[n]);
       gg.setIndex(lists[k]);
-      var mt=src.material.clone();mt.transparent=true;mt.metalness=Math.min(mt.metalness,.3);mt.side=THREE.DoubleSide;
+      var mt=holoMat(src.material.map,bb.min.y,H);
       var m=new THREE.Mesh(gg,mt);m.userData.zone=k;
       m.scale.setScalar(sc);m.position.set(-cx*sc,-bb.min.y*sc,-cz*sc);
       mdl.add(m);hitMeshes.push(m);mats[k]=mt;
     });
-    body.add(mdl);modelOn=true;paintEnemy();
+    holoScene(mdl,geo,sc,cx,cz,bb.min.y);
+    body.add(mdl);modelOn=true;grid.visible=false;ring.visible=false;view.style.background='radial-gradient(ellipse at 50% 60%,#0a2a55 0%,#04142b 55%,#020812 100%)';scene.fog.color.setHex(0x03101f);paintEnemy();
   },undefined,function(){});
 }
 function loop(){
@@ -196,6 +231,7 @@ function loop(){
   cam.lookAt(0,-.15,0);
   ring.rotation.z+=.01;
   reticle.rotation.y+=.05;
+  var tt=performance.now()/1000;for(var q=0;q<fxT.length;q++)fxT[q](tt);
   rend.render(scene,cam);
 }
 var rc=new THREE.Raycaster(),mv=new THREE.Vector2();
