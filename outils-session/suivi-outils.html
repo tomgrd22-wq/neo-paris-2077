@@ -69,6 +69,19 @@ select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);bord
    <select id="sp"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
    <label><input type="checkbox" id="st2"> déjà testée</label></div>
    <button class="btn" style="--c:#00ff88" onclick="giveSyr()">DONNER À FURY</button></div>
+  <div class="fm"><h4>Nouveau produit (ingrédient)</h4>
+   <div class="r"><input id="in-ico" placeholder="🧪" style="width:46px;text-align:center"><input id="in-n" placeholder="Nom (ex : Sang de rat mutant)" style="flex:1"></div>
+   <input id="in-t" placeholder="Description courte (optionnel)">
+   <div class="r" style="margin-top:4px">Propriétés (0 à 5) :
+    <label>💚 soin <input type="number" id="ip-soin" value="0" min="-3" max="5" style="width:46px"></label>
+    <label>⚡ stim <input type="number" id="ip-stim" value="0" min="-3" max="5" style="width:46px"></label>
+    <label>☠ tox <input type="number" id="ip-tox" value="0" min="-3" max="5" style="width:46px"></label>
+    <label>💤 sed <input type="number" id="ip-sed" value="0" min="-3" max="5" style="width:46px"></label>
+    <label>⚠ instable <input type="number" id="ip-instable" value="0" min="-3" max="5" style="width:46px"></label></div>
+   <div class="r"><label>Quantité <input type="number" id="in-q" value="3" min="0" max="12" style="width:50px"></label>
+   <select id="in-c"><option value="#e8e8f4">Blanc</option><option value="#00ff88">Vert</option><option value="#ffaa00">Orange</option><option value="#bb44ff">Violet</option><option value="#00ccff">Cyan</option><option value="#ff4060">Rouge</option><option value="#ff33cc">Rose</option></select></div>
+   <div style="font-size:9px;color:rgba(255,255,255,.4);margin:4px 0">Soin = guérit · stim = booste · tox = poison · sed = endort · instable = risque d'explosion (négatif = stabilise).</div>
+   <button class="btn" style="--c:#00ff88" onclick="addIng()">AJOUTER AU STOCK DE FURY</button></div>
   <div class="fm"><h4>Nouvelle recette à découvrir</h4>
    <div class="r"><select id="r1"></select><select id="r2"></select><select id="r3"><option value="">(aucun)</option></select></div>
    <input id="rn" placeholder="Nom de la recette"><input id="re" placeholder="Effet de la seringue">
@@ -131,12 +144,24 @@ var INGS=[['adre','Adrénaline synthé'],['nano','Nanites médicales'],['sang','
 ['r1','r2','r3'].forEach(function(id){var el=document.getElementById(id);el.insertAdjacentHTML('beforeend',INGS.map(function(g){return '<option value="'+g[0]+'">'+g[1]+'</option>';}).join(''));});
 document.getElementById('r2').selectedIndex=1;
 function val(i){return document.getElementById(i).value.trim();}
+function addIng(){
+  if(!val('in-n'))return;
+  var p={};['soin','stim','tox','sed','instable'].forEach(function(k){p[k]=+document.getElementById('ip-'+k).value||0;});
+  sendTo('fury','addIng',{n:val('in-n'),ico:val('in-ico')||'🧪',t:val('in-t'),c:val('in-c'),p:p,q:+document.getElementById('in-q').value||3});
+  ['in-n','in-ico','in-t'].forEach(function(i){document.getElementById(i).value='';});
+}
+function fillSelects(list){
+  var sig=list.map(function(g){return g[0];}).join(',');if(fillSelects.sig===sig)return;fillSelects.sig=sig;
+  INGS=list;
+  ['r1','r2','r3','fgi'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var cur=el.value;var first=id==='r3'?'<option value="">(aucun)</option>':'';el.innerHTML=first+list.map(function(g){return '<option value="'+g[0]+'">'+esc(g[1])+'</option>';}).join('');if(cur)el.value=cur;});
+}
 function giveSyr(){if(!val('sn')){return;}sendTo('fury','addSyr',{n:val('sn'),e:val('se'),side:val('ss')||'Aucun effet secondaire notable.',k:val('sk'),pot:+val('sp'),tested:document.getElementById('st2').checked});['sn','se','ss'].forEach(function(i){document.getElementById(i).value='';});}
 function addRecipe(){var ids=[val('r1'),val('r2'),val('r3')].filter(Boolean);if(!val('rn')||ids.length<2)return;sendTo('fury','recipe',{ids:ids,n:val('rn'),e:val('re'),k:val('rk')});['rn','re'].forEach(function(i){document.getElementById(i).value='';});}
 function labDyn(){
   var d=data.fury,box=document.getElementById('lab-dyn');if(!d){return;}
   var s=d.state||{},h='<div class="sec">STOCK (clique − / + pour ajuster)</div>';
-  (s.ing||[]).forEach(function(g){var q=(s.stock||{})[g.id]||0;h+='<span class="stk">'+g.ico+' '+esc(g.n)+' <b>'+q+'</b><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q-1)+'})">−</button><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q+1)+'})">+</button></span>';});
+  if(s.ing)fillSelects(s.ing.map(function(g){return [g.id,g.n];}));
+  (s.ing||[]).forEach(function(g){var q=(s.stock||{})[g.id]||0;h+='<span class="stk">'+g.ico+' '+esc(g.n)+' <b>'+q+'</b><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q-1)+'})">−</button><button onclick="sendTo(\'fury\',\'stock\',{id:\''+g.id+'\',q:'+(q+1)+'})">+</button>'+(g.custom?'<button title="Supprimer ce produit" style="border-color:#ff4060;color:#ff4060" onclick="if(confirm(\'Retirer ce produit du labo ?\'))sendTo(\'fury\',\'delIng\',{id:\''+g.id+'\'})">×</button>':'')+'</span>';});
   h+='<div class="sec">SERINGUES DE FURY</div>'+((s.syr||[]).length?(s.syr||[]).map(function(x){return '<div class="syr" style="--c:#00ff88"><b>'+esc(x.n)+'</b> · puissance '+x.pot+' <button class="btn" style="--c:#00ccff" onclick="sendTo(\'fury\',\'revealSyr\',{id:'+x.id+'})">'+(x.tested?'testée ✔':'👁 RÉVÉLER')+'</button><button class="btn" style="--c:#ff4060" onclick="sendTo(\'fury\',\'delSyr\',{id:'+x.id+'})">🗑 RETIRER</button><small>'+esc(x.e)+'</small><small>Effet secondaire : '+esc(x.side)+'</small></div>';}).join(''):'<span style="color:rgba(255,255,255,.35);font-size:10px">Aucune</span>');
   h+='<div class="sec">RECETTES</div>'+(s.recipes||[]).map(function(r){return '<div class="syr" style="--c:'+(r.known?'#00ff88':'#666')+'"><b>'+esc(r.n)+'</b> '+(r.known?'<span class="chip g">découverte</span>':'<span class="chip">non découverte</span>')+(r.custom?'<span class="chip">MJ</span><button class="btn" style="--c:#ff4060" onclick="sendTo(\'fury\',\'delRecipe\',{key:\''+r.k+'\'})">SUPPR.</button>':'')+'<small>'+r.k.split('+').map(function(i){var f=INGS.filter(function(g){return g[0]===i;})[0];return f?f[1]:i;}).join(' + ')+' → '+esc(r.e)+'</small></div>';}).join('');
   box.innerHTML=h;
