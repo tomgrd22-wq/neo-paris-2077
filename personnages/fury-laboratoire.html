@@ -28,6 +28,8 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00f
 .inv{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:480px;overflow:auto;padding-right:2px;}
 .it{position:relative;text-align:center;border:1px solid var(--c);background:rgba(255,255,255,.03);border-radius:7px;padding:8px 4px 6px;cursor:grab;user-select:none;}
 .it:active{cursor:grabbing;}
+.it{touch-action:none;}
+#ghost{position:fixed;z-index:200;pointer-events:none;opacity:.85;transform:translate(-50%,-50%) scale(1.1);}
 .it .ic{font-size:26px;height:34px;display:flex;align-items:center;justify-content:center;}
 .it .im{width:100%;height:34px;background-size:contain;background-position:center;background-repeat:no-repeat;}
 .it b{display:block;font-size:9px;letter-spacing:1px;color:#fff;margin-top:3px;line-height:1.25;word-break:break-word;}
@@ -217,7 +219,7 @@ function syrHTML(s,acts){
 function itemHTML(it){
   var lab=!!it.lab,qtyLeft=qtyOf(it)-used(it.id),col=it.col||'#a0a0a0';
   var vis=it.img&&it.img.length>5?'<div class="im" style="background-image:url('+esc(it.img)+')"></div>':'<div class="ic">'+esc(it.ic||'📦')+'</div>';
-  return '<div class="it '+(lab?'':'no')+(lab&&qtyLeft<=0?' used':'')+'" style="--c:'+col+'" draggable="true" ondragstart="onDrag(event,\''+it.id+'\')" onclick="tryAdd(\''+it.id+'\')" title="'+(lab?'Glisse sur une fiole (ou clique)':'Non utilisable au labo')+'">'
+  return '<div class="it '+(lab?'':'no')+(lab&&qtyLeft<=0?' used':'')+'" style="--c:'+col+'" draggable="true" ondragstart="onDrag(event,\''+it.id+'\')" data-id="'+it.id+'" title="'+(lab?'Glisse sur une fiole':'Non utilisable au labo')+'">'
     +'<span class="tag">'+(lab?'⚗':'🚫')+'</span><span class="q">×'+qtyLeft+'</span>'+vis+'<b>'+esc(it.n)+'</b></div>';
 }
 function render(){
@@ -226,7 +228,7 @@ function render(){
     var h='<div class="lab"><div class="box"><h3><span>🎒 MON INVENTAIRE</span><span id="sync" class="sync"></span></h3><div class="inv">';
     if(!items.length)h+='<div class="empty">'+(invKnown?'Ton inventaire est vide.<br>Les objets que le MJ te remet apparaissent ici.':'Inventaire non synchronisé.<br>Ouvre ton Outil de jeu (onglet Inventaire) ou demande au MJ de l\'ouvrir.')+'</div>';
     items.forEach(function(it){h+=itemHTML(it);});
-    h+='</div><div style="margin-top:8px;font-size:9px;color:rgba(255,255,255,.35);line-height:1.6">⚗ = utilisable au labo · 🚫 = non utilisable. Glisse un objet ⚗ sur une fiole (ou clique-le). Les produits utilisés sont retirés de ton inventaire principal.</div></div>';
+    h+='</div><div style="margin-top:8px;font-size:9px;color:rgba(255,255,255,.35);line-height:1.6">⚗ = utilisable au labo · 🚫 = non utilisable. Glisse un objet ⚗ sur une fiole. Les produits utilisés sont retirés de ton inventaire principal.</div></div>';
     h+='<div class="box"><h3><span>TABLE DE MÉLANGE</span></h3><div class="mixer">';
     for(var i=0;i<3;i++){var id=mix[i],it=id?itemById(id):null;h+='<div class="vial '+(it?'f':'')+'" ondragover="onOver(event,'+i+')" ondragleave="onLeave(event)" ondrop="onDrop(event,'+i+')" onclick="'+(it?'rem('+i+')':'')+'">'+(it?'<span>'+esc(it.ic||'📦')+'</span>'+esc(it.n)+'<small>(clique pour retirer)</small>':'+ FIOLE '+(i+1)+'<small>glisse un produit ici</small>')+'</div>';}
     h+='</div><div style="text-align:center;margin-bottom:12px"><button class="btn" onclick="synth()" '+(mix.length<2?'disabled':'')+'>SYNTHÉTISER</button> <button class="btn red" onclick="clearMix()" '+(mix.length?'':'disabled')+'>VIDER</button></div>';
@@ -271,6 +273,24 @@ function furyCmd(d){
   if(d.type==='resetLab'){st.syr=[];st.known={};st.journal={};mix=[];last=null;save();render();NPTools.event('laboratoire réinitialisé par le MJ (seringues et recettes)');}
   NPTools.pub();
 }
+/* glisser au doigt (tactile) : le glisser natif HTML5 n'existe pas sur mobile */
+(function(){
+  var drag=null;
+  document.addEventListener('pointerdown',function(e){
+    if(e.pointerType!=='touch')return;var t=e.target.closest&&e.target.closest('.it');if(!t)return;
+    var g=t.cloneNode(true);g.id='ghost';g.style.width=t.offsetWidth+'px';document.body.appendChild(g);
+    drag={id:t.getAttribute('data-id'),g:g};move(e);
+  });
+  function move(e){if(!drag)return;drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px';
+    Array.prototype.forEach.call(document.querySelectorAll('.vial'),function(v){var r=v.getBoundingClientRect();v.classList.toggle('over',e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom);});}
+  document.addEventListener('pointermove',function(e){if(drag&&e.pointerType==='touch')move(e);});
+  function end(e){
+    if(!drag)return;var id=drag.id,slot=null;
+    Array.prototype.forEach.call(document.querySelectorAll('.vial'),function(v,i){var r=v.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)slot=i;});
+    drag.g.remove();drag=null;if(slot!==null)tryAdd(id,slot);else render();
+  }
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+})();
 connectInv();
 if(window.NPTools)NPTools.player({role:ROLE,getState:furyState,onCmd:furyCmd});
 render();
