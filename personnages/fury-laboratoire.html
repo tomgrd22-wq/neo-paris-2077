@@ -243,8 +243,8 @@ function render(){
   if(pageTab==='i'){
     var h2='<div class="box"><h3><span>MES SERINGUES ('+st.syr.length+')</span></h3>';
     if(!st.syr.length)h2+='<div class="out" style="color:rgba(255,255,255,.35)">Aucune seringue. Va à la table de synthèse.</div>';
-    st.syr.slice().reverse().forEach(function(s){h2+=syrHTML(s,(s.tested?'':'<button class="btn" onclick="testSyr('+s.id+')">TESTER</button>')+'<button class="btn" onclick="useSyr('+s.id+')">UTILISER</button><button class="btn red" onclick="dropSyr('+s.id+')">JETER</button>');});
-    view(h2+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">TESTER révèle l\'effet secondaire (sur un cobaye ou sur toi). UTILISER consomme la seringue : annonce-la au MJ.</div></div>');return;
+    st.syr.slice().reverse().forEach(function(s){h2+=syrHTML(s,'<button class="btn red" onclick="dropSyr('+s.id+')">JETER</button>');});
+    view(h2+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">Seul le MJ peut tester une seringue (révéler son effet secondaire) ou l\'utiliser : demande-lui.</div></div>');return;
   }
   var h3='<div class="box"><h3><span>JOURNAL DE RECHERCHE</span></h3>';
   var found=Object.keys(st.journal).map(function(k){return st.journal[k];}).sort(function(a,b){return b.t-a.t;});
