@@ -152,8 +152,8 @@ function syrHTML(s,acts){
 function render(){
   if(pageTab==='s'){
     var h='<div class="lab"><div class="box"><h3>INGRÉDIENTS</h3><div class="ing">';
-    var vis=ING.filter(function(g){return st.seen[g.id]||(st.stock[g.id]||0)>0;});
-    if(!vis.length)h+='<div class="out" style="grid-column:1/-1;color:rgba(255,255,255,.4)">Ton labo est vide.<br>Les produits se trouvent au cours de l\'aventure : le MJ t\'en remettra.</div>';
+    var vis=ING.filter(function(g){return (st.stock[g.id]||0)>0;});
+    if(!vis.length)h+='<div class="out" style="grid-column:1/-1;color:rgba(255,255,255,.4)">Ton labo est vide (plus aucun produit).<br>Les produits se trouvent au cours de l\'aventure : le MJ t\'en remettra.</div>';
     vis.forEach(function(g){var q=st.stock[g.id]||0;h+='<button class="ig" style="--c:'+g.c+'" '+(q<=0||mix.length>=3?'disabled':'')+' onclick="add(\''+g.id+'\')"><span class="q">x'+q+'</span><span class="i">'+g.ico+'</span><b>'+g.n.toUpperCase()+'</b><small>'+g.t+'</small></button>';});
     h+='</div><div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.35)">Les produits trouvés pendant l\'aventure s\'ajoutent ici.</div></div>';
     h+='<div class="box"><h3>TABLE DE MÉLANGE</h3><div class="mixer">';
