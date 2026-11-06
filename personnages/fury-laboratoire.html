@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>FURY — Laboratoire // Neo-Paris 2077</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+<script src="../assets/toolsync.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;background:#040a07;color:#bfe9d3;font-family:'Share Tech Mono',monospace;min-height:100%;}
 body{background:radial-gradient(ellipse at 50% -10%,#0a2a1a,#040a07 60%);}
 .back{position:fixed;top:10px;left:10px;z-index:60;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.45);text-decoration:none;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:4px;background:#040a07;}
-.wrap{max-width:980px;margin:0 auto;padding:54px 14px 40px;}
+.wrap{max-width:1000px;margin:0 auto;padding:54px 14px 40px;}
 h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00ff88;text-align:center;margin:0;text-shadow:0 0 16px rgba(0,255,136,.6);}
 .sub{text-align:center;font-size:10px;letter-spacing:3px;color:rgba(0,255,136,.45);margin:4px 0 16px;}
 .tabs{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
@@ -18,36 +20,43 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00f
 .tabs button.on{background:#00ff88;color:#040a07;}
 .btn:disabled{opacity:.35;cursor:default;}
 .btn.red{border-color:#ff4060;color:#ff4060;background:rgba(255,32,64,.07);}
-.lab{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;}
-@media(max-width:720px){.lab{grid-template-columns:1fr;}}
+.lab{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.1fr);gap:16px;}
+@media(max-width:760px){.lab{grid-template-columns:1fr;}}
 .box{border:1px solid rgba(0,255,136,.22);border-radius:8px;padding:12px;background:rgba(0,14,8,.7);}
-.box h3{margin:0 0 10px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:rgba(0,255,136,.7);}
-.ing{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
-.ig{position:relative;text-align:left;border:1px solid var(--c);background:rgba(255,255,255,.02);color:#dff;border-radius:7px;padding:8px;cursor:pointer;font-family:inherit;}
-.ig:hover:not(:disabled){background:rgba(255,255,255,.08);}
-.ig:disabled{opacity:.3;cursor:default;}
-.ig .i{font-size:22px}.ig b{display:block;font-size:10px;letter-spacing:1px;color:var(--c);margin:2px 0;}
-.ig small{font-size:9px;color:rgba(255,255,255,.5);line-height:1.4;display:block;}
-.ig .q{position:absolute;top:5px;right:7px;font-size:10px;color:#fff;}
+.box h3{margin:0 0 10px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:rgba(0,255,136,.7);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.box h3 small{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;}
+.inv{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:480px;overflow:auto;padding-right:2px;}
+.it{position:relative;text-align:center;border:1px solid var(--c);background:rgba(255,255,255,.03);border-radius:7px;padding:8px 4px 6px;cursor:grab;user-select:none;}
+.it:active{cursor:grabbing;}
+.it .ic{font-size:26px;height:34px;display:flex;align-items:center;justify-content:center;}
+.it .im{width:100%;height:34px;background-size:contain;background-position:center;background-repeat:no-repeat;}
+.it b{display:block;font-size:9px;letter-spacing:1px;color:#fff;margin-top:3px;line-height:1.25;word-break:break-word;}
+.it .q{position:absolute;top:3px;right:5px;font-size:10px;color:var(--c);font-family:'Orbitron',monospace;}
+.it .tag{position:absolute;top:3px;left:4px;font-size:10px;}
+.it.no{opacity:.5;border-style:dashed;}
+.it.used{opacity:.3;}
 .mixer{display:flex;gap:10px;justify-content:center;margin:6px 0 12px;}
-.vial{width:78px;height:98px;border:2px dashed rgba(0,255,136,.35);border-radius:6px 6px 28px 28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;text-align:center;padding:4px;color:rgba(255,255,255,.4);cursor:pointer;}
+.vial{width:84px;height:106px;border:2px dashed rgba(0,255,136,.35);border-radius:6px 6px 28px 28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;text-align:center;padding:4px;color:rgba(255,255,255,.4);cursor:pointer;transition:.15s;}
 .vial.f{border-style:solid;color:#fff;background:rgba(0,255,136,.08);}
+.vial.over{border-color:#ffe94a;background:rgba(255,233,74,.12);transform:scale(1.05);}
 .vial span{font-size:26px;display:block;}
+.vial small{display:block;font-size:8px;color:rgba(255,255,255,.4);margin-top:2px;}
 .out{text-align:center;min-height:84px;font-size:12px;line-height:1.6;}
 .syr{border:1px solid var(--c);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.02);}
 .syr .si{font-size:28px;filter:drop-shadow(0 0 8px var(--c));}
 .syr b{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;color:var(--c);}
 .syr small{display:block;font-size:10px;color:rgba(255,255,255,.6);line-height:1.5;margin-top:2px;}
 .syr .act{margin-left:auto;display:flex;flex-direction:column;gap:5px;}
-.tag{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 5px;border-radius:3px;border:1px solid;margin-right:4px;}
 .fail{color:#ff6080}
 .bubble{animation:bub .9s ease;}
 @keyframes bub{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 .rec{font-size:11px;line-height:1.7;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
 .rec b{color:#00ff88}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#2a0810;border:1px solid #ff4060;color:#ff8aa0;padding:11px 20px;border-radius:8px;font-size:12px;letter-spacing:1px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.sync{font-size:9px;letter-spacing:1px;}.sync.ok{color:#00ff88}.sync.no{color:#ffaa00}
+.empty{grid-column:1/-1;text-align:center;color:rgba(255,255,255,.4);font-size:11px;line-height:1.7;padding:18px 6px;}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
-<script src="../assets/toolsync.js"></script>
 </head>
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
@@ -57,25 +66,17 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#00f
 <div class="tabs"><button id="t-s" class="on" onclick="tab('s')">TABLE DE SYNTHÈSE</button><button id="t-i" onclick="tab('i')">SERINGUES</button><button id="t-j" onclick="tab('j')">JOURNAL</button></div>
 <div id="v"></div>
 </div>
+<div id="toast"></div>
 <script>
-/* propriétés : soin, stim, toxine, sedatif, instable */
+/* ═════ PROPRIÉTÉS ═════ */
 var PR={soin:{n:'SOIN',c:'#00ff88',ico:'💚'},stim:{n:'STIMULANT',c:'#ffaa00',ico:'⚡'},tox:{n:'TOXIQUE',c:'#bb44ff',ico:'☠'},sed:{n:'SÉDATIF',c:'#00ccff',ico:'💤'}};
-var ING=[
- {id:'adre',ico:'💉',n:'Adrénaline synthé',c:'#ffaa00',p:{stim:3,instable:1},t:'Coup de fouet.'},
- {id:'nano',ico:'🧬',n:'Nanites médicales',c:'#00ff88',p:{soin:3,instable:1},t:'Réparent les tissus.'},
- {id:'sang',ico:'🩸',n:'Plasma de synthèse',c:'#ff4060',p:{soin:2},t:'Base de transfusion.'},
- {id:'neuro',ico:'🐍',n:'Neurotoxine',c:'#bb44ff',p:{tox:3,sed:1,instable:1},t:'Paralyse les nerfs.'},
- {id:'venin',ico:'🕷',n:'Venin de vipère',c:'#bb44ff',p:{tox:2,stim:1},t:'Douloureux, efficace.'},
- {id:'cryo',ico:'🧊',n:'Cryo-gel',c:'#00ccff',p:{sed:2,soin:1},t:'Ralentit tout.'},
- {id:'morph',ico:'😴',n:'Opioïde de rue',c:'#00ccff',p:{sed:3,tox:1},t:'Éteint la douleur.'},
- {id:'stab',ico:'🧪',n:'Stabilisant',c:'#e8e8f4',p:{instable:-2},t:'Rend le mélange sûr.'},
- {id:'eau',ico:'💧',n:'Eau stérile',c:'#8fd0ff',p:{},t:'Dilue : réduit la puissance.',dil:true},
- {id:'psy',ico:'🍄',n:'Psychotrope',c:'#ff33cc',p:{stim:2,sed:1,instable:2},t:'Imprévisible.'},
- {id:'acid',ico:'🧫',n:'Acide corrosif',c:'#aaff00',p:{tox:2,instable:2},t:'Brûle tout ce qu\'il touche.'},
- {id:'anti',ico:'💊',n:'Antibiotique',c:'#e8e8f4',p:{soin:1,instable:-1},t:'Neutralise les infections.'}
+var PRESETS=[
+ {id:'adre',n:'Adrénaline synthé',p:{stim:3,instable:1}},{id:'nano',n:'Nanites médicales',p:{soin:3,instable:1}},{id:'sang',n:'Plasma de synthèse',p:{soin:2}},
+ {id:'neuro',n:'Neurotoxine',p:{tox:3,sed:1,instable:1}},{id:'venin',n:'Venin de vipère',p:{tox:2,stim:1}},{id:'cryo',n:'Cryo-gel',p:{sed:2,soin:1}},
+ {id:'morph',n:'Opioïde de rue',p:{sed:3,tox:1}},{id:'stab',n:'Stabilisant',p:{instable:-2}},{id:'eau',n:'Eau stérile',p:{}},
+ {id:'psy',n:'Psychotrope',p:{stim:2,sed:1,instable:2}},{id:'acid',n:'Acide corrosif',p:{tox:2,instable:2}},{id:'anti',n:'Antibiotique',p:{soin:1,instable:-1}}
 ];
-var STOCK0=0;var BASE_ING=ING.slice();
-/* recettes nommées (ids triés) */
+function presetName(id){var p=PRESETS.filter(function(x){return x.id===id;})[0];return p?p.n:id;}
 var NAMED={
  'adre+nano':{n:'Sérum de Combat',e:'+2 aux actions physiques pendant 1 scène, soigne 1d6.',k:'stim'},
  'cryo+nano':{n:'Gel Cicatrisant',e:'Stoppe les saignements, soigne 2d6 sur 3 tours.',k:'soin'},
@@ -88,43 +89,107 @@ var NAMED={
  'adre+cryo+stab':{n:'Phase Zéro',e:'Réflexes figés : agit en premier à la prochaine initiative.',k:'stim'}
 };
 var SIDE=['Tremblements pendant 1 heure.','Vision floue pendant 10 minutes.','Soif insatiable et nausée.','Fièvre légère jusqu\'au repos.','Goût métallique, malus de -1 en Charisme.','Sursauts nerveux : -1 à la discrétion.','Aucun effet secondaire notable.','Aucun effet secondaire notable.'];
+
+/* ═════ IDENTITÉ / PERSISTANCE DU LABO ═════ */
 var q=new URLSearchParams(location.search),ROLE=q.get('role')||'fury',KS='np_lab_'+ROLE;
-var st=load();
-if(!st.custom)st.custom={};if(!st.customIng)st.customIng=[];
-if(st.v!==2){ING.forEach(function(g){st.stock[g.id]=0;});st.seen={};st.pending=false;st.v=2;save();}
-if(!st.seen)st.seen={};if(!st.removed)st.removed=[];
-st.removed.forEach(function(id){var g=ING.filter(function(x){return x.id===id;})[0];if(g)ING.splice(ING.indexOf(g),1);});
-function setStock(id,q){st.stock[id]=Math.max(0,Math.min(12,q|0));if(st.stock[id]>0)st.seen[id]=1;}
-st.customIng.forEach(function(g){if(!ing(g.id)){ING.push(g);}if(st.stock[g.id]==null)st.stock[g.id]=0;});Object.keys(st.custom).forEach(function(k){NAMED[k]=st.custom[k];});
+function sessCode(){
+  var c=(q.get('code')||'').trim().toLowerCase().replace(/\s+/g,'_');
+  if(c.length>=3)return c;
+  try{var v=JSON.parse(localStorage.getItem('np_ident'));if(v&&v.code)return v.code;}catch(e){}
+  try{var l=localStorage.getItem('fury_last_code');if(l)return l.trim().toLowerCase().replace(/\s+/g,'_');}catch(e){}
+  return '';
+}
+var CODE=sessCode();
+function load(){try{var v=JSON.parse(localStorage.getItem(KS));if(v&&v.syr)return v;}catch(e){}return {syr:[],known:{},custom:{}};}
+var st=load();if(!st.custom)st.custom={};if(!st.known)st.known={};
+Object.keys(st.custom).forEach(function(k){NAMED[k]=st.custom[k];});
+function save(){try{localStorage.setItem(KS,JSON.stringify({syr:st.syr,known:st.known,custom:st.custom}));}catch(e){}}
+
+/* ═════ INVENTAIRE PRINCIPAL (partagé avec l'outil de jeu) ═════ */
+var inv={placed:[],gridW:10,gridH:10,cells:null,displayMode:'puzzle'},invKnown=false,invLive=false,mc=null,TOPIC=CODE?'spectre_finv_v1_'+CODE:'';
+(function(){try{var i=JSON.parse(localStorage.getItem('fury_inv_'+CODE));if(i){inv.placed=i.placed||(Array.isArray(i)?i:[]);inv.gridW=i.w||10;inv.gridH=i.h||10;inv.cells=i.cells||null;inv.displayMode=i.displayMode||'puzzle';invKnown=true;}}catch(e){}})();
+function invPublish(){
+  try{localStorage.setItem('fury_inv_'+CODE,JSON.stringify({placed:inv.placed,w:inv.gridW,h:inv.gridH,cells:inv.cells,displayMode:inv.displayMode}));}catch(e){}
+  if(mc&&mc.connected&&TOPIC)mc.publish(TOPIC,JSON.stringify({type:'inventory',placed:inv.placed,gridW:inv.gridW,gridH:inv.gridH,cells:inv.cells,displayMode:inv.displayMode}),{retain:true});
+}
+function connectInv(){
+  if(!TOPIC||typeof mqtt==='undefined')return;
+  mc=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'flab'+Date.now()+Math.random().toString(36).slice(2,5),clean:true,connectTimeout:8000,reconnectPeriod:5000});
+  mc.on('connect',function(){invLive=true;mc.subscribe(TOPIC);mc.publish(TOPIC,JSON.stringify({type:'requestState'}));renderSync();});
+  mc.on('close',function(){invLive=false;renderSync();});
+  mc.on('error',function(){});
+  mc.on('message',function(t,m){
+    var d;try{d=JSON.parse(m.toString());}catch(e){return;}
+    if(d.type!=='inventory'||!d.placed)return;
+    inv.placed=d.placed;if(d.gridW)inv.gridW=d.gridW;if(d.gridH)inv.gridH=d.gridH;if(d.cells)inv.cells=d.cells;if(d.displayMode)inv.displayMode=d.displayMode;
+    invKnown=true;
+    try{localStorage.setItem('fury_inv_'+CODE,JSON.stringify({placed:inv.placed,w:inv.gridW,h:inv.gridH,cells:inv.cells,displayMode:inv.displayMode}));}catch(e){}
+    sanitizeMix();render();if(window.NPTools)NPTools.pub();
+  });
+}
+function renderSync(){var el=document.getElementById('sync');if(!el)return;el.className='sync '+(invKnown&&invLive?'ok':'no');el.textContent=invKnown?(invLive?'● INVENTAIRE SYNCHRONISÉ':'● COPIE LOCALE (hors ligne)'):'● INVENTAIRE NON SYNCHRONISÉ';}
+function labInfo(it){ /* définition d'ingrédient d'un objet d'inventaire utilisable au labo */
+  if(!it||!it.lab)return null;
+  var p=it.lab.p||{},id=it.lab.pid||('c_'+it.id);
+  return {id:id,p:p,dil:it.lab.pid==='eau'};
+}
+function itemById(id){return inv.placed.filter(function(x){return x.id===id;})[0];}
+function qtyOf(it){return it.qty||1;}
+function used(id){return mix.filter(function(m){return m===id;}).length;}
+
+/* ═════ ÉTAT UI ═════ */
 var mix=[],last=null,pageTab='s';
-function load(){try{var v=JSON.parse(localStorage.getItem(KS));if(v&&v.stock)return v;}catch(e){}var s={};ING.forEach(function(i){s[i.id]=STOCK0;});return {stock:s,syr:[],known:{},seen:{},removed:[],v:2};}
-function save(){try{localStorage.setItem(KS,JSON.stringify(st));}catch(e){}}
-function ing(id){return ING.filter(function(i){return i.id===id;})[0];}
 function r(n){return Math.floor(Math.random()*n);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function view(h){document.getElementById('v').innerHTML=h;}
 function tab(t){pageTab=t;['s','i','j'].forEach(function(x){document.getElementById('t-'+x).className=x===t?'on':'';});render();}
-function add(id){if(mix.length>=3||st.stock[id]<=0)return;mix.push(id);render();}
+function toast(t){var el=document.getElementById('toast');el.textContent=t;el.className='on';clearTimeout(toast._t);toast._t=setTimeout(function(){el.className='';},2200);}
+function sanitizeMix(){mix=mix.filter(function(id,i){var it=itemById(id);if(!it||!it.lab)return false;return mix.slice(0,i+1).filter(function(m){return m===id;}).length<=qtyOf(it);});}
+
+/* ═════ AJOUT À LA TABLE ═════ */
+function tryAdd(id,slot){
+  var it=itemById(id);if(!it)return;
+  if(!it.lab){toast('✖ « '+it.n+' » n\'est pas utilisable au labo');return;}
+  var cur=slot!=null&&mix[slot]===id?1:0;
+  if(used(id)-cur>=qtyOf(it)){toast('✖ Plus assez d\'exemplaires de « '+it.n+' »');return;}
+  if(slot!=null&&slot<3){if(slot>mix.length)slot=mix.length;mix[slot]=id;}
+  else{if(mix.length>=3){toast('Les 3 fioles sont pleines');return;}mix.push(id);}
+  render();
+}
 function rem(i){mix.splice(i,1);render();}
 function clearMix(){mix=[];render();}
-function analyse(ids){
+function onDrag(ev,id){ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='copy';window._dragId=id;}
+function onOver(ev,i){ev.preventDefault();ev.currentTarget.classList.add('over');}
+function onLeave(ev){ev.currentTarget.classList.remove('over');}
+function onDrop(ev,i){ev.preventDefault();ev.currentTarget.classList.remove('over');var id=ev.dataTransfer.getData('text/plain')||window._dragId;if(id)tryAdd(id,i);}
+
+/* ═════ SYNTHÈSE ═════ */
+function analyse(defs){
   var v={soin:0,stim:0,tox:0,sed:0,instable:0},dil=0;
-  ids.forEach(function(id){var g=ing(id);if(g.dil)dil++;for(var k in g.p)v[k]+=g.p[k];});
+  defs.forEach(function(g){if(g.dil)dil++;for(var k in g.p)v[k]=(v[k]||0)+(+g.p[k]||0);});
   return {v:v,dil:dil};
+}
+function mixDefs(){return mix.map(function(id){return labInfo(itemById(id));}).filter(Boolean);}
+function consume(){
+  var cnt={};mix.forEach(function(id){cnt[id]=(cnt[id]||0)+1;});
+  Object.keys(cnt).forEach(function(id){var it=itemById(id);if(!it)return;it.qty=qtyOf(it)-cnt[id];if(it.qty<=0)inv.placed=inv.placed.filter(function(x){return x.id!==id;});});
+  invPublish();
 }
 function synth(){
   if(mix.length<2)return;
-  var ids=mix.slice();ids.forEach(function(id){st.stock[id]--;});
-  var key=ids.slice().sort().join('+'),a=analyse(ids),v=a.v;
-  /* instabilité : jet de risque */
+  var defs=mixDefs(),names=mix.map(function(id){return itemById(id).n;});
+  if(defs.length<mix.length){sanitizeMix();render();return;}
+  consume();
+  var ids=defs.map(function(d){return d.id;}),key=ids.slice().sort().join('+'),a=analyse(defs),v=a.v;
   var risk=Math.max(0,v.instable)*14,roll=r(100);
-  var res;
+  mix=[];
   if(roll<risk){
     var bad=['Le mélange mousse et explose : 1d6 dégâts à Fury.','Réaction exothermique : le labo est enfumé, tout est perdu.','Le flacon se fissure et dégage un gaz toxique : jet d\'Endurance.'];
-    res={fail:true,txt:bad[r(bad.length)]};last=res;mix=[];save();render();if(window.NPTools)NPTools.event('ÉCHEC de synthèse ('+ids.map(function(i){return ing(i).n;}).join(' + ')+') : '+res.txt);return;
+    last={fail:true,txt:bad[r(bad.length)]};save();render();
+    if(window.NPTools)NPTools.event('ÉCHEC de synthèse ('+names.join(' + ')+') : '+last.txt);return;
   }
   var named=NAMED[key],name,eff,kind,pot;
-  var sorted=Object.keys(PR).sort(function(x,y){return v[y]-v[x];});
-  var top=sorted[0];
+  var sorted=Object.keys(PR).sort(function(x,y){return v[y]-v[x];}),top=sorted[0];
   if(a.dil){pot=Math.max(1,Math.round(Math.max(v[top],1)/(1+a.dil)));}else pot=Math.max(1,Math.min(5,v[top]));
   if(named){name=named.n;eff=named.e;kind=named.k;st.known[key]=name;}
   else if(v[top]<=0){name='Mixture inerte';eff='Aucun effet. Dilué, sans intérêt.';kind='sed';pot=0;}
@@ -132,71 +197,80 @@ function synth(){
     kind=top;
     var base={soin:['Sérum','Soigne '+pot+'d6 PV.'],stim:['Stimulant','+'+Math.min(pot,3)+' aux actions pendant '+pot+' tours.'],tox:['Toxine','Inflige '+pot+'d6 dégâts de poison.'],sed:['Sédatif','Endort ou ralentit : -'+Math.min(pot,3)+' à toutes les actions de la cible.']}[top];
     var sec=sorted[1];
-    name=base[0]+' '+(['Faible','Léger','Standard','Concentré','Puissant','Pur'][Math.min(pot,5)])+(v[sec]>0&&sec!=='instable'?' / '+PR[sec].n.toLowerCase():'');
+    name=base[0]+' '+(['Faible','Léger','Standard','Concentré','Puissant','Pur'][Math.min(pot,5)])+(v[sec]>0?' / '+PR[sec].n.toLowerCase():'');
     eff=base[1]+(v[sec]>0?' Effet secondaire marqué : '+PR[sec].n.toLowerCase()+'.':'');
   }
-  var s={id:Date.now(),n:name,e:eff,k:kind,pot:pot,side:SIDE[r(SIDE.length)],tested:false,mix:ids.map(function(i){return ing(i).n;}).join(' + '),unstable:v.instable>=2,named:!!named};
-  st.syr.push(s);last={fail:false,syr:s};mix=[];save();render();if(window.NPTools)NPTools.event('synthétise « '+s.n+' » ('+s.mix+')');
+  var s={id:Date.now(),n:name,e:eff,k:kind,pot:pot,side:SIDE[r(SIDE.length)],tested:false,mix:names.join(' + '),named:!!named};
+  st.syr.push(s);last={fail:false,syr:s};save();render();
+  if(window.NPTools)NPTools.event('synthétise « '+s.n+' » ('+s.mix+')');
 }
-function testSyr(id){
-  var s=st.syr.filter(function(x){return x.id===id;})[0];if(!s)return;
-  s.tested=true;save();render();if(window.NPTools)NPTools.event('teste « '+s.n+' » → '+s.side);
-}
-function dropSyr(id){var _s=st.syr.filter(function(x){return x.id===id;})[0];if(window.NPTools&&_s)NPTools.event('jette « '+_s.n+' »');st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();}
-function useSyr(id){var _s=st.syr.filter(function(x){return x.id===id;})[0];st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();if(window.NPTools&&_s)NPTools.event('UTILISE « '+_s.n+' » — '+_s.e);}
-function restock(){st.pending=true;save();render();if(window.NPTools)NPTools.event('demande un réapprovisionnement');}
+function testSyr(id){var s=st.syr.filter(function(x){return x.id===id;})[0];if(!s)return;s.tested=true;save();render();if(window.NPTools)NPTools.event('teste « '+s.n+' » → '+s.side);}
+function dropSyr(id){var s=st.syr.filter(function(x){return x.id===id;})[0];if(window.NPTools&&s)NPTools.event('jette « '+s.n+' »');st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();}
+function useSyr(id){var s=st.syr.filter(function(x){return x.id===id;})[0];st.syr=st.syr.filter(function(x){return x.id!==id;});save();render();if(window.NPTools&&s)NPTools.event('UTILISE « '+s.n+' » — '+s.e);}
+
+/* ═════ RENDU ═════ */
 function syrHTML(s,acts){
   var c=(PR[s.k]||PR.sed).c;
-  return '<div class="syr" style="--c:'+c+'"><div class="si">💉</div><div><b>'+s.n.toUpperCase()+'</b><small>'+s.e+'</small><small>Puissance : '+'●'.repeat(s.pot)+'○'.repeat(Math.max(0,5-s.pot))+' · '+(PR[s.k]||PR.sed).n+'</small><small>'+(s.tested?'<span style="color:#ffaa00">Effet secondaire : '+s.side+'</span>':'<span style="color:rgba(255,255,255,.35)">Effets secondaires inconnus (non testée)</span>')+'</small><small style="opacity:.5">'+s.mix+'</small></div>'+(acts?'<div class="act">'+acts+'</div>':'')+'</div>';
+  return '<div class="syr" style="--c:'+c+'"><div class="si">💉</div><div><b>'+esc(s.n).toUpperCase()+'</b><small>'+esc(s.e)+'</small><small>Puissance : '+'●'.repeat(s.pot)+'○'.repeat(Math.max(0,5-s.pot))+' · '+(PR[s.k]||PR.sed).n+'</small><small>'+(s.tested?'<span style="color:#ffaa00">Effet secondaire : '+esc(s.side)+'</span>':'<span style="color:rgba(255,255,255,.35)">Effets secondaires inconnus (non testée)</span>')+'</small><small style="opacity:.5">'+esc(s.mix)+'</small></div>'+(acts?'<div class="act">'+acts+'</div>':'')+'</div>';
+}
+function itemHTML(it){
+  var lab=!!it.lab,qtyLeft=qtyOf(it)-used(it.id),col=it.col||'#a0a0a0';
+  var vis=it.img&&it.img.length>5?'<div class="im" style="background-image:url('+esc(it.img)+')"></div>':'<div class="ic">'+esc(it.ic||'📦')+'</div>';
+  return '<div class="it '+(lab?'':'no')+(lab&&qtyLeft<=0?' used':'')+'" style="--c:'+col+'" draggable="true" ondragstart="onDrag(event,\''+it.id+'\')" onclick="tryAdd(\''+it.id+'\')" title="'+(lab?'Glisse sur une fiole (ou clique)':'Non utilisable au labo')+'">'
+    +'<span class="tag">'+(lab?'⚗':'🚫')+'</span><span class="q">×'+qtyLeft+'</span>'+vis+'<b>'+esc(it.n)+'</b></div>';
 }
 function render(){
   if(pageTab==='s'){
-    var h='<div class="lab"><div class="box"><h3>INGRÉDIENTS</h3><div class="ing">';
-    var vis=ING.filter(function(g){return (st.stock[g.id]||0)>0;});
-    if(!vis.length)h+='<div class="out" style="grid-column:1/-1;color:rgba(255,255,255,.4)">Ton labo est vide (plus aucun produit).<br>Les produits se trouvent au cours de l\'aventure : le MJ t\'en remettra.</div>';
-    vis.forEach(function(g){var q=st.stock[g.id]||0;h+='<button class="ig" style="--c:'+g.c+'" '+(q<=0||mix.length>=3?'disabled':'')+' onclick="add(\''+g.id+'\')"><span class="q">x'+q+'</span><span class="i">'+g.ico+'</span><b>'+g.n.toUpperCase()+'</b><small>'+g.t+'</small></button>';});
-    h+='</div><div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.35)">Les produits trouvés pendant l\'aventure s\'ajoutent ici.</div></div>';
-    h+='<div class="box"><h3>TABLE DE MÉLANGE</h3><div class="mixer">';
-    for(var i=0;i<3;i++){var id=mix[i],g=id?ing(id):null;h+='<div class="vial '+(g?'f':'')+'" onclick="'+(g?'rem('+i+')':'')+'">'+(g?'<span>'+g.ico+'</span>'+g.n:'+ FIOLE '+(i+1))+'</div>';}
+    var items=inv.placed.slice().sort(function(a,b){return (b.lab?1:0)-(a.lab?1:0);});
+    var h='<div class="lab"><div class="box"><h3><span>🎒 MON INVENTAIRE</span><span id="sync" class="sync"></span></h3><div class="inv">';
+    if(!items.length)h+='<div class="empty">'+(invKnown?'Ton inventaire est vide.<br>Les objets que le MJ te remet apparaissent ici.':'Inventaire non synchronisé.<br>Ouvre ton Outil de jeu (onglet Inventaire) ou demande au MJ de l\'ouvrir.')+'</div>';
+    items.forEach(function(it){h+=itemHTML(it);});
+    h+='</div><div style="margin-top:8px;font-size:9px;color:rgba(255,255,255,.35);line-height:1.6">⚗ = utilisable au labo · 🚫 = non utilisable. Glisse un objet ⚗ sur une fiole (ou clique-le). Les produits utilisés sont retirés de ton inventaire principal.</div></div>';
+    h+='<div class="box"><h3><span>TABLE DE MÉLANGE</span></h3><div class="mixer">';
+    for(var i=0;i<3;i++){var id=mix[i],it=id?itemById(id):null;h+='<div class="vial '+(it?'f':'')+'" ondragover="onOver(event,'+i+')" ondragleave="onLeave(event)" ondrop="onDrop(event,'+i+')" onclick="'+(it?'rem('+i+')':'')+'">'+(it?'<span>'+esc(it.ic||'📦')+'</span>'+esc(it.n)+'<small>(clique pour retirer)</small>':'+ FIOLE '+(i+1)+'<small>glisse un produit ici</small>')+'</div>';}
     h+='</div><div style="text-align:center;margin-bottom:12px"><button class="btn" onclick="synth()" '+(mix.length<2?'disabled':'')+'>SYNTHÉTISER</button> <button class="btn red" onclick="clearMix()" '+(mix.length?'':'disabled')+'>VIDER</button></div>';
-    if(mix.length>=2){var a=analyse(mix),v=a.v;h+='<div class="out" style="color:rgba(255,255,255,.55);font-size:10px;letter-spacing:1px">ANALYSE : '+Object.keys(PR).map(function(k){return PR[k].ico+' '+Math.max(0,v[k]);}).join(' &nbsp; ')+' &nbsp; ⚠ INSTABILITÉ '+Math.max(0,v.instable)+(v.instable>=3?' (DANGEREUX)':v.instable>=1?' (RISQUÉ)':' (STABLE)')+'</div>';}
+    var defs=mixDefs();
+    if(defs.length>=2){var a=analyse(defs),v=a.v;h+='<div class="out" style="color:rgba(255,255,255,.55);font-size:10px;letter-spacing:1px">ANALYSE : '+Object.keys(PR).map(function(k){return PR[k].ico+' '+Math.max(0,v[k]);}).join(' &nbsp; ')+' &nbsp; ⚠ INSTABILITÉ '+Math.max(0,v.instable)+(v.instable>=3?' (DANGEREUX)':v.instable>=1?' (RISQUÉ)':' (STABLE)')+'</div>';}
     if(last){
-      if(last.fail)h+='<div class="out bubble fail"><b>✖ ÉCHEC DE SYNTHÈSE</b><br>'+last.txt+'<br><small>Les ingrédients sont perdus. Le MJ applique les conséquences.</small></div>';
+      if(last.fail)h+='<div class="out bubble fail"><b>✖ ÉCHEC DE SYNTHÈSE</b><br>'+esc(last.txt)+'<br><small>Les ingrédients sont perdus. Le MJ applique les conséquences.</small></div>';
       else h+='<div class="out bubble"><b style="color:#00ff88">✔ NOUVELLE SERINGUE'+(last.syr.named?' — RECETTE CONNUE':'')+'</b></div>'+syrHTML(last.syr);
-    }else h+='<div class="out" style="color:rgba(255,255,255,.35)">Choisis 2 ou 3 ingrédients. Le stabilisant réduit le risque ; plus un mélange est instable, plus il peut exploser.</div>';
-    view(h+'</div></div>');return;
+    }else h+='<div class="out" style="color:rgba(255,255,255,.35)">Glisse 2 ou 3 produits de ton inventaire sur les fioles. Le stabilisant réduit le risque ; plus un mélange est instable, plus il peut exploser.</div>';
+    view(h+'</div></div>');renderSync();return;
   }
   if(pageTab==='i'){
-    var h2='<div class="box"><h3>MES SERINGUES ('+st.syr.length+')</h3>';
+    var h2='<div class="box"><h3><span>MES SERINGUES ('+st.syr.length+')</span></h3>';
     if(!st.syr.length)h2+='<div class="out" style="color:rgba(255,255,255,.35)">Aucune seringue. Va à la table de synthèse.</div>';
     st.syr.slice().reverse().forEach(function(s){h2+=syrHTML(s,(s.tested?'':'<button class="btn" onclick="testSyr('+s.id+')">TESTER</button>')+'<button class="btn" onclick="useSyr('+s.id+')">UTILISER</button><button class="btn red" onclick="dropSyr('+s.id+')">JETER</button>');});
     view(h2+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">TESTER révèle l\'effet secondaire (sur un cobaye ou sur toi). UTILISER consomme la seringue : annonce-la au MJ.</div></div>');return;
   }
-  var h3='<div class="box"><h3>JOURNAL DE RECHERCHE</h3>';
-  var keys=Object.keys(NAMED),n=Object.keys(st.known).length;
+  var h3='<div class="box"><h3><span>JOURNAL DE RECHERCHE</span></h3>';
+  var keys=Object.keys(NAMED),n=Object.keys(st.known).filter(function(k){return NAMED[k];}).length;
   h3+='<div style="font-size:11px;margin-bottom:8px">Recettes découvertes : <b style="color:#00ff88">'+n+' / '+keys.length+'</b></div>';
   keys.forEach(function(k){
     var d=!!st.known[k];
-    h3+='<div class="rec">'+(d?'<b>'+NAMED[k].n+'</b> — '+k.split('+').map(function(i){return ing(i).n;}).join(' + ')+'<br><span style="color:rgba(255,255,255,.5)">'+NAMED[k].e+'</span>':'<span style="color:rgba(255,255,255,.3)">??? — recette non découverte ('+k.split('+').length+' ingrédients)</span>')+'</div>';
+    h3+='<div class="rec">'+(d?'<b>'+esc(NAMED[k].n)+'</b> — '+k.split('+').map(function(i){return esc(presetName(i));}).join(' + ')+'<br><span style="color:rgba(255,255,255,.5)">'+esc(NAMED[k].e)+'</span>':'<span style="color:rgba(255,255,255,.3)">??? — recette non découverte ('+k.split('+').length+' ingrédients)</span>')+'</div>';
   });
   view(h3+'</div>');
 }
-function furyState(){return {stock:st.stock,ing:ING.map(function(g){return {id:g.id,n:g.n,ico:g.ico,custom:!!g.custom,p:g.p,seen:!!st.seen[g.id]};}),removed:st.removed.length,syr:st.syr,known:st.known,total:Object.keys(NAMED).length,recipes:Object.keys(NAMED).map(function(k){return {k:k,n:NAMED[k].n,e:NAMED[k].e,known:!!st.known[k],custom:!!st.custom[k]};}),pending:!!st.pending,lastFail:last&&last.fail?last.txt:null,mix:mix.map(function(i){return ing(i).n;})};}
+
+/* ═════ SYNCHRO MJ ═════ */
+function furyState(){
+  var li=inv.placed.filter(function(x){return x.lab;});
+  return {invSync:invKnown,ing:li.map(function(x){return {id:x.id,n:x.n,ico:x.ic||'📦',q:qtyOf(x),p:x.lab.p};}),nolab:inv.placed.length-li.length,
+    syr:st.syr,known:st.known,total:Object.keys(NAMED).length,
+    recipes:Object.keys(NAMED).map(function(k){return {k:k,n:NAMED[k].n,e:NAMED[k].e,known:!!st.known[k],custom:!!st.custom[k]};}),
+    lastFail:last&&last.fail?last.txt:null,mix:mix.map(function(i){var it=itemById(i);return it?it.n:'?';})};
+}
 function furyCmd(d){
-  if(d.type==='restock'){if(d.ok){ING.forEach(function(i){st.stock[i.id]=Math.min(8,(st.stock[i.id]||0)+2);});st.pending=false;save();render();NPTools.event('réapprovisionnement accordé par le MJ');}else{st.pending=false;save();render();NPTools.event('réapprovisionnement refusé');}}
-  if(d.type==='give'){setStock(d.id,(st.stock[d.id]||0)+(d.q||1));save();render();NPTools.event('reçoit '+(d.q||1)+' x '+(ing(d.id)||{n:d.id}).n+' du MJ');}
-  if(d.type==='stock'){setStock(d.id,d.q);save();render();NPTools.event('stock '+(ing(d.id)||{n:d.id}).n+' fixé à '+(d.q|0)+' par le MJ');}
-  if(d.type==='addSyr'){var sy={id:Date.now()+Math.floor(Math.random()*1000),n:d.n||'Seringue du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin',pot:Math.max(0,Math.min(5,d.pot|0||3)),side:d.side||'Aucun effet secondaire notable.',tested:!!d.tested,mix:'Fournie par le MJ',unstable:false,named:false};st.syr.push(sy);save();render();NPTools.event('reçoit une seringue du MJ : « '+sy.n+' »');}
+  if(d.type==='addSyr'){var sy={id:Date.now()+Math.floor(Math.random()*1000),n:d.n||'Seringue du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin',pot:Math.max(0,Math.min(5,d.pot|0||3)),side:d.side||'Aucun effet secondaire notable.',tested:!!d.tested,mix:'Fournie par le MJ',named:false};st.syr.push(sy);save();render();NPTools.event('reçoit une seringue du MJ : « '+sy.n+' »');}
   if(d.type==='delSyr'){st.syr=st.syr.filter(function(x){return x.id!==d.id;});save();render();NPTools.event('une seringue est retirée par le MJ');}
   if(d.type==='revealSyr'){st.syr.forEach(function(x){if(x.id===d.id)x.tested=true;});save();render();NPTools.event('effet secondaire révélé par le MJ');}
   if(d.type==='recipe'&&d.ids&&d.ids.length>=2){var key=d.ids.slice().sort().join('+');st.custom[key]={n:d.n||'Recette du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin'};NAMED[key]=st.custom[key];save();render();NPTools.event('nouvelle recette ajoutée par le MJ : « '+(d.n||'?')+' »');}
   if(d.type==='delRecipe'&&st.custom[d.key]){delete st.custom[d.key];delete NAMED[d.key];delete st.known[d.key];save();render();NPTools.event('une recette est supprimée par le MJ');}
-  if(d.type==='addIng'&&d.n){var gid='x'+Date.now().toString(36),p={};['soin','stim','tox','sed','instable'].forEach(function(k){var v=parseInt(d.p&&d.p[k],10)||0;if(v)p[k]=Math.max(-3,Math.min(5,v));});var g={id:gid,ico:d.ico||'🧪',n:d.n,c:d.c||'#e8e8f4',p:p,t:d.t||'Produit fourni par le MJ.',custom:true};st.customIng.push(g);ING.push(g);setStock(gid,d.q===0?0:(d.q|0||3));save();render();NPTools.event('reçoit un nouveau produit du MJ : '+g.ico+' '+g.n+' x'+st.stock[gid]);}
-  if(d.type==='delIng'){var gi=ING.filter(function(g){return g.id===d.id;})[0];if(gi){ING.splice(ING.indexOf(gi),1);if(gi.custom)st.customIng=st.customIng.filter(function(g){return g.id!==d.id;});else if(st.removed.indexOf(gi.id)<0)st.removed.push(gi.id);delete st.stock[d.id];delete st.seen[d.id];mix=mix.filter(function(i){return i!==d.id;});save();render();NPTools.event('le produit « '+gi.n+' » est retiré par le MJ');}}
-  if(d.type==='restoreIng'){st.removed=[];BASE_ING.forEach(function(g){if(!ing(g.id)){ING.push(g);st.stock[g.id]=0;}});save();render();NPTools.event('produits par défaut restaurés (stock à 0)');}
-  if(d.type==='resetLab'){ING.forEach(function(i){st.stock[i.id]=0;});st.seen={};st.syr=[];st.known={};st.pending=false;save();render();NPTools.event('laboratoire réinitialisé par le MJ');}
+  if(d.type==='resetLab'){st.syr=[];st.known={};mix=[];last=null;save();render();NPTools.event('laboratoire réinitialisé par le MJ (seringues et recettes)');}
   NPTools.pub();
 }
+connectInv();
 if(window.NPTools)NPTools.player({role:ROLE,getState:furyState,onCmd:furyCmd});
 render();
 </script>

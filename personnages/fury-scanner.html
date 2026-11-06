@@ -898,6 +898,36 @@ var invLib=[
   {n:'Fléchette adrénaline',ic:'💉',w:1,h:1,col:'#00ff88',img:''},
   {n:'Fléchette vide (rechargeable)',ic:'💉',w:1,h:1,col:'#a0a0a0',img:''}
 ];
+var LAB_PRESETS=[
+ {id:'adre',n:'Adrénaline synthé',p:{stim:3,instable:1}},{id:'nano',n:'Nanites médicales',p:{soin:3,instable:1}},{id:'sang',n:'Plasma de synthèse',p:{soin:2}},
+ {id:'neuro',n:'Neurotoxine',p:{tox:3,sed:1,instable:1}},{id:'venin',n:'Venin de vipère',p:{tox:2,stim:1}},{id:'cryo',n:'Cryo-gel',p:{sed:2,soin:1}},
+ {id:'morph',n:'Opioïde de rue',p:{sed:3,tox:1}},{id:'stab',n:'Stabilisant',p:{instable:-2}},{id:'eau',n:'Eau stérile',p:{}},
+ {id:'psy',n:'Psychotrope',p:{stim:2,sed:1,instable:2}},{id:'acid',n:'Acide corrosif',p:{tox:2,instable:2}},{id:'anti',n:'Antibiotique',p:{soin:1,instable:-1}}
+];
+var invNextLab=null; /* profil labo appliqué aux prochains objets posés (null = inutilisable) */
+function labDefault(){return {pid:'',p:{soin:0,stim:0,tox:0,sed:0,instable:0}};}
+function labFromPreset(pid){var pr=LAB_PRESETS.filter(function(x){return x.id===pid;})[0];var l=labDefault();if(pr){l.pid=pid;for(var k in pr.p)l.p[k]=pr.p[k];}return l;}
+function labPropsHtml(lab,onchange){
+  var h='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;font-size:10px;color:rgba(255,255,255,.6);">';
+  [['soin','💚 soin'],['stim','⚡ stim'],['tox','☠ tox'],['sed','💤 sed'],['instable','⚠ instable']].forEach(function(k){h+='<label style="display:flex;align-items:center;gap:3px;">'+k[1]+'<input type="number" min="-3" max="5" value="'+((lab.p&&lab.p[k[0]])||0)+'" style="width:42px;background:#0a0f0c;color:#fff;border:1px solid rgba(0,255,136,.3);border-radius:3px;padding:2px;" onchange="'+onchange(k[0])+'"></label>';});
+  return h+'</div>';
+}
+function presetSelectHtml(cur,onchange){return '<select style="background:#0a0f0c;color:#fff;border:1px solid rgba(0,255,136,.3);border-radius:3px;padding:3px;font-size:10px;max-width:100%;" onchange="'+onchange+'"><option value="">— profil personnalisé —</option>'+LAB_PRESETS.map(function(x){return '<option value="'+x.id+'"'+(cur===x.id?' selected':'')+'>'+x.n+'</option>';}).join('')+'</select>';}
+function labBlockHtml(it){
+  if(role!=='mj')return '';
+  var on=!!it.lab,id=it.id;
+  var h='<div style="margin:10px 0;padding:8px;border:1px solid '+(on?'rgba(0,255,136,.5)':'rgba(255,255,255,.1)')+';border-radius:6px;background:rgba(0,0,0,.2);text-align:left;">'
+   +'<label style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:'+(on?'#00ff88':'rgba(255,255,255,.6)')+';cursor:pointer;"><input type="checkbox" '+(on?'checked':'')+' onchange="setItemLab(\''+id+'\',this.checked)"> ⚗ UTILISABLE AU LABO</label>';
+  if(on){h+='<div style="margin-top:6px;">'+presetSelectHtml(it.lab.pid||'','setItemLabPreset(\''+id+'\',this.value)')+'</div>'
+    +labPropsHtml(it.lab,function(k){return "setItemLabProp('"+id+"','"+k+"',this.value)";});}
+  return h+'</div>';
+}
+function setItemLab(id,on){var it=invPlaced.find(function(x){return x.id===id;});if(!it)return;it.lab=on?(invNextLab?JSON.parse(JSON.stringify(invNextLab)):labDefault()):undefined;if(!on)delete it.lab;saveInv();showInvDetails(it);}
+function setItemLabPreset(id,pid){var it=invPlaced.find(function(x){return x.id===id;});if(!it)return;it.lab=pid?labFromPreset(pid):{pid:'',p:(it.lab&&it.lab.p)||labDefault().p};saveInv();showInvDetails(it);}
+function setItemLabProp(id,k,v){var it=invPlaced.find(function(x){return x.id===id;});if(!it||!it.lab)return;it.lab.p[k]=Math.max(-3,Math.min(5,parseInt(v,10)||0));it.lab.pid=it.lab.pid||'';saveInv();}
+function setNextLab(on){invNextLab=on?(invNextLab||labDefault()):null;renderInvLib();}
+function setNextLabPreset(pid){invNextLab=pid?labFromPreset(pid):{pid:'',p:(invNextLab&&invNextLab.p)||labDefault().p};renderInvLib();}
+function setNextLabProp(k,v){if(!invNextLab)return;invNextLab.p[k]=Math.max(-3,Math.min(5,parseInt(v,10)||0));}
 var invCustomLib=[];
 function loadCustomLib(){try{var c=JSON.parse(localStorage.getItem('fury_customlib'));if(c&&Array.isArray(c))invCustomLib=c;}catch(e){}}
 function saveCustomLib(){try{localStorage.setItem('fury_customlib',JSON.stringify(invCustomLib));}catch(e){}}
@@ -989,6 +1019,10 @@ function invPrev(){
   document.getElementById('inv-grid').appendChild(d);
 }
 function renderInvLib(){var l=document.getElementById('inv-lib');if(!l)return;l.innerHTML='';
+  if(role==='mj'){var hb=document.createElement('div');hb.style.cssText='margin-bottom:10px;padding:8px;border:1px solid '+(invNextLab?'rgba(0,255,136,.5)':'rgba(255,255,255,.12)')+';border-radius:6px;font-size:10px;';
+    hb.innerHTML='<label style="display:flex;align-items:center;gap:8px;letter-spacing:1px;color:'+(invNextLab?'#00ff88':'rgba(255,255,255,.6)')+';cursor:pointer;"><input type="checkbox" '+(invNextLab?'checked':'')+' onchange="setNextLab(this.checked)"> ⚗ UTILISABLE AU LABO (prochain objet posé)</label>'
+     +(invNextLab?'<div style="margin-top:6px;">'+presetSelectHtml(invNextLab.pid||'','setNextLabPreset(this.value)')+'</div>'+labPropsHtml(invNextLab,function(k){return "setNextLabProp('"+k+"',this.value)";}):'');
+    l.appendChild(hb);}
   /* Default items */
   invLib.forEach(function(it){var d=document.createElement('div');d.className='inv-ie';d.innerHTML='<span class="inv-ie-ic">'+it.ic+'</span><span class="inv-ie-n">'+esc(it.n)+' <small style="opacity:.5">'+it.w+'×'+it.h+'</small></span>';d.onclick=function(){if(role!=='mj')return;startPlace(it);openInvDetailsModal();};l.appendChild(d);});
   /* Custom items */
@@ -1026,11 +1060,11 @@ function showInvDetails(it){
     ?('<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0;padding:8px;border:1px solid rgba(255,255,255,.06);border-radius:4px;background:rgba(0,0,0,.2);"><button onclick="changeQty(\''+it.id+'\',-1)" style="width:30px;height:30px;border:1px solid rgba(255,32,64,.4);border-radius:4px;background:transparent;color:#ff4060;font-size:16px;font-weight:700;cursor:pointer;font-family:Orbitron,monospace;">−</button><span style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#00ff88;min-width:40px;text-align:center;">×'+qty+'</span><button onclick="changeQty(\''+it.id+'\',1)" style="width:30px;height:30px;border:1px solid rgba(0,255,136,.4);border-radius:4px;background:transparent;color:#00ff88;font-size:16px;font-weight:700;cursor:pointer;font-family:Orbitron,monospace;">+</button></div>')
     :('<div style="text-align:center;margin:10px 0;padding:8px;border:1px solid rgba(255,255,255,.06);border-radius:4px;background:rgba(0,0,0,.2);"><span style="font-family:Orbitron,monospace;font-size:18px;font-weight:700;color:#00ff88;">×'+qty+'</span></div>');
   var simpleView=(role!=='mj'&&invDisplayMode==='liste');
-  d.innerHTML=imgHtml+'<div style="text-align:center;font-family:Orbitron;font-size:12px;color:#00ff88;letter-spacing:2px;margin-bottom:4px;">'+esc(it.n)+'</div>'+(simpleView?'':'<div style="text-align:center;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:2px;margin-bottom:6px;">'+invGW(it)+'×'+invGH(it)+' cellules'+(it.rotated?' — pivoté':'')+'</div>')+qtyHtml+((!simpleView&&("ontouchstart" in window))?('<div class="inv-dpad">'+'<div></div><button class="inv-dpad-btn" onclick="nudgeItem(0,-1)">▲</button><div></div>'+'<button class="inv-dpad-btn" onclick="nudgeItem(-1,0)">◀</button><div></div><button class="inv-dpad-btn" onclick="nudgeItem(1,0)">▶</button>'+'<div></div><button class="inv-dpad-btn" onclick="nudgeItem(0,1)">▼</button><div></div>'+'</div>'):'')+(simpleView?'':('<div class="inv-det-btns"><button class="inv-det-btn inv-move" onclick="startMove(invPlaced.find(function(x){return x.id===\''+it.id+'\';}))">✥ DÉPLACER</button>'+(canRot?'<button class="inv-det-btn inv-rot" onclick="rotItem(\''+it.id+'\')">↻ PIVOTER</button>':'<div></div>')+(role==='mj'?'<button class="inv-det-btn" style="border-color:rgba(0,255,136,.4);color:#00ff88;grid-column:span 2;" onclick="saveToLib(invPlaced.find(function(x){return x.id===\''+it.id+'\';}))">💾 SAUVER EN BIBLIO</button>':'')+(role==='mj'?'<button class="inv-det-btn inv-del mj-on" onclick="delItem(\''+it.id+'\')">✕ SUPPRIMER</button>':'')+'</div>'));
+  d.innerHTML=imgHtml+'<div style="text-align:center;font-family:Orbitron;font-size:12px;color:#00ff88;letter-spacing:2px;margin-bottom:4px;">'+esc(it.n)+'</div>'+(simpleView?'':'<div style="text-align:center;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:2px;margin-bottom:6px;">'+invGW(it)+'×'+invGH(it)+' cellules'+(it.rotated?' — pivoté':'')+'</div>')+qtyHtml+labBlockHtml(it)+((!simpleView&&("ontouchstart" in window))?('<div class="inv-dpad">'+'<div></div><button class="inv-dpad-btn" onclick="nudgeItem(0,-1)">▲</button><div></div>'+'<button class="inv-dpad-btn" onclick="nudgeItem(-1,0)">◀</button><div></div><button class="inv-dpad-btn" onclick="nudgeItem(1,0)">▶</button>'+'<div></div><button class="inv-dpad-btn" onclick="nudgeItem(0,1)">▼</button><div></div>'+'</div>'):'')+(simpleView?'':('<div class="inv-det-btns"><button class="inv-det-btn inv-move" onclick="startMove(invPlaced.find(function(x){return x.id===\''+it.id+'\';}))">✥ DÉPLACER</button>'+(canRot?'<button class="inv-det-btn inv-rot" onclick="rotItem(\''+it.id+'\')">↻ PIVOTER</button>':'<div></div>')+(role==='mj'?'<button class="inv-det-btn" style="border-color:rgba(0,255,136,.4);color:#00ff88;grid-column:span 2;" onclick="saveToLib(invPlaced.find(function(x){return x.id===\''+it.id+'\';}))">💾 SAUVER EN BIBLIO</button>':'')+(role==='mj'?'<button class="inv-det-btn inv-del mj-on" onclick="delItem(\''+it.id+'\')">✕ SUPPRIMER</button>':'')+'</div>'));
 }
 function startPlace(def){invMode='place';invMovingItem=def;invMovingRot=false;invHov={x:0,y:0};showMBar('Placement : '+def.n);invPrev();}
 function startMove(it){if(!it)return;invMode='move';invMovingItem=it;invMovingRot=it.rotated;invHov={x:it.x,y:it.y};invSel=it.id;showMBar('Déplacer : '+it.n);renderInv();invPrev();}
-function invPlace(x,y){if(!invMode||!invMovingItem)return;if(invMode==='place'){var w=invMovingRot?invMovingItem.h:invMovingItem.w,h=invMovingRot?invMovingItem.w:invMovingItem.h;if(!invCanPlace(x,y,w,h))return;invPlaced.push({id:'i'+Date.now(),n:invMovingItem.n,ic:invMovingItem.ic,img:invMovingItem.img||'',w:invMovingItem.w,h:invMovingItem.h,col:invMovingItem.col,x:x,y:y,rotated:invMovingRot,qty:1});}else{var it=invMovingItem,w=invMovingRot?it.h:it.w,h=invMovingRot?it.w:it.h;if(!invCanPlace(x,y,w,h,it.id))return;it.x=x;it.y=y;it.rotated=invMovingRot;}invMode=null;invMovingItem=null;hideMBar();saveInv();renderInv();}
+function invPlace(x,y){if(!invMode||!invMovingItem)return;if(invMode==='place'){var w=invMovingRot?invMovingItem.h:invMovingItem.w,h=invMovingRot?invMovingItem.w:invMovingItem.h;if(!invCanPlace(x,y,w,h))return;invPlaced.push({id:'i'+Date.now(),n:invMovingItem.n,ic:invMovingItem.ic,img:invMovingItem.img||'',w:invMovingItem.w,h:invMovingItem.h,col:invMovingItem.col,x:x,y:y,rotated:invMovingRot,qty:1,lab:invNextLab?JSON.parse(JSON.stringify(invNextLab)):undefined});}else{var it=invMovingItem,w=invMovingRot?it.h:it.w,h=invMovingRot?it.w:it.h;if(!invCanPlace(x,y,w,h,it.id))return;it.x=x;it.y=y;it.rotated=invMovingRot;}invMode=null;invMovingItem=null;hideMBar();saveInv();renderInv();}
 function invRotMode(){invMovingRot=!invMovingRot;invPrev();}
 function invCancel(){invMode=null;invMovingItem=null;var g=document.getElementById('inv-ghost');if(g)g.remove();hideMBar();renderInv();}
 function rotItem(id){var it=invPlaced.find(function(x){return x.id===id;});if(!it)return;var nr=!it.rotated,nw=nr?it.h:it.w,nh=nr?it.w:it.h;if(invCanPlace(it.x,it.y,nw,nh,id)){it.rotated=nr;saveInv();renderInv();showInvDetails(it);return;}var spot=invFindSpot(nw,nh,id,it.x,it.y);if(spot){it.x=spot.x;it.y=spot.y;it.rotated=nr;saveInv();renderInv();showInvDetails(it);return;}showMBar('Impossible de pivoter');setTimeout(hideMBar,2000);}
