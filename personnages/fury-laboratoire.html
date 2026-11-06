@@ -101,9 +101,9 @@ function sessCode(){
 }
 var CODE=sessCode();
 function load(){try{var v=JSON.parse(localStorage.getItem(KS));if(v&&v.syr)return v;}catch(e){}return {syr:[],known:{},custom:{}};}
-var st=load();if(!st.custom)st.custom={};if(!st.known)st.known={};
+var st=load();if(!st.journal)st.journal={};if(!st.custom)st.custom={};if(!st.known)st.known={};
 Object.keys(st.custom).forEach(function(k){NAMED[k]=st.custom[k];});
-function save(){try{localStorage.setItem(KS,JSON.stringify({syr:st.syr,known:st.known,custom:st.custom}));}catch(e){}}
+function save(){try{localStorage.setItem(KS,JSON.stringify({syr:st.syr,known:st.known,custom:st.custom,journal:st.journal}));}catch(e){}}
 
 /* ═════ INVENTAIRE PRINCIPAL (partagé avec l'outil de jeu) ═════ */
 var inv={placed:[],gridW:10,gridH:10,cells:null,displayMode:'puzzle'},invKnown=false,invLive=false,mc=null,TOPIC=CODE?'spectre_finv_v1_'+CODE:'';
@@ -201,6 +201,7 @@ function synth(){
     eff=base[1]+(v[sec]>0?' Effet secondaire marqué : '+PR[sec].n.toLowerCase()+'.':'');
   }
   var s={id:Date.now(),n:name,e:eff,k:kind,pot:pot,side:SIDE[r(SIDE.length)],tested:false,mix:names.join(' + '),named:!!named};
+  if(pot>0||named){var jk=ids.slice().sort().join('+')+'|'+names.slice().sort().join('+');var je=st.journal[jk]||{n:s.n,e:s.e,mix:names.slice().sort().join(' + '),k:s.k,count:0,t:Date.now()};je.count++;je.n=s.n;je.e=s.e;st.journal[jk]=je;}
   st.syr.push(s);last={fail:false,syr:s};save();render();
   if(window.NPTools)NPTools.event('synthétise « '+s.n+' » ('+s.mix+')');
 }
@@ -244,11 +245,11 @@ function render(){
     view(h2+'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px">TESTER révèle l\'effet secondaire (sur un cobaye ou sur toi). UTILISER consomme la seringue : annonce-la au MJ.</div></div>');return;
   }
   var h3='<div class="box"><h3><span>JOURNAL DE RECHERCHE</span></h3>';
-  var keys=Object.keys(NAMED),n=Object.keys(st.known).filter(function(k){return NAMED[k];}).length;
-  h3+='<div style="font-size:11px;margin-bottom:8px">Recettes découvertes : <b style="color:#00ff88">'+n+' / '+keys.length+'</b></div>';
-  keys.forEach(function(k){
-    var d=!!st.known[k];
-    h3+='<div class="rec">'+(d?'<b>'+esc(NAMED[k].n)+'</b> — '+k.split('+').map(function(i){return esc(presetName(i));}).join(' + ')+'<br><span style="color:rgba(255,255,255,.5)">'+esc(NAMED[k].e)+'</span>':'<span style="color:rgba(255,255,255,.3)">??? — recette non découverte ('+k.split('+').length+' ingrédients)</span>')+'</div>';
+  var found=Object.keys(st.journal).map(function(k){return st.journal[k];}).sort(function(a,b){return b.t-a.t;});
+  if(!found.length)h3+='<div class="out" style="color:rgba(255,255,255,.35)">Aucune recette notée pour l\'instant.<br>Chaque mélange réussi s\'inscrit ici automatiquement avec sa formule.</div>';
+  else h3+='<div style="font-size:11px;margin-bottom:8px">Recettes notées : <b style="color:#00ff88">'+found.length+'</b></div>';
+  found.forEach(function(j){
+    h3+='<div class="rec"><b>'+esc(j.n)+'</b>'+(j.count>1?' <span style="color:rgba(255,255,255,.4)">×'+j.count+'</span>':'')+'<br><span style="color:#bfe9d3">'+esc(j.mix)+'</span><br><span style="color:rgba(255,255,255,.5)">'+esc(j.e)+'</span></div>';
   });
   view(h3+'</div>');
 }
@@ -267,7 +268,7 @@ function furyCmd(d){
   if(d.type==='revealSyr'){st.syr.forEach(function(x){if(x.id===d.id)x.tested=true;});save();render();NPTools.event('effet secondaire révélé par le MJ');}
   if(d.type==='recipe'&&d.ids&&d.ids.length>=2){var key=d.ids.slice().sort().join('+');st.custom[key]={n:d.n||'Recette du MJ',e:d.e||'',k:PR[d.k]?d.k:'soin'};NAMED[key]=st.custom[key];save();render();NPTools.event('nouvelle recette ajoutée par le MJ : « '+(d.n||'?')+' »');}
   if(d.type==='delRecipe'&&st.custom[d.key]){delete st.custom[d.key];delete NAMED[d.key];delete st.known[d.key];save();render();NPTools.event('une recette est supprimée par le MJ');}
-  if(d.type==='resetLab'){st.syr=[];st.known={};mix=[];last=null;save();render();NPTools.event('laboratoire réinitialisé par le MJ (seringues et recettes)');}
+  if(d.type==='resetLab'){st.syr=[];st.known={};st.journal={};mix=[];last=null;save();render();NPTools.event('laboratoire réinitialisé par le MJ (seringues et recettes)');}
   NPTools.pub();
 }
 connectInv();

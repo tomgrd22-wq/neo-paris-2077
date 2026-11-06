@@ -105,7 +105,7 @@ function body(role,d){
     h+='<div class="sec">JOURNAL DE ROUTE</div><div class="log">'+(s.log||[]).map(esc).join('<br>')+'</div>';
   }
   if(role==='fury'){
-    h+='<div class="kv"><span>Recettes découvertes</span><b>'+Object.keys(s.known||{}).length+' / '+s.total+'</b></div>';
+    h+='<div class="kv"><span>Recettes découvertes</span><b>'+Object.keys(s.known||{}).length+'</b></div>';
     if(s.mix&&s.mix.length)h+='<div class="sec">SUR LA TABLE</div>'+s.mix.map(function(m){return '<span class="chip">'+esc(m)+'</span>';}).join('');
     if(s.lastFail)h+='<div class="sec">DERNIER ÉCHEC</div><span class="chip r">'+esc(s.lastFail)+'</span>';
     h+='<div class="sec">PRODUITS UTILISABLES AU LABO (inventaire principal)</div>'+((s.ing||[]).length?(s.ing||[]).map(function(g){return '<span class="chip">'+esc(g.ico)+' '+esc(g.n)+' ×'+g.q+'</span>';}).join(''):'<span style="color:rgba(255,255,255,.35);font-size:10px">Aucun'+(s.invSync===false?' — inventaire de Fury non synchronisé':'')+'</span>')+((s.nolab)?'<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:4px">+ '+s.nolab+' objet(s) non utilisable(s) au labo</div>':'');
