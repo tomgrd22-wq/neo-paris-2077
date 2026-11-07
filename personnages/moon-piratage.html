@@ -237,12 +237,35 @@ function conclude(decFail){
   if(decFail)h+='<div style="color:#ff6080">Le décryptage a échoué : les effets sont obtenus mais le code d\'accès reste verrouillé.</div>';
   if(n===0)h+='<div style="color:#ff6080">Conseil MJ : dégâts de feedback 1d6 sur le netrunner.</div>';
   h+='</div>';
-  if(code)h+='<div style="margin:16px auto;max-width:420px;border:2px solid #00ff88;border-radius:10px;padding:14px;background:rgba(0,255,136,.07)"><div style="font-size:10px;letter-spacing:3px;color:#00ff88">CODE D\'ACCÈS OBTENU — DONNE-LE À UN ALLIÉ (ou au MJ) : il pourra ACTIVER / DÉSACTIVER la cible</div><div style="font-family:Orbitron,monospace;font-size:26px;letter-spacing:4px;color:#fff;margin:8px 0;user-select:all" id="cdv">'+code+'</div><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\')">COPIER</button></div>';
+  if(code)h+='<div style="margin:16px auto;max-width:420px;border:2px solid #00ff88;border-radius:10px;padding:14px;background:rgba(0,255,136,.07)"><div style="font-size:10px;letter-spacing:3px;color:#00ff88">CODE D\'ACCÈS OBTENU</div><div style="font-family:Orbitron,monospace;font-size:26px;letter-spacing:4px;color:#fff;margin:8px 0;user-select:all" id="cdv">'+code+'</div><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\')">COPIER</button></div><div id="mk" style="margin:12px auto;max-width:420px;border:1px solid #00ccff;border-radius:10px;padding:14px;font-size:12px;line-height:1.8"></div>';
   h+='<button class="btn" onclick="start('+TARGETS.indexOf(S.t)+')">REJOUER LA CIBLE</button> <button class="btn" onclick="home()">AUTRE CIBLE</button></div>';
   view(h);
+  if(code){MK={code:code,t:S.t,who:null};mkPick();}
 }
 function codes(){try{return JSON.parse(localStorage.getItem('np_moon_codes')||'[]');}catch(e){return [];}}
 function moonState(){return {codes:codes().slice(0,8),logs:logs.slice(-15),cur:S&&!S.over?{target:S.t.n,left:Math.ceil(S.left),buf:S.buf,max:S.max,dms:S.dms.map(function(d){return {n:d.n,e:d.e,seq:d.seq,done:d.done};})}:null};}
+
+/* ── clé : un joueur au hasard doit valider le code, puis renvoie un code retour à Moon ── */
+var MK=null,MKW=['tamuro','kiki','keiyo','fury'],MKN={tamuro:'Tamuro',kiki:'Kiki',keiyo:'Keiyo',fury:'Fury'};
+function mkPick(){
+  if(!MK)return;var o=MKW.filter(function(x){return x!==MK.who;});MK.who=o[r(o.length)];MK.ok=false;
+  if(window.NPTools)NPTools.send(MK.who,'moonKey',{target:MK.t.id,name:MK.t.n,nonce:Date.now()});
+  if(window.NPTools)NPTools.event('désigne '+MKN[MK.who]+' pour valider le code '+MK.code);
+  mkPaint();
+}
+function mkPaint(){
+  var b=document.getElementById('mk');if(!b||!MK)return;
+  if(MK.ok){b.innerHTML='<b style="color:#00ff88">✔ CLÉ VALIDÉE — '+MK.t.ico+' '+esc2(MK.t.n)+'</b><br><button class="btn" style="border-color:#00ff88;color:#00ff88" onclick="mkAct(1)">ACTIVER</button> <button class="btn" style="border-color:#ff4060;color:#ff4060" onclick="mkAct(0)">DÉSACTIVER</button>'+(MK.done?'<br><span style="color:#00ff88">'+MK.done+'</span>':'');return;}
+  b.innerHTML='<b style="color:#00ccff">'+MKN[MK.who].toUpperCase()+'</b> a été tiré au sort : une alerte plein écran vient d\'apparaître chez lui/elle. Donne-lui le code ci-dessus ; il/elle te renverra un <b>code retour à 4 caractères</b>.<br><input id="mkin" maxlength="4" placeholder="CODE RETOUR" style="text-transform:uppercase;width:130px;background:#0c0c18;color:#fff;border:1px solid #00ccff;border-radius:4px;padding:6px;letter-spacing:3px"> <button class="btn" onclick="mkAck()">VALIDER</button> <button class="btn" style="border-color:#666;color:#999" onclick="mkPick()">↻ AUTRE JOUEUR</button><div id="mkerr" style="color:#ff4060"></div>';
+}
+function esc2(x){return String(x).replace(/</g,'&lt;');}
+function mkAck(){
+  var v=document.getElementById('mkin').value.trim().toUpperCase(),sc=(window.NPTools&&NPTools.code&&NPTools.code())||'';
+  var exp=('0000'+(hash(sc+'|ack|'+MK.code)%1679616).toString(36)).slice(-4).toUpperCase();
+  if(v!==exp){document.getElementById('mkerr').textContent='✖ Code retour incorrect.';return;}
+  MK.ok=true;if(window.NPTools)NPTools.event('clé validée par '+MKN[MK.who]+' — accès à '+MK.t.n+' débloqué');mkPaint();
+}
+function mkAct(on){MK.done=(on?'ACTIVÉ':'DÉSACTIVÉ')+' : '+MK.t.n;if(window.NPTools)NPTools.event((on?'ACTIVE':'DÉSACTIVE')+' '+MK.t.n+' (clé validée)');mkPaint();}
 if(window.NPTools)NPTools.player({role:ROLE,getState:moonState});
 home();
 </script>
