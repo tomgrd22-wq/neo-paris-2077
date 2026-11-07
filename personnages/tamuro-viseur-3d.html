@@ -206,32 +206,52 @@ function zoneOf(x,h){
   if(Math.abs(x)>lim)return x<0?'armL':'armR';
   return 'torso';
 }
+function partZone(cx,cy,H){
+  var ax=Math.abs(cx)/H;
+  if(ax>.09)return cx<0?'armR':'armL';           /* bras, avant-bras, mains (côté +x = gauche) */
+  if(ax<.03)return cy/H>.78?'head':'torso';
+  return cx<0?'legR':'legL';                      /* cuisses, jambes, pieds */
+}
 function loadModel(){
   if(!THREE.GLTFLoader)return;
   new THREE.GLTFLoader().load('../assets/tamuro-silhouette.glb',function(g){
-    var src=null;g.scene.traverse(function(o){if(o.isMesh&&!src)src=o;});if(!src)return;
-    var geo=src.geometry,pos=geo.attributes.position,idx=geo.index.array;
-    geo.computeBoundingBox();var bb=geo.boundingBox,H=bb.max.y-bb.min.y,sc=2.7/H,cx=(bb.max.x+bb.min.x)/2,cz=(bb.max.z+bb.min.z)/2;
-    var lists={head:[],torso:[],armL:[],armR:[],legL:[],legR:[]};
-    for(var i=0;i<idx.length;i+=3){
-      var a=idx[i],b=idx[i+1],c=idx[i+2];
-      var x=(pos.getX(a)+pos.getX(b)+pos.getX(c))/3-cx,y=(pos.getY(a)+pos.getY(b)+pos.getY(c))/3-bb.min.y;
-      /* le personnage regarde vers nous : sa gauche est du côté +x */
-      lists[zoneOf(-x,y/H)].push(a,b,c);
-    }
-    var mdl=new THREE.Group();mdl.position.set(0,0,0);
-    fig.visible=false;hitMeshes.length=0;for(var k in mats)delete mats[k];
-    Object.keys(lists).forEach(function(k){
-      if(!lists[k].length)return;
-      var gg=new THREE.BufferGeometry();
-      for(var n in geo.attributes)gg.setAttribute(n,geo.attributes[n]);
-      gg.setIndex(lists[k]);
-      var mt=holoMat(src.material.map,bb.min.y,H);
-      var m=new THREE.Mesh(gg,mt);m.userData.zone=k;
-      m.scale.setScalar(sc);m.position.set(-cx*sc,-bb.min.y*sc,-cz*sc);
-      mdl.add(m);hitMeshes.push(m);mats[k]=mt;
+    g.scene.updateMatrixWorld(true);
+    var src=[];g.scene.traverse(function(o){if(o.isMesh)src.push(o);});if(!src.length)return;
+    /* géométries dans le repère commun (transformations des nœuds intégrées) */
+    var bb=new THREE.Box3();
+    src.forEach(function(o){o.geometry=o.geometry.clone();o.geometry.applyMatrix4(o.matrixWorld);o.geometry.computeBoundingBox();bb.union(o.geometry.boundingBox);});
+    var H=bb.max.y-bb.min.y,sc=2.7/H,cx=(bb.max.x+bb.min.x)/2,cz=(bb.max.z+bb.min.z)/2;
+    var tex=src[0].material.map;
+    var multi=src.length>1,lists={};
+    var bigGeo=null,parts=[];
+    src.forEach(function(o){
+      var geo=o.geometry,pos=geo.attributes.position;
+      if(multi){
+        var c=new THREE.Vector3();geo.boundingBox.getCenter(c);parts.push({geo:geo,k:partZone(c.x-cx,c.y-bb.min.y,H)});
+      }else{
+        var idx=geo.index.array;
+        var L={head:[],torso:[],armL:[],armR:[],legL:[],legR:[]};
+        for(var i=0;i<idx.length;i+=3){
+          var a=idx[i],b=idx[i+1],c2=idx[i+2];
+          var x=(pos.getX(a)+pos.getX(b)+pos.getX(c2))/3-cx,y=(pos.getY(a)+pos.getY(b)+pos.getY(c2))/3-bb.min.y;
+          L[zoneOf(-x,y/H)].push(a,b,c2);
+        }
+        Object.keys(L).forEach(function(k){if(!L[k].length)return;var gg=new THREE.BufferGeometry();for(var n in geo.attributes)gg.setAttribute(n,geo.attributes[n]);gg.setIndex(L[k]);parts.push({geo:gg,k:k});});
+      }
     });
-    holoScene(mdl,geo,sc,cx,cz,bb.min.y);
+    var mdl=new THREE.Group();
+    fig.visible=false;hitMeshes.length=0;for(var k in mats)delete mats[k];
+    parts.forEach(function(pt){
+      var mt=mats[pt.k]||(mats[pt.k]=holoMat(tex,bb.min.y,H));
+      var m=new THREE.Mesh(pt.geo,mt);m.userData.zone=pt.k;
+      m.scale.setScalar(sc);m.position.set(-cx*sc,-bb.min.y*sc,-cz*sc);
+      mdl.add(m);hitMeshes.push(m);
+    });
+    var pgeo=new THREE.BufferGeometry();
+    var tot=0;parts.forEach(function(pt){tot+=pt.geo.attributes.position.count;});
+    var all=new Float32Array(tot*3),o2=0;parts.forEach(function(pt){var a=pt.geo.attributes.position;for(var i=0;i<a.count;i++){all[o2++]=a.getX(i);all[o2++]=a.getY(i);all[o2++]=a.getZ(i);}});
+    pgeo.setAttribute('position',new THREE.BufferAttribute(all,3));pgeo.boundingBox=bb;
+    holoScene(mdl,pgeo,sc,cx,cz,bb.min.y);
     body.add(mdl);modelOn=true;grid.visible=false;ring.visible=false;view.style.background='radial-gradient(ellipse at 50% 60%,#0a2a55 0%,#04142b 55%,#020812 100%)';scene.fog.color.setHex(0x03101f);paintEnemy();playScan();
   },undefined,function(){});
 }
