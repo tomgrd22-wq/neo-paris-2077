@@ -200,6 +200,16 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 
 /* Selected target detail */
 .sil-head{display:flex;justify-content:space-between;font-size:10px;letter-spacing:2px;color:#2a9bff;padding:6px 10px;border-bottom:1px solid rgba(42,155,255,.25);}.sil-head b{color:#fff;}
+#tam-mj{display:none;border:1px solid rgba(255,32,64,.4);border-radius:6px;padding:10px;margin-bottom:14px;background:rgba(255,32,64,.05);font-size:10px;}
+.is-mj #tam-mj.on{display:block;}
+.tmj-t{font-family:'Orbitron',monospace;color:#ff2040;letter-spacing:2px;margin-bottom:6px;font-size:11px;}.tmj-t small{color:rgba(255,255,255,.4);letter-spacing:1px;}
+.tmj-aim{color:#ffb0b8;margin-bottom:6px;letter-spacing:1px;}
+#tam-mj select,#tam-mj input{background:#0c0a10;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;font-family:inherit;font-size:11px;padding:5px;margin:2px 0;}
+#tam-mj select{width:100%;}.tmj-row{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin:4px 0;}.tmj-row label{display:flex;flex-direction:column;gap:2px;color:rgba(255,255,255,.5);letter-spacing:1px;}
+#tam-mj button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:4px;padding:6px 9px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;}
+.tmj-ok{border-color:#00ff88 !important;color:#00ff88 !important;flex:1;}.tmj-ko{border-color:#ff4060 !important;color:#ff4060 !important;flex:1;}
+.tmj-calc{background:rgba(0,0,0,.35);border-radius:4px;padding:7px 8px;line-height:1.6;color:rgba(255,255,255,.7);margin:4px 0;}
+.tmj-sep{height:1px;background:rgba(255,255,255,.1);margin:8px 0;}
 #sil-box{display:none;position:fixed;left:14px;bottom:14px;z-index:60;width:min(430px,94vw);border:1px solid rgba(42,155,255,.55);border-radius:8px;overflow:hidden;background:#020812;box-shadow:0 0 28px rgba(42,155,255,.35);}
 #sil-frame{display:block;width:100%;height:min(70vh,580px);border:0;}
 #sil-x{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:4px;cursor:pointer;font-size:11px;padding:0 7px;margin-left:8px;}
@@ -468,6 +478,17 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
           </div>
           <div class="hs-body">
             <div class="sel-detail" id="sel-detail"><div class="sd-empty">Sélectionne une cible pour l'analyser</div></div>
+            <div id="tam-mj" class="tam-mj">
+              <div class="tmj-t">🎯 RÉSOLUTION DU TIR <small>(MJ)</small></div>
+              <div id="tmj-aim" class="tmj-aim">Zone visée : —</div>
+              <select id="tmj-z" onchange="tmjCalc()"></select>
+              <div class="tmj-row"><label>Dé du joueur<input id="tmj-d" type="number" min="0" placeholder="ex : 14" oninput="tmjCalc()"></label><label>Bonus<input id="tmj-b" type="number" value="0" oninput="tmjCalc()"></label></div>
+              <div id="tmj-c" class="tmj-calc">Entre le résultat du dé.</div>
+              <div class="tmj-row"><button class="tmj-ok" onclick="tmjHit()">✔ RÉUSSI</button><button class="tmj-ko" onclick="tmjMiss()">✖ ÉCHEC</button></div>
+              <div class="tmj-sep"></div>
+              <div class="tmj-row"><label>PV<input id="tmj-hp" type="number" style="width:64px"></label><label>/ max<input id="tmj-mx" type="number" style="width:64px"></label><button onclick="tmjSetHp()">OK</button></div>
+              <div class="tmj-row"><button onclick="tmjSex('h')" id="tmj-sh">♂ HOMME</button><button onclick="tmjSex('f')" id="tmj-sf">♀ FEMME</button><button onclick="tmjReset()">↺ ZONES</button></div>
+            </div>
             <div id="target-list"></div>
           </div>
           <div class="mj-hud-bar" id="mj-hud-bar">
@@ -666,7 +687,8 @@ function handleMsg(topic,d){
   if(topic===topics.hud){
     if(d.type==='hudState'){targets=d.targets||[];combatLog=d.log||[];renderTargets();renderCombatLog();updateHudInfo();}
     else if(d.type==='alert'){showAlert(d.text);}
-    else if(d.type==='aim'){if(role==='mj'){showAlert('🎯 Tamuro vise : '+d.zname+(d.tname?' — '+d.tname:''));silPost({type:'aim',zone:d.zone});try{var ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.12);}catch(e){}}}
+    else if(d.type==='fx'){if(role!=='mj'){var go=function(){d.np='sil';silPost(d);};if(lockedTarget!==d.id){lockTarget(d.id);setTimeout(go,700);}else go();}}
+    else if(d.type==='aim'){if(role==='mj'){showAlert('🎯 Tamuro vise : '+d.zname+(d.tname?' — '+d.tname:''));silPost({type:'aim',zone:d.zone});document.getElementById('tmj-z').value=d.zone;document.getElementById('tmj-aim').textContent='Zone visée : '+d.zname;tmjCalc();try{var ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.12);}catch(e){}}}
     else if(d.type==='netStatus'){if(role!=='mj')applyNetStatus(d.status,true);}
     else if(d.type==='netErr'){if(role!=='mj')spawnFakeErr(d.txt);}
     else if(d.type==='tabVis'){hiddenTabs=new Set(d.hidden||[]);applyTabVisibility();}
@@ -910,6 +932,7 @@ var silSend=null;
 window.addEventListener('message',function(e){
   var d=e.data;if(!d||d.np!=='sil')return;
   if(d.type==='ready'&&silSend)silPost(silSend);
+  if(d.type==='zones'){TZ=d.zones||[];tmjUpdate();}
   if(d.type==='aim'&&role!=='mj'){var tt=targets.find(function(x){return x.id===d.id;});pub(topics.hud,{type:'aim',id:d.id,zone:d.zone,zname:d.zname,tname:tt?tt.name:''});}
   if(d.type==='patch'){
     var t=targets.find(function(x){return x.id===d.id;});if(!t)return;
@@ -921,7 +944,7 @@ window.addEventListener('message',function(e){
 function renderSelDetail(){
   var d=document.getElementById('sel-detail');
   var t=targets.find(function(x){return x.id===lockedTarget;});
-  syncSil(t);
+  syncSil(t);tmjUpdate();
   if(!t){d.innerHTML='<div class="sd-empty">Sélectionne une cible pour l\'analyser</div>';return;}
   var scanId='scanres_'+t.id;
   var dmgHtml=(role==='mj'&&!t.eliminated)?
@@ -1266,6 +1289,48 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
   }
   requestAnimationFrame(tick);zt();
 })();
+
+/* ═════ RÉSOLUTION DU TIR (MJ) : tout se fait ici, plus besoin du suivi des outils ═════ */
+var TZ=[];
+function lockedT(){return targets.find(function(x){return x.id===lockedTarget;});}
+function tmjZ(k){return TZ.filter(function(z){return z.k===k;})[0];}
+function tmjZmax(t,z){return Math.max(1,Math.round(t.maxHp*z.hp));}
+function tmjUpdate(){
+  var box=document.getElementById('tam-mj'),t=lockedT();
+  if(role!=='mj'||!t){box.classList.remove('on');return;}box.classList.add('on');
+  var sel=document.getElementById('tmj-z');
+  if(TZ.length&&sel.options.length!==TZ.length)sel.innerHTML=TZ.map(function(z){return '<option value="'+z.k+'">'+esc(z.n)+' (×'+z.x+')</option>';}).join('');
+  var a=document.activeElement.id;if(a!=='tmj-hp')document.getElementById('tmj-hp').value=t.hp;if(a!=='tmj-mx')document.getElementById('tmj-mx').value=t.maxHp;
+  document.getElementById('tmj-sh').style.borderColor=(t.sex!=='f')?'#00ccff':'rgba(255,255,255,.3)';document.getElementById('tmj-sf').style.borderColor=(t.sex==='f')?'#ff66cc':'rgba(255,255,255,.3)';
+  tmjCalc();
+}
+function tmjCalc(){
+  var o=document.getElementById('tmj-c'),t=lockedT();if(!t||!TZ.length)return;
+  var z=tmjZ(document.getElementById('tmj-z').value);if(!z)return;
+  var d=document.getElementById('tmj-d').value;if(d===''){o.innerHTML='Entre le résultat du dé.';return;}
+  var tot=(+d)+(+document.getElementById('tmj-b').value||0),dmg=Math.max(0,Math.round(tot*z.x)),after=Math.max(0,t.hp-dmg),zd=(t.zd&&t.zd[z.k])||0,brk=zd+dmg>=tmjZmax(t,z);
+  o.innerHTML='<b style="color:#fff;font-size:13px">'+dmg+' dégâts</b> <span style="opacity:.6">(('+tot+') × '+z.x+')</span><br>PV : '+t.hp+' → <b>'+after+'</b> / '+t.maxHp+'<br>'
+   +(t.hp>0&&dmg>=t.hp?'<b style="color:#ff2040;font-size:13px">☠ LE TIR TUE LA CIBLE</b>':(t.hp<=0?'<b style="color:#ff6080">Déjà neutralisée.</b>':'<span style="color:#00ff88">La cible survit</span> ('+after+' PV)'))
+   +'<br>'+(brk?'<b style="color:#ffaa00">⚠ Zone brisée : '+esc(z.eff||'')+'</b>':'<span style="opacity:.6">Zone : '+(zd+dmg)+' / '+tmjZmax(t,z)+'</span>');
+}
+function tmjFx(m){m.type='fx';m.id=lockedTarget;pub(topics.hud,m);m.np='sil';silPost(m);}
+function tmjHit(){
+  var t=lockedT(),z=tmjZ(document.getElementById('tmj-z').value),d=document.getElementById('tmj-d').value;if(!t||!z||d==='')return;
+  var dmg=Math.max(0,Math.round(((+d)+(+document.getElementById('tmj-b').value||0))*z.x));
+  t.zd=t.zd||{};var brk=(t.zd[z.k]||0)+dmg>=tmjZmax(t,z),dead=t.hp-dmg<=0;
+  tmjFx({kind:'hit',z:z.k,dmg:dmg,brk:brk,dead:dead});
+  setTimeout(function(){
+    t.hp=Math.max(0,t.hp-dmg);t.zd[z.k]=(t.zd[z.k]||0)+dmg;
+    addLog('warn','<b>'+esc(t.name)+'</b> touché ('+esc(z.n)+') : '+dmg+' dégâts — '+t.hp+'/'+t.maxHp+' PV');
+    if(t.hp<=0&&!t.eliminated){t.eliminated=true;addLog('kill','<b>'+esc(t.name)+'</b> mis hors combat.');}
+    saveHud();renderTargets();updateHudInfo();renderSelDetail();
+  },320);
+  document.getElementById('tmj-d').value='';
+}
+function tmjMiss(){var t=lockedT();if(!t)return;tmjFx({kind:'miss',z:document.getElementById('tmj-z').value});document.getElementById('tmj-d').value='';}
+function tmjSetHp(){var t=lockedT();if(!t)return;var mx=+document.getElementById('tmj-mx').value,hp=+document.getElementById('tmj-hp').value;if(mx>0)t.maxHp=Math.round(mx);t.hp=Math.max(0,Math.min(t.maxHp,Math.round(hp)));t.eliminated=t.hp<=0;saveHud();renderTargets();updateHudInfo();renderSelDetail();}
+function tmjSex(v){var t=lockedT();if(!t)return;t.sex=v;saveHud();renderSelDetail();}
+function tmjReset(){var t=lockedT();if(!t)return;t.zd={};saveHud();renderSelDetail();}
 </script>
 </body>
 </html>

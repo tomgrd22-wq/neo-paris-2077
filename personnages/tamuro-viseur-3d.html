@@ -22,7 +22,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
 #zl b{color:#fff;letter-spacing:2px;}
 html.emb #side{padding:8px 10px;border:0;border-top:1px solid rgba(255,32,64,.25);}
 html.emb #app{grid-template-columns:1fr !important;grid-template-rows:1fr auto !important;}
-html.emb .back,html.emb h1,html.emb .sub,html.emb #tip,html.emb #hud,html.emb #log,html.emb #np-refresh{display:none !important;}
+html.emb #log{max-height:96px;margin-top:6px;padding-top:4px;}
+html.emb .back,html.emb h1,html.emb .sub,html.emb #tip,html.emb #hud,html.emb #np-refresh{display:none !important;}
 html.emb .aim{margin-top:6px;padding:6px 8px;font-size:10px;}
 #view .ftx{position:absolute;transform:translate(-50%,-50%);pointer-events:none;font-family:'Orbitron',monospace;font-weight:900;font-size:30px;color:#ff4050;text-shadow:0 0 10px #ff2040,0 0 22px rgba(255,32,64,.6);animation:ftx 1.4s ease-out forwards;z-index:8;white-space:nowrap;}
 #view .ftx.big{font-size:44px;color:#ffd060;text-shadow:0 0 12px #ff8800,0 0 26px #ff2040;}
@@ -428,6 +429,11 @@ function applyHit(zone,dmg){
   rec('touche '+z.n+' : '+dmg+' dégâts'+(brk?' — zone brisée':'')+(st.hp<=0?' — CIBLE NEUTRALISÉE':''));
   saveSt();paintEnemy();ui();
 }
+function showHitLog(zone,dmg,brk,dead){
+  var z=ZONES[zone];if(!z)return;
+  log('<b class="h">TOUCHÉ</b> '+z.n+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(dead?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':'')+joke(zone,true));
+}
+function zonesMsg(){if(!EMB)return;var zs=Object.keys(ZONES).map(function(k){return {k:k,n:ZONES[k].n,x:ZONES[k].x,hp:ZONES[k].hp,eff:EFF[k]};});try{parent.postMessage({np:'sil',type:'zones',zones:zs},'*');}catch(e){}}
 function applyMiss(zone){
   var z=ZONES[zone];if(!z)return;
   log('<b class="m">RATÉ</b> '+z.n+'.'+joke(zone,false));rec('rate '+z.n);
@@ -446,13 +452,18 @@ if(window.NPTools&&QS.get('role')!=='mj')NPTools.player({role:(new URLSearchPara
 window.addEventListener('message',function(e){
   var d=e.data;if(!d||d.np!=='sil')return;
   if(d.type==='show'){resize();return;}
+  if(d.type==='fx'){
+    if(d.kind==='hit')playHitFx(d.z,d.dmg,d.brk,function(){showHitLog(d.z,d.dmg,d.brk,d.dead);});
+    else playMissFx(d.z,function(){applyMiss(d.z);});
+    return;
+  }
   if(d.type==='aim'){st.aim=d.zone;document.getElementById('aim').innerHTML='ZONE VISÉE : <b>'+(ZONES[d.zone]?ZONES[d.zone].n.toUpperCase():'')+'</b>';paintEnemy();return;}
   if(d.type!=='target')return;
   var changed=st.tid!==d.id;
   st.tid=d.id;st.tname=d.name||'';st.hp=d.hp;st.max=d.max;st.sex=d.sex==='f'?'f':'h';
   Object.keys(ZONES).forEach(function(k){st.zd[k]=(d.zd&&d.zd[k])||0;});
   if(changed){st.aim=null;if(window.playScan)playScan();}
-  paintEnemy();ui();
+  paintEnemy();ui();zonesMsg();
   if(window.NPTools&&QS.get('role')!=='mj')NPTools.pub();
 });
 if(EMB)try{parent.postMessage({np:'sil',type:'ready'},'*');}catch(e){}
