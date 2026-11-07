@@ -49,6 +49,7 @@ h1{font-family:'Orbitron',monospace;font-size:22px;letter-spacing:5px;color:#ffa
 .log{font-size:10px;line-height:1.7;color:rgba(255,255,255,.55);max-height:150px;overflow:auto;}
 .log div{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
 .hold span{display:inline-block;margin:2px 4px 2px 0;padding:3px 7px;border:1px solid rgba(255,255,255,.2);border-radius:4px;font-size:10px;}
+#chase{position:fixed;inset:0;z-index:9500;background:rgba(3,2,0,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#ffe3b0;font-family:'Share Tech Mono',monospace}#chase canvas{border:2px solid #ffaa00;border-radius:8px;box-shadow:0 0 30px rgba(255,170,0,.35);touch-action:none;max-width:94vw;max-height:70vh}#chase .hud{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:#ffaa00;display:flex;gap:18px}#chase .ctl{display:flex;gap:14px}#chase .ctl button{width:110px;height:56px;font-size:24px;border-radius:10px;border:1px solid #ffaa00;background:rgba(255,170,0,.1);color:#ffaa00}#chase .res{text-align:center;max-width:380px;line-height:1.7}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 <script src="../assets/toolsync.js"></script>
@@ -140,10 +141,14 @@ var EVENTS=[
   {l:'Rouler en zigzag dans les ruelles',s:'Jet DD 11 — consomme 6 carburant',f:function(){var x=roll(11);S.fuel=Math.max(0,S.fuel-6);return x.ok?{m:'Tu le perds dans le dédale. -6 carburant.'}:{m:'Il te colle encore : amende de 60 ¢.',cash:-60};}}]},
  {t:'AUBAINE DANS LES DÉCOMBRES',p:'Une camionnette abandonnée gît sur le bas-côté, portes ouvertes.',ch:[
   {l:'La fouiller',s:'Jet DD 10',f:function(){var x=roll(10);if(!x.ok)return {m:'Elle est vide, déjà pillée.'};if(sum()>=CAP)return {m:'Du butin… mais ta cargaison est pleine.'};return {m:'Tu trouves des pièces détachées en bon état !',gain:'pieces'};}},
-  {l:'Passer ton chemin',s:'Rien ne se passe',f:function(){return {m:'Prudence avant tout.'};}}]}
+  {l:'Passer ton chemin',s:'Rien ne se passe',f:function(){return {m:'Prudence avant tout.'};}}]},
+ {t:'POURSUITE ARASAKA',p:'Un convoi de berlines noires te colle au pare-chocs, gyrophares éteints. Ils veulent ton van.',ch:[
+  {l:'🏎 Foncer et les semer (mini-jeu de conduite)',s:'Esquive les obstacles pendant 30 s — chaque choc abîme la coque',f:function(){return {chase:1};}},
+  {l:'Abandonner une partie de la cargaison pour alléger le van',s:'Perd une marchandise, mais ils lâchent l\'affaire',f:function(){return {m:'Tu largues des caisses, les berlines freinent pour les ramasser.',steal:1};}}]}
 ];
 function resolve(i){
   var res=S.ev.ch[i].f(),m=res.m;
+  if(res.chase){startChase();return;}
   if(res.cash)S.cash=Math.max(0,S.cash+res.cash);
   if(res.hull)S.hull=Math.max(0,Math.min(100,S.hull+res.hull));
   if(res.steal){var ks=Object.keys(S.hold);if(ks.length){var k=ks[r(ks.length)-1];S.hold[k].q--;S.hold[k].paid-=S.hold[k].paid/(S.hold[k].q+1);if(S.hold[k].q<=0)delete S.hold[k];m+=' ('+gd(k).n+' perdu)';}}
@@ -151,6 +156,65 @@ function resolve(i){
   lg(S.ev.t+' — '+m);if(window.NPTools)NPTools.event(S.ev.t+' : '+S.ev.ch[i].l+' → '+m);S.ev=null;
   if(S.hull<=0){S.ev={t:'VAN HORS D\'USAGE',p:'Ton van est détruit. Tu perds la moitié de ton argent et la cargaison, mais tu repars avec une épave réparée.',ch:[{l:'Repartir',s:'',f:function(){S.hull=40;S.hold={};S.cash=Math.floor(S.cash/2);return {m:'Épave retapée, cargaison perdue.'};}}]};}
   save();render();
+}
+
+/* ── POURSUITE : mini-jeu de conduite ── */
+var CH=null;
+function startChase(){
+  var o=document.createElement('div');o.id='chase';
+  o.innerHTML='<div class="hud"><span id="ch-t">30 s</span><span id="ch-h">CHOCS : 0</span></div><canvas id="ch-c" width="300" height="440"></canvas><div class="ctl"><button id="ch-l">◀</button><button id="ch-r">▶</button></div><div style="font-size:10px;opacity:.55;letter-spacing:2px">← → / glisser · évite les obstacles · ramasse ⛽</div>';
+  document.body.appendChild(o);
+  var cv=document.getElementById('ch-c'),cx=cv.getContext('2d'),W=300,H=440,LW=W/3;
+  var g={lane:1,x:LW*1.5,t:30,hits:0,fuel:0,obs:[],spd:230-Math.min(60,S.bonus*8),acc:0,sp:0,over:false,inv:0,last:performance.now(),road:0,shake:0};
+  CH=g;
+  function mv(d){if(!g.over)g.lane=Math.max(0,Math.min(2,g.lane+d));}
+  document.getElementById('ch-l').onclick=function(){mv(-1);};document.getElementById('ch-r').onclick=function(){mv(1);};
+  g.key=function(e){if(e.key==='ArrowLeft'||e.key==='q'||e.key==='a')mv(-1);if(e.key==='ArrowRight'||e.key==='d')mv(1);};document.addEventListener('keydown',g.key);
+  var sx=null;cv.addEventListener('pointerdown',function(e){sx=e.clientX;});cv.addEventListener('pointerup',function(e){if(sx===null)return;var dx=e.clientX-sx;if(Math.abs(dx)>20)mv(dx>0?1:-1);else{var rc=cv.getBoundingClientRect();mv(e.clientX<rc.left+rc.width/2?-1:1);}sx=null;});
+  function spawn(){var l=r(3),k=Math.random()<.18?'fuel':Math.random()<.5?'car':'bar';g.obs.push({l:l,y:-60,k:k});if(Math.random()<.35){var l2=(l+1+r(2))%3;if(l2!==l)g.obs.push({l:l2,y:-60-r(40),k:'car'});}}
+  function end(){
+    g.over=true;document.removeEventListener('keydown',g.key);
+    var caught=g.hits>=4,res;
+    if(g.hits===0){res={m:'Parcours sans une égratignure : les berlines décrochent. Tu récupères le butin de leur convoi abandonné (+200 ¢).',cash:200};}
+    else if(!caught){res={m:'Tu t\'en sors de justesse avec '+g.hits+' choc'+(g.hits>1?'s':'')+' : -'+g.hits*10+'% de coque.',hull:-g.hits*10};}
+    else{res={m:'Ils te coincent ! Tu paies 150 ¢ et le van encaisse : -40% de coque.',cash:-150,hull:-40};}
+    if(g.fuel){res.fuel=g.fuel*5;res.m+=' (+'+g.fuel*5+' carburant ramassé)';}
+    o.innerHTML='<div class="res"><h2 style="font-family:Orbitron;letter-spacing:4px;color:'+(caught?'#ff4060':g.hits?'#ffaa00':'#00ff88')+'">'+(caught?'RATTRAPÉ':g.hits?'ÉCHAPPÉ':'SEMÉS !')+'</h2><p>'+res.m+'</p><button class="btn big" id="ch-ok">CONTINUER</button></div>';
+    document.getElementById('ch-ok').onclick=function(){
+      if(res.cash)S.cash=Math.max(0,S.cash+res.cash);if(res.hull)S.hull=Math.max(0,Math.min(100,S.hull+res.hull));if(res.fuel)S.fuel=Math.min(100,S.fuel+res.fuel);
+      lg('POURSUITE ARASAKA — '+res.m);if(window.NPTools)NPTools.event('POURSUITE ARASAKA : '+(caught?'rattrapé':g.hits?'échappé ('+g.hits+' chocs)':'semés sans dégât')+' → '+res.m);
+      S.ev=null;if(S.hull<=0){S.hull=10;lg('Le van est une épave, mais roule encore.');}
+      o.remove();CH=null;save();render();
+    };
+  }
+  function frame(now){
+    if(g.over)return;var dt=Math.min(.05,(now-g.last)/1000);g.last=now;
+    g.t-=dt;g.sp+=dt;g.road=(g.road+g.spd*dt)%40;g.inv=Math.max(0,g.inv-dt);g.shake=Math.max(0,g.shake-dt);
+    var sp=g.spd*(1+(30-g.t)/45);g.acc+=dt;if(g.acc>.55-(30-g.t)*.006){g.acc=0;spawn();}
+    g.x+=(g.lane*LW+LW/2-g.x)*Math.min(1,dt*14);
+    g.obs.forEach(function(b){b.y+=sp*dt;});
+    g.obs=g.obs.filter(function(b){
+      var bx=b.l*LW+LW/2;
+      if(b.y>H-95&&b.y<H-35&&Math.abs(bx-g.x)<30&&!b.done){b.done=true;
+        if(b.k==='fuel'){g.fuel++;return false;}
+        if(g.inv<=0){g.hits++;g.inv=1;g.shake=.3;if(g.hits>=4){end();}}
+      }
+      return b.y<H+60;
+    });
+    if(g.over)return;
+    cx.save();if(g.shake>0)cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
+    cx.fillStyle='#0d0903';cx.fillRect(0,0,W,H);
+    cx.strokeStyle='rgba(255,170,0,.4)';cx.lineWidth=3;cx.setLineDash([22,18]);cx.lineDashOffset=-g.road;
+    [LW,LW*2].forEach(function(x){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();});cx.setLineDash([]);
+    g.obs.forEach(function(b){var bx=b.l*LW+LW/2;cx.font='34px serif';cx.textAlign='center';cx.fillText(b.k==='fuel'?'⛽':b.k==='car'?'🚗':'🚧',bx,b.y+12);});
+    if(g.inv<=0||Math.floor(g.inv*10)%2){cx.font='38px serif';cx.fillText('🚐',g.x,H-55);}
+    cx.font='30px serif';cx.globalAlpha=.7;cx.fillText('🚓',g.x+(g.hits*8-10),H-8);cx.globalAlpha=1;
+    cx.restore();
+    document.getElementById('ch-t').textContent=Math.max(0,Math.ceil(g.t))+' s';document.getElementById('ch-h').textContent='CHOCS : '+g.hits+' / 4';
+    if(g.t<=0){end();return;}
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 function reset(){if(confirm('Recommencer le convoi à zéro ?')){S=fresh();fluctuate();save();render();}}
 function render(){
