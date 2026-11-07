@@ -263,8 +263,15 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 .inv-cm-ok{flex:2;padding:10px;border:1px solid #00ff88;border-radius:4px;background:rgba(0,255,136,.1);color:#00ff88;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;}
 
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}::-webkit-scrollbar-thumb{background:rgba(0,255,136,.2);border-radius:2px;}
+#lab-fab{position:fixed;right:14px;bottom:14px;z-index:9000;background:#06140c;border:1px solid #00ff88;color:#00ff88;border-radius:22px;padding:9px 14px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;}
+#lab-pan{position:fixed;right:14px;bottom:60px;z-index:9000;width:min(400px,94vw);max-height:76vh;overflow:auto;background:#0a0d0c;border:1px solid rgba(0,255,136,.5);border-radius:10px;padding:12px;display:none;font-size:10px;color:#ddd;}
+#lab-pan.on{display:block;}#lab-pan h2{margin:0 0 8px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:#00ff88;}
+#lab-pan input,#lab-pan select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:4px;font-family:inherit;font-size:11px;padding:6px;margin:2px 3px 2px 0;}
+#lab-pan input:not([type]){width:100%;box-sizing:border-box;}#lab-pan button{background:transparent;border:1px solid var(--c,#00ff88);color:var(--c,#00ff88);border-radius:4px;padding:5px 8px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;margin:2px 3px 2px 0;}
+#lab-pan .sec{font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.35);margin:10px 0 4px;}#lab-pan .syr{border-left:2px solid var(--c);padding:3px 8px;margin:4px 0;line-height:1.5;}#lab-pan .syr small{display:block;color:rgba(255,255,255,.45)}
+#lab-pan h4{margin:10px 0 4px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.55);}
 </style>
-<link rel="stylesheet" href="../assets/fx.css"><script defer src="../assets/fx.js"></script>
+<script src="../assets/toolsync.js"></script><link rel="stylesheet" href="../assets/fx.css"><script defer src="../assets/fx.js"></script>
 </head>
 <body>
 
@@ -570,6 +577,7 @@ function enableMJ(){
   document.getElementById('net-ctrl').style.display='block';
   document.getElementById('tabs-ctrl').style.display='block';
   buildTabsMenu();
+  labInit();
 }
 function switchTab(t){
   if(role!=='mj'&&hiddenTabs.has(t))return;
@@ -1116,6 +1124,32 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
   if(codeParam&&roleParam){setTimeout(function(){go(roleParam);},50);}
 })();
 
+
+/* ═════ LABO DE FURY (MJ) : géré ici, plus besoin du suivi des outils ═════ */
+var LAB=null,LINGS=[['adre','Adrénaline synthé'],['nano','Nanites médicales'],['sang','Plasma de synthèse'],['neuro','Neurotoxine'],['venin','Venin de vipère'],['cryo','Cryo-gel'],['morph','Opioïde de rue'],['stab','Stabilisant'],['eau','Eau stérile'],['psy','Psychotrope'],['acid','Acide corrosif'],['anti','Antibiotique']];
+function lv(i){return document.getElementById(i).value.trim();}
+function labSend(t,d){if(window.NPTools)NPTools.send('fury',t,d||{});}
+function labInit(){
+  if(document.getElementById('lab-fab'))return;
+  try{localStorage.setItem('np_ident',JSON.stringify({code:String(sCode).trim().toLowerCase().replace(/\s+/g,'_'),role:'mj'}));}catch(e){}
+  var b=document.createElement('button');b.id='lab-fab';b.textContent='⚗ LABO';b.onclick=function(){document.getElementById('lab-pan').classList.toggle('on');};document.body.appendChild(b);
+  var o=LINGS.map(function(g){return '<option value="'+g[0]+'">'+g[1]+'</option>';}).join('');
+  var K='<option value="soin">Soin</option><option value="stim">Stimulant</option><option value="tox">Toxique</option><option value="sed">Sédatif</option>';
+  var p=document.createElement('div');p.id='lab-pan';p.innerHTML='<h2>⚗ LABO DE FURY (MJ)</h2><div id="lab-dyn" style="color:rgba(255,255,255,.4)">En attente du signal du labo de Fury…</div>'
+   +'<h4>Seringue sur mesure</h4><input id="ln" placeholder="Nom"><input id="le" placeholder="Effet"><input id="ls" placeholder="Effet secondaire (optionnel)"><select id="lk">'+K+'</select><select id="lp"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select><label><input type="checkbox" id="lt"> testée</label><br><button onclick="labGive()">DONNER À FURY</button>'
+   +'<h4>Nouvelle recette</h4><select id="lr1">'+o+'</select><select id="lr2">'+o+'</select><select id="lr3"><option value="">(aucun)</option>'+o+'</select><input id="lrn" placeholder="Nom de la recette"><input id="lre" placeholder="Effet de la seringue"><select id="lrk">'+K+'</select><br><button onclick="labRecipe()">AJOUTER LA RECETTE</button>'
+   +'<div style="margin-top:10px"><button style="--c:#ff4060" onclick="if(confirm(\'Réinitialiser seringues et recettes de Fury ?\'))labSend(\'resetLab\')">↺ RÉINITIALISER LE LABO</button></div>';
+  document.body.appendChild(p);
+  if(window.NPTools)NPTools.mj({onState:function(r,d){if(r==='fury'){LAB=d.state||{};labDyn();}}});
+}
+function labGive(){if(!lv('ln'))return;labSend('addSyr',{n:lv('ln'),e:lv('le'),side:lv('ls')||'Aucun effet secondaire notable.',k:lv('lk'),pot:+lv('lp'),tested:document.getElementById('lt').checked});['ln','le','ls'].forEach(function(i){document.getElementById(i).value='';});}
+function labRecipe(){var ids=[lv('lr1'),lv('lr2'),lv('lr3')].filter(Boolean);if(!lv('lrn')||ids.length<2)return;labSend('recipe',{ids:ids,n:lv('lrn'),e:lv('lre'),k:lv('lrk')});['lrn','lre'].forEach(function(i){document.getElementById(i).value='';});}
+function labDyn(){
+  var s=LAB;if(!s)return;
+  var h='<div style="margin-bottom:6px">📦 Produits : cocher « ⚗ Utilisable au labo » dans l\'inventaire.</div><div class="sec">SERINGUES</div>'+((s.syr||[]).length?s.syr.map(function(x){return '<div class="syr" style="--c:#00ff88"><b>'+esc(x.n)+'</b> · puissance '+x.pot+' <button style="--c:#00ccff" onclick="labSend(\'revealSyr\',{id:'+x.id+'})">'+(x.tested?'testée ✔':'👁 RÉVÉLER')+'</button><button style="--c:#ff4060" onclick="labSend(\'delSyr\',{id:'+x.id+'})">🗑</button><small>'+esc(x.e)+'</small><small>Effet secondaire : '+esc(x.side)+'</small></div>';}).join(''):'<span style="opacity:.4">Aucune</span>');
+  h+='<div class="sec">RECETTES</div>'+(s.recipes||[]).map(function(r){return '<div class="syr" style="--c:'+(r.known?'#00ff88':'#666')+'"><b>'+esc(r.n)+'</b> '+(r.known?'✔ découverte':'non découverte')+(r.custom?' <button style="--c:#ff4060" onclick="labSend(\'delRecipe\',{key:\''+r.k+'\'})">SUPPR.</button>':'')+'<small>'+r.k.split('+').map(function(i){var f=LINGS.filter(function(g){return g[0]===i;})[0];return f?f[1]:i;}).join(' + ')+' → '+esc(r.e)+'</small></div>';}).join('');
+  document.getElementById('lab-dyn').innerHTML=h;
+}
 </script>
 </body>
 </html>
