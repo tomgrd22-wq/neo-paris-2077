@@ -334,6 +334,30 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 .inv-cm-ok{flex:2;padding:10px;border:1px solid #ff2040;border-radius:4px;background:rgba(255,32,64,.1);color:#ff2040;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;}
 
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}::-webkit-scrollbar-thumb{background:rgba(255,32,64,.2);border-radius:2px;}
+
+/* ═════ LUNETTE RÉALISTE ═════ */
+.scope-view{background:radial-gradient(ellipse at center,#0b0a10 0%,#020204 100%);}
+.reticle{border:0;background:#05060c;box-shadow:0 0 0 7px #0a0a0e,0 0 0 11px #3a3d46,0 0 0 13px #14151a,0 0 0 20px #050507,0 0 60px 12px rgba(0,0,0,.9),0 0 40px rgba(255,60,40,.08);}
+.reticle::before,.reticle::after{display:none;}
+.rt-ring,.rt-center{display:none;}
+.rt-sway{position:absolute;inset:0;will-change:transform;}
+.rt-scene{position:absolute;left:-80%;top:-80%;width:260%;height:260%;filter:blur(.7px) saturate(1.1);pointer-events:none;}
+.rt-scene svg{width:100%;height:100%;display:block;}
+.rt-vig{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:6;background:radial-gradient(circle at 50% 50%,transparent 52%,rgba(0,0,0,.38) 74%,rgba(0,0,0,.92) 96%,#000 100%);}
+.rt-glare{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:7;background:linear-gradient(125deg,rgba(255,255,255,.07) 0%,transparent 28%),radial-gradient(ellipse at 22% 18%,rgba(255,255,255,.09),transparent 22%);mix-blend-mode:screen;}
+.rt-tint{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:5;background:radial-gradient(circle,rgba(40,70,120,.10),rgba(120,40,40,.10));mix-blend-mode:overlay;}
+.rt-reticle{position:absolute;inset:0;z-index:8;pointer-events:none;}
+.rt-reticle svg{width:100%;height:100%;display:block;}
+.tm-fig{position:absolute;left:50%;top:50%;width:calc(26px * var(--s,1));height:calc(54px * var(--s,1));transform:translate(-50%,-52%);overflow:visible;filter:drop-shadow(0 0 3px rgba(255,40,40,.55));}
+.target-marker{opacity:.95;}
+.target-marker .c1,.target-marker .c2,.target-marker .c3,.target-marker .c4{opacity:.4;}
+.target-marker.locked .c1,.target-marker.locked .c2,.target-marker.locked .c3,.target-marker.locked .c4{opacity:1;}
+.target-marker.eliminated .tm-fig{transform:translate(-50%,-30%) rotate(90deg);opacity:.5;}
+.hud-info,.hud-ammo-n,.hud-ammo-lbl{text-shadow:0 0 6px rgba(255,32,64,.4);}
+#scope-ctl{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;z-index:12;font-family:'Share Tech Mono',monospace;}
+#scope-ctl button{background:rgba(10,8,12,.8);border:1px solid rgba(255,32,64,.45);color:#ffb0b8;border-radius:4px;padding:7px 11px;font-size:10px;letter-spacing:2px;cursor:pointer;font-family:inherit;user-select:none;touch-action:none;}
+#scope-ctl button.on{background:#ff2040;color:#0a0306;}
+#breath{width:80px;height:5px;border:1px solid rgba(255,32,64,.45);border-radius:3px;overflow:hidden;}#breath i{display:block;height:100%;background:#ff2040;width:100%;}
 </style>
 <link rel="stylesheet" href="../assets/fx.css"><script defer src="../assets/fx.js"></script>
 </head>
@@ -409,15 +433,16 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
           <div id="alert-banner"></div>
           <div class="scope-mask">
             <div class="reticle" id="reticle">
-              <div class="reticle-world" id="reticle-world">
-                <div class="rt-ring" style="width:40%;height:40%;"></div>
-                <div class="rt-ring" style="width:70%;height:70%;"></div>
+              <div class="rt-sway" id="rt-sway"><div class="reticle-world" id="reticle-world">
+                <div class="rt-scene" id="rt-scene"></div>
                 <div class="hud-sweep" id="hud-sweep"></div>
                 <!-- Target markers injected here -->
-              </div>
-              <div class="rt-center"></div>
+              </div></div>
+              <div class="rt-tint"></div><div class="rt-vig"></div><div class="rt-glare"></div>
+              <div class="rt-reticle"><svg viewBox="0 0 1000 1000" id="rt-svg"></svg></div>
             </div>
           </div>
+          <div id="scope-ctl"><button id="zm-" title="Réduire le grossissement">−</button><button id="zm+" title="Augmenter le grossissement">+</button><button id="hold" title="Retenir son souffle pour stabiliser (touche Maj)">RETENIR SOUFFLE</button><div id="breath"><i></i></div></div>
           <div class="hud-corner tl"></div>
           <div class="hud-corner tr"></div>
           <div class="hud-corner bl"></div>
@@ -426,6 +451,9 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
             <div>MODE : <b id="hud-mode">RECHERCHE</b></div>
             <div>CIBLES : <b id="hud-target-count">0</b></div>
             <div>STATUT : <b id="hud-status">SCAN ACTIF</b></div>
+            <div>PORTÉE : <b id="hud-range">—</b></div>
+            <div>VENT : <b id="hud-wind">—</b></div>
+            <div>GROSS. : <b id="hud-zoom">x6</b></div>
           </div>
           <div class="hud-ammo">
             <div class="hud-ammo-n" id="hud-lockname">— </div>
@@ -797,6 +825,7 @@ function updateHudInfo(){
   document.getElementById('hud-status').textContent=active.length>0?'HOSTILES DÉTECTÉS':'ZONE CLAIRE';
   var lt=targets.find(function(t){return t.id===lockedTarget;});
   document.getElementById('hud-lockname').textContent=lt?lt.name:'—';
+  document.getElementById('hud-range').textContent=lt?(lt.dist+' m'):'—';
   document.getElementById('hs-sub').textContent=lt?('Verrouillé : '+lt.name):'Aucune cible verrouillée';
 }
 
@@ -814,7 +843,8 @@ function renderTargetMarkers(){
     var m=document.createElement('div');
     m.className='target-marker'+(t.id===lockedTarget?' locked':'')+(t.eliminated?' eliminated':'');
     m.style.left=t.x+'%';m.style.top=t.y+'%';
-    m.innerHTML='<div class="tm-lbl">'+esc(t.name)+'</div><div class="c1"></div><div class="c2"></div><div class="c3"></div><div class="c4"></div>'
+    m.style.setProperty('--s',Math.max(.6,Math.min(1.5,1.75-(t.dist||50)/90)).toFixed(2));
+    m.innerHTML='<svg class="tm-fig" viewBox="0 0 26 54"><g fill="#0b0306" stroke="rgba(255,70,70,.7)" stroke-width=".8"><circle cx="13" cy="6" r="4.6"/><path d="M6 13h14l2.6 15-3.4 1-1.2-8-.4 12 2 20h-4.2L13 38l-2.4 15H6.4l2-20 -.4-12-1.2 8-3.4-1z"/></g></svg><div class="tm-lbl">'+esc(t.name)+'</div><div class="c1"></div><div class="c2"></div><div class="c3"></div><div class="c4"></div>'
       +'<div class="tm-hpbar"><div class="tm-hpfill" style="width:'+Math.max(0,(t.hp/t.maxHp*100))+'%;"></div></div>';
     m.onclick=function(){lockTarget(t.id);};
     world.appendChild(m);
@@ -1183,6 +1213,67 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
   if(codeParam&&roleParam){setTimeout(function(){go(roleParam);},50);}
 })();
 
+
+/* ═════ LUNETTE RÉALISTE : décor, réticule mil-dot, balancement, grossissement, souffle ═════ */
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+  /* décor : skyline nocturne floue avec fenêtres éclairées et bokeh néon */
+  var sc=document.getElementById('rt-scene'),svg=el('svg',{viewBox:'0 0 260 260',preserveAspectRatio:'none'},sc);
+  var df=el('defs',{},svg);var g1=el('linearGradient',{id:'sk',x1:0,y1:0,x2:0,y2:1},df);
+  [['0','#050816'],['.55','#1a1230'],['.75','#47203a'],['1','#8a3a2c']].forEach(function(c){el('stop',{offset:c[0],'stop-color':c[1]},g1);});
+  var bl=el('filter',{id:'bk',x:'-50%',y:'-50%',width:'200%',height:'200%'},df);el('feGaussianBlur',{stdDeviation:'3'},bl);
+  el('rect',{width:260,height:260,fill:'url(#sk)'},svg);
+  var seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+  [[150,'#1b1428',14,26,.9],[168,'#120d1c',10,34,.95],[188,'#0a0710',8,44,1]].forEach(function(L,li){
+    var x=-5;while(x<265){var w=L[2]+rnd()*L[3]*.5,h=22+rnd()*(60-li*12);el('rect',{x:x,y:L[0]+60-h-li*6,width:w,height:h+60,fill:L[1]},svg);
+      if(li>0)for(var i=0;i<w*h/38;i++){if(rnd()<.55)el('rect',{x:x+1+rnd()*(w-2.5),y:L[0]+62-h-li*6+rnd()*h,width:1.1,height:1.5,fill:rnd()<.8?'#ffcf7a':'#7fd6ff',opacity:.35+rnd()*.5},svg);}
+      x+=w+rnd()*3;}
+  });
+  [['#ff2a6d',.5],['#2ad4ff',.5],['#ffb02a',.4],['#b04aff',.4]].forEach(function(c,ci){for(var i=0;i<9;i++)el('circle',{cx:rnd()*260,cy:130+rnd()*95,r:2.5+rnd()*5,fill:c[0],opacity:.22+rnd()*.25,filter:'url(#bk)'},svg);});
+  el('rect',{y:215,width:260,height:45,fill:'#050408',opacity:.8},svg);
+  /* réticule mil-dot éclairé en rouge */
+  var rs=document.getElementById('rt-svg');
+  el('circle',{cx:500,cy:500,r:495,fill:'none',stroke:'#000','stroke-width':10},rs);
+  var P='#02020380';
+  [[0,500,330,500],[670,500,1000,500],[500,670,500,1000]].forEach(function(l){el('line',{x1:l[0],y1:l[1],x2:l[2],y2:l[3],stroke:'#000','stroke-width':16},rs);});
+  [[330,500,470,500],[530,500,670,500],[500,530,500,670],[500,330,500,470]].forEach(function(l){el('line',{x1:l[0],y1:l[1],x2:l[2],y2:l[3],stroke:'#ff2a2a','stroke-width':2.2,opacity:.95},rs);});
+  el('line',{x1:500,y1:0,x2:500,y2:330,stroke:'#000','stroke-width':3},rs);
+  [-1,1].forEach(function(sg){for(var i=1;i<=6;i++){var d=i*50*sg;
+    el('circle',{cx:500+d+(sg>0?0:0),cy:500,r:i%2?4.2:3.2,fill:'#ff2a2a',opacity:.9},rs);
+    if(i<=5)el('circle',{cx:500,cy:500+(sg>0?d:d),r:i%2?4.2:3.2,fill:'#ff2a2a',opacity:.9},rs);}});
+  [100,200,300].forEach(function(d,i){[500-d,500+d].forEach(function(x){el('line',{x1:x,y1:500-12,x2:x,y2:500+12,stroke:'#ff2a2a','stroke-width':1.4,opacity:.8},rs);});});
+  el('circle',{cx:500,cy:500,r:2.6,fill:'#ff3030'},rs);el('circle',{cx:500,cy:500,r:9,fill:'none',stroke:'#ff3030','stroke-width':1,opacity:.7},rs);
+  /* balancement, souffle, grossissement, vent */
+  var sw=document.getElementById('rt-sway'),zoom=1,breath=1,hold=false,gasp=0,wind=2.5+Math.random()*3,windDir=Math.random()<.5?-1:1;
+  var Z=[1,1.25,1.55,1.9,2.3];var zi=0;
+  function zt(){document.getElementById('hud-zoom').textContent='x'+Math.round(4+zi*2);}
+  document.getElementById('zm+').onclick=function(){zi=Math.min(Z.length-1,zi+1);zt();};
+  document.getElementById('zm-').onclick=function(){zi=Math.max(0,zi-1);zt();};
+  document.getElementById('scope-view').addEventListener('wheel',function(e){e.preventDefault();zi=Math.max(0,Math.min(Z.length-1,zi+(e.deltaY<0?1:-1)));zt();},{passive:false});
+  var hb=document.getElementById('hold');
+  function setHold(v){hold=v;hb.classList.toggle('on',v);}
+  hb.addEventListener('pointerdown',function(e){e.preventDefault();setHold(true);});['pointerup','pointerleave','pointercancel'].forEach(function(n){hb.addEventListener(n,function(){setHold(false);});});
+  document.addEventListener('keydown',function(e){if(e.key==='Shift'&&!e.repeat)setHold(true);});document.addEventListener('keyup',function(e){if(e.key==='Shift')setHold(false);});
+  var bi=document.querySelector('#breath i'),last=performance.now();
+  function tick(now){
+    var dt=Math.min(.1,(now-last)/1000);last=now;var t=now/1000;
+    if(hold&&breath>0&&gasp<=0){breath=Math.max(0,breath-dt/4.5);if(breath<=0){gasp=2.2;setHold(false);}}
+    else{breath=Math.min(1,breath+dt/(gasp>0?6:3.5));}
+    if(gasp>0)gasp-=dt;
+    var amp=(hold&&gasp<=0)?.12:(gasp>0?2.4:1)*(1+Math.min(1,wind/10)*.5);
+    var A=7*zi*.0+6;/* pixels de base */
+    var x=(Math.sin(t*.9)*A+Math.sin(t*2.7+1)*A*.28+Math.sin(t*.37)*A*.5+windDir*wind*.6)*amp;
+    var y=(Math.cos(t*.7)*A*.8+Math.sin(t*3.1)*A*.22+Math.sin(t*1.3)*A*.5+breath*0)*amp+(1-breath)*2*(hold?0:1);
+    var zs=Z[zi]*(1+.004*Math.sin(t*1.5));
+    sw.style.transform='translate('+x.toFixed(2)+'px,'+y.toFixed(2)+'px) scale('+zs.toFixed(3)+')';
+    bi.style.width=(breath*100)+'%';bi.style.background=gasp>0?'#ffaa00':'#ff2040';
+    if(((now/4000)|0)!==window.__wd){window.__wd=(now/4000)|0;wind=Math.max(0,Math.min(10,wind+(Math.random()-.5)*1.4));if(Math.random()<.08)windDir*=-1;
+      document.getElementById('hud-wind').textContent=(windDir<0?'← ':'→ ')+wind.toFixed(1)+' m/s';}
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);zt();
+})();
 </script>
 </body>
 </html>
