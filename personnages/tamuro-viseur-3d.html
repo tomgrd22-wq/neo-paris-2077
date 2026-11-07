@@ -54,7 +54,7 @@ label{display:block;font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.4);
   <label>COUVERT DE LA CIBLE</label><div class="seg" id="cv"></div>
   <div class="zl" style="margin-top:10px"><span>Ton bonus d'attaque</span><span><button id="bm" style="background:none;border:1px solid #ff2040;color:#ff2040;cursor:pointer;border-radius:3px">−</button> <b id="bn">+3</b> <button id="bp" style="background:none;border:1px solid #ff2040;color:#ff2040;cursor:pointer;border-radius:3px">+</button></span></div>
   <div class="log" id="log"></div>
-  <div class="small">Difficulté = 10 + zone + distance + couvert. Tête +4, torse +0, bras +2, jambes +2. Critique sur 20 naturel (dégâts x2), maladresse sur 1.</div>
+  <div class="small">Difficulté = 10 + zone + distance + couvert. Tête +4, torse +0, bras +2, avant-bras +3, mains +5, cuisses +2, jambes +3. Critique sur 20 naturel (dégâts x2), maladresse sur 1.</div>
   <div style="margin-top:10px"><button id="rs" style="font-family:inherit;font-size:10px;letter-spacing:2px;padding:8px 12px;border:1px solid #ff2040;background:transparent;color:#ff2040;border-radius:4px;cursor:pointer">RÉINITIALISER LA CIBLE</button></div>
  </div>
 </div>
@@ -68,11 +68,22 @@ var ENEMIES=[
 var WEAPONS=[{n:'Pistolet',d:'1d6+2',mod:0,dmg:[1,6,2]},{n:'Fusil',d:'2d6',mod:-1,dmg:[2,6,0]},{n:'Katana',d:'1d8+3',mod:-3,dmg:[1,8,3],melee:true},{n:'Shotgun',d:'3d6',mod:-2,dmg:[3,6,0]}];
 var DIST=[{n:'CORPS À CORPS',m:-2},{n:'COURTE',m:0},{n:'MOYENNE',m:2},{n:'LONGUE',m:5}];
 var COVER=[{n:'AUCUN',m:0},{n:'LÉGER',m:2},{n:'LOURD',m:5}];
-var ZONES={head:{n:'Tête',m:4,x:2,hp:.2},torso:{n:'Torse',m:0,x:1,hp:.4},armL:{n:'Bras gauche',m:2,x:.7,hp:.1},armR:{n:'Bras droit',m:2,x:.7,hp:.1},legL:{n:'Jambe gauche',m:2,x:.7,hp:.1},legR:{n:'Jambe droite',m:2,x:.7,hp:.1}};
-var EFF={head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',armL:'Lâche ce qu\'il tient / -2 en attaque.',armR:'Lâche son arme / -2 en attaque.',legL:'Vitesse réduite de moitié.',legR:'Vitesse réduite de moitié.'};
+var ZONES={
+  head:{n:'Tête',m:4,x:2,hp:.15},torso:{n:'Torse',m:0,x:1,hp:.3},
+  armL:{n:'Bras gauche',m:2,x:.7,hp:.06},armR:{n:'Bras droit',m:2,x:.7,hp:.06},
+  foreL:{n:'Avant-bras gauche',m:3,x:.7,hp:.05},foreR:{n:'Avant-bras droit',m:3,x:.7,hp:.05},
+  handL:{n:'Main gauche',m:5,x:.5,hp:.03},handR:{n:'Main droite',m:5,x:.5,hp:.03},
+  thighL:{n:'Cuisse gauche',m:2,x:.7,hp:.07},thighR:{n:'Cuisse droite',m:2,x:.7,hp:.07},
+  legL:{n:'Jambe gauche',m:3,x:.7,hp:.06},legR:{n:'Jambe droite',m:3,x:.7,hp:.06}};
+var EFF={head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',
+  armL:'Bras gauche hors d\'usage : lâche ce qu\'il tient.',armR:'Bras droit hors d\'usage : lâche son arme.',
+  foreL:'Avant-bras gauche brisé : -2 en attaque.',foreR:'Avant-bras droit brisé : -2 en attaque.',
+  handL:'Main gauche écrasée : lâche ce qu\'il tient.',handR:'Main droite écrasée : lâche son arme.',
+  thighL:'Cuisse gauche touchée : vitesse réduite de moitié.',thighR:'Cuisse droite touchée : vitesse réduite de moitié.',
+  legL:'Jambe gauche brisée : ne peut plus courir.',legR:'Jambe droite brisée : ne peut plus courir.'};
 var st={en:0,wp:0,ds:1,cv:0,bonus:3,hp:{},zd:{}};
 function r(n){return 1+Math.floor(Math.random()*n);}
-function reset(){var e=ENEMIES[st.en];st.hp[st.en]=e.hp;st.zd[st.en]={head:0,torso:0,armL:0,armR:0,legL:0,legR:0};}
+function reset(){var e=ENEMIES[st.en];st.hp[st.en]=e.hp;st.zd[st.en]={};Object.keys(ZONES).forEach(function(k){st.zd[st.en][k]=0;});}
 ENEMIES.forEach(function(_,i){st.en=i;reset();});st.en=0;
 
 /* ───────── 3D ───────── */
@@ -117,14 +128,16 @@ add('torso',SP(.27),0,1.7,0,{s:[1.1,.7,.78]});
   add(k,SP(.17),0,0,0,{s:[1,.9,1]},P);
   add(k,LA([[.072,-.62],[.082,-.5],[.1,-.32],[.108,-.18],[.1,-.04]]),0,0,0,null,P);
   add(k,SP(.08),0,-.62,0,null,P);
-  add(k,LA([[.058,-1.2],[.07,-1.1],[.085,-.9],[.082,-.72],[.07,-.62]]),0,0,0,null,P);
-  add(k,SP(.075),0,-1.32,0,{s:[.75,1.5,.45]},P);
+  var fk=k==='armL'?'foreL':'foreR',hk=k==='armL'?'handL':'handR';
+  add(fk,LA([[.058,-1.2],[.07,-1.1],[.085,-.9],[.082,-.72],[.07,-.62]]),0,0,0,null,P);
+  add(hk,SP(.075),0,-1.32,0,{s:[.75,1.5,.45]},P);
 });
 /* jambes : pivot à la hanche, cuisse, genou, mollet galbé, pied */
 ['legL','legR'].forEach(function(k){
   var sx=k==='legL'?-1:1,P=new THREE.Group();P.position.set(sx*.17,1.72,0);P.rotation.z=-sx*.02;fig.add(P);
-  add(k,LA([[.092,-.85],[.105,-.75],[.13,-.5],[.16,-.25],[.165,-.05]]),0,0,0,null,P);
-  add(k,SP(.1),0,-.85,0,null,P);
+  var tk=k==='legL'?'thighL':'thighR';
+  add(tk,LA([[.092,-.85],[.105,-.75],[.13,-.5],[.16,-.25],[.165,-.05]]),0,0,0,null,P);
+  add(tk,SP(.1),0,-.85,0,null,P);
   add(k,LA([[.05,-1.62],[.065,-1.4],[.095,-1.1],[.1,-.95],[.09,-.85]]),0,0,0,null,P);
   add(k,SP(.09),0,-1.66,.1,{s:[1,.7,2.4]},P);
 });
@@ -199,18 +212,12 @@ function holoScene(mdl,geo,sc,cx,cz,y0){
     beams.material.opacity=.9*fade;pm.opacity=p<1.2?.9:.35;
   });
 }
-function zoneOf(x,h){
-  if(h>=.86)return 'head';
-  if(h<.42)return x<0?'legL':'legR';
-  var lim=h<.54?.135:(h<.66?.105:.12);
-  if(Math.abs(x)>lim)return x<0?'armL':'armR';
-  return 'torso';
-}
+/* range une pièce (ou un triangle) du modèle dans l'une des 12 zones : cx = décalage latéral, cy = hauteur depuis les pieds */
 function partZone(cx,cy,H){
-  var ax=Math.abs(cx)/H;
-  if(ax>.09)return cx<0?'armR':'armL';           /* bras, avant-bras, mains (côté +x = gauche) */
-  if(ax<.03)return cy/H>.78?'head':'torso';
-  return cx<0?'legR':'legL';                      /* cuisses, jambes, pieds */
+  var ax=Math.abs(cx)/H,h=cy/H,R=cx<0;            /* côté +x = côté gauche du personnage */
+  if(ax>.09)return h>.68?(R?'armR':'armL'):(h>.54?(R?'foreR':'foreL'):(R?'handR':'handL'));
+  if(ax<.03)return h>.78?'head':'torso';
+  return h>.3?(R?'thighR':'thighL'):(R?'legR':'legL');
 }
 function loadModel(){
   if(!THREE.GLTFLoader)return;
@@ -230,11 +237,11 @@ function loadModel(){
         var c=new THREE.Vector3();geo.boundingBox.getCenter(c);parts.push({geo:geo,k:partZone(c.x-cx,c.y-bb.min.y,H)});
       }else{
         var idx=geo.index.array;
-        var L={head:[],torso:[],armL:[],armR:[],legL:[],legR:[]};
+        var L={};Object.keys(ZONES).forEach(function(z){L[z]=[];});
         for(var i=0;i<idx.length;i+=3){
           var a=idx[i],b=idx[i+1],c2=idx[i+2];
           var x=(pos.getX(a)+pos.getX(b)+pos.getX(c2))/3-cx,y=(pos.getY(a)+pos.getY(b)+pos.getY(c2))/3-bb.min.y;
-          L[zoneOf(-x,y/H)].push(a,b,c2);
+          L[partZone(x,y,H)].push(a,b,c2);
         }
         Object.keys(L).forEach(function(k){if(!L[k].length)return;var gg=new THREE.BufferGeometry();for(var n in geo.attributes)gg.setAttribute(n,geo.attributes[n]);gg.setIndex(L[k]);parts.push({geo:gg,k:k});});
       }
