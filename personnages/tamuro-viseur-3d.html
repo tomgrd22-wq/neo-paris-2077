@@ -69,19 +69,23 @@ var WEAPONS=[{n:'Pistolet',d:'1d6+2',mod:0,dmg:[1,6,2]},{n:'Fusil',d:'2d6',mod:-
 var DIST=[{n:'CORPS À CORPS',m:-2},{n:'COURTE',m:0},{n:'MOYENNE',m:2},{n:'LONGUE',m:5}];
 var COVER=[{n:'AUCUN',m:0},{n:'LÉGER',m:2},{n:'LOURD',m:5}];
 var ZONES={
-  head:{n:'Tête',m:4,x:2,hp:.15},torso:{n:'Torse',m:0,x:1,hp:.3},
+  head:{n:'Tête',m:4,x:2,hp:.15},torso:{n:'Torse',m:0,x:1,hp:.26},
   armL:{n:'Bras gauche',m:2,x:.7,hp:.06},armR:{n:'Bras droit',m:2,x:.7,hp:.06},
   foreL:{n:'Avant-bras gauche',m:3,x:.7,hp:.05},foreR:{n:'Avant-bras droit',m:3,x:.7,hp:.05},
   handL:{n:'Main gauche',m:5,x:.5,hp:.03},handR:{n:'Main droite',m:5,x:.5,hp:.03},
   thighL:{n:'Cuisse gauche',m:2,x:.7,hp:.07},thighR:{n:'Cuisse droite',m:2,x:.7,hp:.07},
-  legL:{n:'Jambe gauche',m:3,x:.7,hp:.06},legR:{n:'Jambe droite',m:3,x:.7,hp:.06}};
-var EFF={head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',
+  legL:{n:'Jambe gauche',m:3,x:.7,hp:.06},legR:{n:'Jambe droite',m:3,x:.7,hp:.06},
+  fesses:{n:'Fesses',m:1,x:.7,hp:.04},
+  groin:{get n(){return 'Appareil génital '+(st.sex[st.en]==='f'?'♀':'♂');},m:6,x:1.5,hp:.03}};
+var EFFG={h:'Aïe… sonné : perd son prochain tour et voix de soprano pour la journée.',f:'Coup bas : plié en deux, perd son prochain tour.'};
+var EFF={get groin(){return EFFG[st.sex[st.en]==='f'?'f':'h'];},fesses:'Fessée magistrale : ne peut plus s\'asseoir, -1 à tout.',head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',
   armL:'Bras gauche hors d\'usage : lâche ce qu\'il tient.',armR:'Bras droit hors d\'usage : lâche son arme.',
   foreL:'Avant-bras gauche brisé : -2 en attaque.',foreR:'Avant-bras droit brisé : -2 en attaque.',
   handL:'Main gauche écrasée : lâche ce qu\'il tient.',handR:'Main droite écrasée : lâche son arme.',
   thighL:'Cuisse gauche touchée : vitesse réduite de moitié.',thighR:'Cuisse droite touchée : vitesse réduite de moitié.',
   legL:'Jambe gauche brisée : ne peut plus courir.',legR:'Jambe droite brisée : ne peut plus courir.'};
-var st={en:0,wp:0,ds:1,cv:0,bonus:3,hp:{},zd:{}};
+var st={sex:(function(){try{var v=JSON.parse(localStorage.getItem('tam_sex'));if(v&&v.length)return v;}catch(e){}return [];})(),en:0,wp:0,ds:1,cv:0,bonus:3,hp:{},zd:{}};
+for(var _i=0;_i<8;_i++)if(st.sex[_i]!=='f')st.sex[_i]='h';
 function r(n){return 1+Math.floor(Math.random()*n);}
 function reset(){var e=ENEMIES[st.en];st.hp[st.en]=e.hp;st.zd[st.en]={};Object.keys(ZONES).forEach(function(k){st.zd[st.en][k]=0;});}
 ENEMIES.forEach(function(_,i){st.en=i;reset();});st.en=0;
@@ -122,6 +126,8 @@ add('torso',LA([[.27,1.68],[.29,1.78],[.26,1.98],[.28,2.15],[.33,2.35],[.37,2.52
 add('torso',SP(.16),-.16,2.45,.14,{s:[1,.7,.55]});
 add('torso',SP(.16),.16,2.45,.14,{s:[1,.7,.55]});
 add('torso',SP(.27),0,1.7,0,{s:[1.1,.7,.78]});
+add('fesses',SP(.2),0,1.62,-.13,{s:[1.35,.95,.75]});
+add('groin',SP(.09),0,1.5,.17,{s:[1,1,.8]});
 /* bras : pivot à l'épaule, légèrement écartés */
 ['armL','armR'].forEach(function(k){
   var sx=k==='armL'?-1:1,P=new THREE.Group();P.position.set(sx*.53,2.58,0);P.rotation.z=sx*.14;fig.add(P);
@@ -219,6 +225,7 @@ function partZone(cx,cy,H){
   if(ax<.03)return h>.78?'head':'torso';
   return h>.3?(R?'thighR':'thighL'):(R?'legR':'legL');
 }
+var GL={zb:-.012,fx:.085,fy0:.38,fy1:.56,zf:.02,gx:.05,gy0:.37,gy1:.5};
 function loadModel(){
   if(!THREE.GLTFLoader)return;
   new THREE.GLTFLoader().load('../assets/tamuro-silhouette.glb',function(g){
@@ -246,6 +253,23 @@ function loadModel(){
         Object.keys(L).forEach(function(k){if(!L[k].length)return;var gg=new THREE.BufferGeometry();for(var n in geo.attributes)gg.setAttribute(n,geo.attributes[n]);gg.setIndex(L[k]);parts.push({geo:gg,k:k});});
       }
     });
+    /* fesses (dos du bassin) et appareil génital (devant, entre les cuisses) : découpés dans torse + cuisses */
+    var extra=[];
+    parts.forEach(function(pt){
+      if(['torso','thighL','thighR'].indexOf(pt.k)<0||!pt.geo.index)return;
+      var pos=pt.geo.attributes.position,idx=pt.geo.index.array,keep=[],fe=[],gr=[];
+      for(var i=0;i<idx.length;i+=3){
+        var a=idx[i],b=idx[i+1],c3=idx[i+2];
+        var x=Math.abs((pos.getX(a)+pos.getX(b)+pos.getX(c3))/3-cx)/H,y=((pos.getY(a)+pos.getY(b)+pos.getY(c3))/3-bb.min.y)/H,z=((pos.getZ(a)+pos.getZ(b)+pos.getZ(c3))/3-cz)/H;
+        if(z<GL.zb&&x<GL.fx&&y>GL.fy0&&y<GL.fy1)fe.push(a,b,c3);
+        else if(z>GL.zf&&x<GL.gx&&y>GL.gy0&&y<GL.gy1)gr.push(a,b,c3);
+        else keep.push(a,b,c3);
+      }
+      function mk(list,k){if(!list.length)return;var gg=new THREE.BufferGeometry();for(var n in pos.itemSize?pt.geo.attributes:{})gg.setAttribute(n,pt.geo.attributes[n]);gg.setIndex(list);extra.push({geo:gg,k:k});}
+      mk(fe,'fesses');mk(gr,'groin');
+      var g0=new THREE.BufferGeometry();for(var n in pt.geo.attributes)g0.setAttribute(n,pt.geo.attributes[n]);g0.setIndex(keep);pt.geo=g0;
+    });
+    parts=parts.concat(extra);
     var mdl=new THREE.Group();
     fig.visible=false;hitMeshes.length=0;for(var k in mats)delete mats[k];
     parts.forEach(function(pt){
@@ -295,6 +319,19 @@ cv.addEventListener('wheel',function(e){e.preventDefault();dist=Math.max(2.8,Mat
 var pd=0;cv.addEventListener('touchmove',function(e){if(e.touches.length===2){var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pd)dist=Math.max(2.8,Math.min(9,dist-(d-pd)*.02));pd=d;moved=true;}},{passive:true});
 cv.addEventListener('touchend',function(){pd=0;});
 
+/* ───────── répliques de comptoir ───────── */
+var JOKES={
+  fesses:{hit:['En plein dans le fessier ! Il mangera debout pendant une semaine.','Direct dans le derche : le gars s\'assoira plus jamais sans coussin.','Il voulait un siège ergonomique, il a un trou de plus.','Bravo, t\'as visé le jambon… Michel, ramène le persil !','La fessée, version 2077. Ça va chauffer.','Pif paf dans le postérieur : on appelle ça un tir de précision de comptoir.'],
+          miss:['Raté ?! C\'est large comme une porte de garage, ce truc-là.','Même un cul de cette taille, tu le loupes. Respect.','Ton tir est passé entre deux fesses… enfin, à côté.']},
+  groin_h:{hit:['Aïe aïe aïe… même nous on a mal pour lui. Soprano jusqu\'à Noël.','Touché en plein dans les bijoux de famille ! Les héritiers sont en deuil.','Plus de descendance : ça c\'est de la réforme des retraites !','Deux mots : noisettes et concassées.','Il a arrêté de se croire viril d\'un coup.','Le monsieur est indisponible pour trois jours. Et pas que pour le boulot.'],
+          miss:['T\'as visé les bijoux et t\'as raté ? Dur, la vie.','Raté ! Il a serré les fesses et les jambes, le malin.','Même pas touché, il rigole… jaune, mais il rigole.']},
+  groin_f:{hit:['Coup bas, madame ! Même au tribunal ce serait « légitime défense ».','La miss ne s\'assoira plus en tailleur avant un moment.','Elle a tout de suite compris le message. Et le message fait mal.','Le talon aiguille, c\'était moins douloureux finalement.','Ça, c\'est pas du fair-play, mais qu\'est-ce que c\'est efficace.','Elle se tord de douleur. On ne dira pas où. On sait tous où.'],
+          miss:['Raté ! Elle te remercierait bien, mais elle est trop occupée à rigoler.','Tu as visé bas et tu as quand même tout loupé. Bravo.','Elle a croisé les jambes à temps, la maligne.']}
+};
+function joke(zone,ok){
+  var j=zone==='fesses'?JOKES.fesses:(zone==='groin'?(st.sex[st.en]==='f'?JOKES.groin_f:JOKES.groin_h):null);
+  if(!j)return '';var a=ok?j.hit:j.miss;return '<br><i style="color:#ffc83c">« '+a[Math.floor(Math.random()*a.length)]+' »</i>';
+}
 /* ───────── règles ───────── */
 function shoot(zone,point){
   var e=ENEMIES[st.en],w=WEAPONS[st.wp],z=ZONES[zone];
@@ -307,7 +344,7 @@ function shoot(zone,point){
   if(!ok){
     hit.textContent=dr===1?'MALADRESSE':'RATÉ';hit.style.color='#ff6080';hit.classList.add('on');
     rec((dr===1?'MALADRESSE':'rate')+' '+z.n+' de '+e.n+' (d20 '+dr+' → '+tot+' vs '+diff+')');
-    log('<b class="m">RATÉ</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+(dr===1?' (maladresse : l\'arme s\'enraye)':'')+'.');return;
+    log('<b class="m">RATÉ</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+(dr===1?' (maladresse : l\'arme s\'enraye)':'')+'.'+joke(zone,false));return;
   }
   var crit=dr===20,dmg=w.dmg[2];for(var i=0;i<w.dmg[0];i++)dmg+=r(w.dmg[1]);
   dmg=Math.round(dmg*z.x*(crit?2:1));
@@ -315,7 +352,7 @@ function shoot(zone,point){
   var zd=st.zd[st.en];zd[zone]+=dmg;
   var brk=zd[zone]>=Math.max(1,e.hp*z.hp);
   hit.textContent=(crit?'CRITIQUE ':'TOUCHÉ ')+dmg;hit.style.color=crit?'#ffc83c':'#00ff88';hit.classList.add('on');
-  log('<b class="'+(crit?'c':'h')+'">'+(crit?'CRITIQUE':'TOUCHÉ')+'</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(st.hp[st.en]<=0?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':''));
+  log('<b class="'+(crit?'c':'h')+'">'+(crit?'CRITIQUE':'TOUCHÉ')+'</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(st.hp[st.en]<=0?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':'')+joke(zone,true));
   rec((crit?'CRITIQUE ':'touche ')+z.n+' de '+e.n+' : '+dmg+' dégâts ('+w.n+', d20 '+dr+')'+(brk?' — zone brisée':'')+(st.hp[st.en]<=0?' — CIBLE NEUTRALISÉE':''));
   paintEnemy();ui();
 }
@@ -338,10 +375,13 @@ function ui(){
 document.getElementById('bm').onclick=function(){st.bonus=Math.max(-5,st.bonus-1);ui();};
 document.getElementById('bp').onclick=function(){st.bonus=Math.min(15,st.bonus+1);ui();};
 document.getElementById('rs').onclick=function(){reset();paintEnemy();ui();log('Cible réinitialisée.');};
-function tamState(){var e=ENEMIES[st.en];return {target:e.n,hp:st.hp[st.en],max:e.hp,zones:Object.keys(ZONES).map(function(k){return {n:ZONES[k].n,d:st.zd[st.en][k],max:Math.max(1,Math.round(e.hp*ZONES[k].hp))};}),weapon:WEAPONS[st.wp].n,dist:DIST[st.ds].n,cover:COVER[st.cv].n,bonus:st.bonus,all:ENEMIES.map(function(x,i){return {n:x.n,hp:st.hp[i],max:x.hp};}),shots:shots.slice(0,10)};}
+function tamState(){var e=ENEMIES[st.en];return {target:e.n,hp:st.hp[st.en],max:e.hp,zones:Object.keys(ZONES).map(function(k){return {n:ZONES[k].n,d:st.zd[st.en][k],max:Math.max(1,Math.round(e.hp*ZONES[k].hp))};}),weapon:WEAPONS[st.wp].n,dist:DIST[st.ds].n,cover:COVER[st.cv].n,bonus:st.bonus,sex:st.sex[st.en],all:ENEMIES.map(function(x,i){return {n:x.n,hp:st.hp[i],max:x.hp,sex:st.sex[i]};}),shots:shots.slice(0,10)};}
 var shots=[];
 function rec(t){shots.unshift(t);if(shots.length>20)shots.pop();if(window.NPTools)NPTools.event(t);}
-if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState});
+if(window.NPTools)function tamCmd(d){
+  if(d.type==='sex'&&d.i>=0&&d.i<ENEMIES.length){st.sex[d.i]=d.v==='f'?'f':'h';try{localStorage.setItem('tam_sex',JSON.stringify(st.sex));}catch(e){}ui();NPTools.pub();}
+}
+if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState,onCmd:tamCmd});
 ui();paintEnemy();loop();loadModel();
 </script>
 </body>

@@ -121,6 +121,7 @@ function body(role,d){
     h+='<div class="kv"><span>Cible</span><b>'+esc(s.target)+'</b></div><div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040');
     h+='<div class="kv"><span>Arme</span><b>'+esc(s.weapon)+'</b></div><div class="kv"><span>Distance / couvert</span><b>'+esc(s.dist)+' · '+esc(s.cover)+'</b></div><div class="kv"><span>Bonus</span><b>+'+s.bonus+'</b></div>';
     h+='<div class="sec">ZONES</div>'+(s.zones||[]).map(function(z){return '<div class="kv"><span>'+esc(z.n)+'</span><b>'+z.d+' / '+z.max+(z.d>=z.max?' ✖':'')+'</b></div>'+bar(z.d,z.max,'#ff2040');}).join('');
+    h+='<div class="sec">GENRE DES CIBLES (zone « appareil génital »)</div>'+(s.all||[]).map(function(x,i){return '<div class="kv"><span>'+esc(x.n)+'</span><b><button class="btn" style="--c:'+(x.sex!=='f'?'#00ccff':'#555')+'" onclick="sendTo(\'tamuro\',\'sex\',{i:'+i+',v:\'h\'})">♂ HOMME</button> <button class="btn" style="--c:'+(x.sex==='f'?'#ff66cc':'#555')+'" onclick="sendTo(\'tamuro\',\'sex\',{i:'+i+',v:\'f\'})">♀ FEMME</button></b></div>';}).join('');
     h+='<div class="sec">DERNIERS TIRS</div><div class="log">'+(s.shots||[]).map(esc).join('<br>')+'</div>';
   }
   return h;
