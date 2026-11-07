@@ -2,6 +2,7 @@
 (function(){
 'use strict';
 if(window.__fx)return;window.__fx=1;
+try{var _cs=document.currentScript;if(_cs&&_cs.src&&!window.__npRefresh){var _r=document.createElement('script');_r.src=_cs.src.replace(/fx\.js(\?.*)?$/,'refresh.js');_r.defer=true;document.head.appendChild(_r);}}catch(e){}
 var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 var fine=window.matchMedia&&matchMedia('(hover: hover) and (pointer: fine)').matches;
 var path=location.pathname;
