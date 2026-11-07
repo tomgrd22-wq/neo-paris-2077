@@ -58,6 +58,25 @@ select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);bord
 <div class="sub"><span class="dot" id="dot"></span><span id="st">CONNEXION…</span> · SESSION <b id="cd">—</b></div>
 <div class="hint">Chaque joueur doit avoir ouvert son outil (piratage, laboratoire, viseur 3D, convoi) pour apparaître ici.</div>
 <div class="main"><div class="cards" id="cards"></div><div><div class="sec" style="margin-top:0">FIL D'ACTIVITÉ</div><div class="feed" id="feed"><div style="color:rgba(255,255,255,.35);font-size:11px">En attente d'activité…</div></div></div></div>
+<div id="tam" class="labp" style="border-color:rgba(255,32,64,.4)">
+ <h2 style="color:#ff2040">🎯 RÉSOLUTION DES TIRS DE TAMURO</h2>
+ <div id="tam-dyn"><div class="hint" style="margin:0">En attente du signal de Tamuro…</div></div>
+ <div class="forms">
+  <div class="fm"><h4>Résoudre un tir</h4>
+   <div class="r"><select id="tz" onchange="tamCalc()"></select></div>
+   <div class="r"><label>Dé du joueur <input id="td" type="number" min="0" style="width:70px" oninput="tamCalc()" placeholder="ex : 14"></label>
+   <label>Bonus <input id="tb" type="number" value="0" style="width:60px" oninput="tamCalc()"></label></div>
+   <div id="tcalc" class="hint" style="text-align:left;margin:8px 0">Entre le résultat du dé.</div>
+   <div class="r"><button class="btn" style="--c:#00ff88" onclick="tamApply()">✔ APPLIQUER LES DÉGÂTS</button><button class="btn" style="--c:#ff4060" onclick="tamMiss()">✖ RATÉ</button></div>
+   <div class="hint" style="text-align:left;margin:6px 0 0">Dégâts = (dé + bonus) × multiplicateur de la zone.</div></div>
+  <div class="fm"><h4>Cible</h4>
+   <div class="r">PV : <input id="thp" type="number" style="width:70px"> / <input id="tmx" type="number" style="width:70px"> <button class="btn" onclick="tamSetHp()">OK</button></div>
+   <div class="r" style="margin-top:6px"><button class="btn" onclick="tamAdd(-5)">−5</button><button class="btn" onclick="tamAdd(-1)">−1</button><button class="btn" onclick="tamAdd(1)">+1</button><button class="btn" onclick="tamAdd(5)">+5</button><button class="btn" style="--c:#00ff88" onclick="tamFull()">PV AU MAX</button></div>
+   <div class="r" style="margin-top:8px">Genre de la cible :
+   <button class="btn" id="tsh" onclick="sendTo('tamuro','sex',{v:'h'})">♂ HOMME</button><button class="btn" id="tsf" onclick="sendTo('tamuro','sex',{v:'f'})">♀ FEMME</button></div>
+   <div class="r" style="margin-top:8px"><button class="btn" style="--c:#ff4060" onclick="sendTo('tamuro','resetZones',{})">↺ RÉINITIALISER LES ZONES</button></div></div>
+ </div>
+</div>
 <div id="lab" class="labp">
  <h2>⚗ GESTION DU LABO DE FURY</h2>
  <div id="lab-dyn"><div class="hint" style="margin:0">En attente du signal de Fury…</div></div>
@@ -118,11 +137,10 @@ function body(role,d){
     h+='<div class="sec">HISTORIQUE</div><div class="log">'+(s.logs||[]).slice().reverse().map(esc).join('<br>')+'</div>';
   }
   if(role==='tamuro'){
-    h+='<div class="kv"><span>Cible</span><b>'+esc(s.target)+'</b></div><div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040');
-    h+='<div class="kv"><span>Arme</span><b>'+esc(s.weapon)+'</b></div><div class="kv"><span>Distance / couvert</span><b>'+esc(s.dist)+' · '+esc(s.cover)+'</b></div><div class="kv"><span>Bonus</span><b>+'+s.bonus+'</b></div>';
+    h+='<div class="kv"><span>PV de la cible</span><b>'+s.hp+' / '+s.max+(s.hp<=0?' ✖':'')+'</b></div>'+bar(s.hp,s.max,'#ff2040');
+    h+='<div class="kv"><span>Zone visée</span><b>'+esc(((s.zones||[]).filter(function(z){return z.k===s.aim;})[0]||{n:'—'}).n)+'</b></div>';
     h+='<div class="sec">ZONES</div>'+(s.zones||[]).map(function(z){return '<div class="kv"><span>'+esc(z.n)+'</span><b>'+z.d+' / '+z.max+(z.d>=z.max?' ✖':'')+'</b></div>'+bar(z.d,z.max,'#ff2040');}).join('');
-    h+='<div class="sec">GENRE DES CIBLES (zone « appareil génital »)</div>'+(s.all||[]).map(function(x,i){return '<div class="kv"><span>'+esc(x.n)+'</span><b><button class="btn" style="--c:'+(x.sex!=='f'?'#00ccff':'#555')+'" onclick="sendTo(\'tamuro\',\'sex\',{i:'+i+',v:\'h\'})">♂ HOMME</button> <button class="btn" style="--c:'+(x.sex==='f'?'#ff66cc':'#555')+'" onclick="sendTo(\'tamuro\',\'sex\',{i:'+i+',v:\'f\'})">♀ FEMME</button></b></div>';}).join('');
-    h+='<div class="sec">DERNIERS TIRS</div><div class="log">'+(s.shots||[]).map(esc).join('<br>')+'</div>';
+    h+='<div class="sec">DERNIERS ÉVÉNEMENTS</div><div class="log">'+(s.shots||[]).map(esc).join('<br>')+'</div>';
   }
   return h;
 }
@@ -132,6 +150,29 @@ document.getElementById('r2').selectedIndex=1;
 function val(i){return document.getElementById(i).value.trim();}
 function giveSyr(){if(!val('sn')){return;}sendTo('fury','addSyr',{n:val('sn'),e:val('se'),side:val('ss')||'Aucun effet secondaire notable.',k:val('sk'),pot:+val('sp'),tested:document.getElementById('st2').checked});['sn','se','ss'].forEach(function(i){document.getElementById(i).value='';});}
 function addRecipe(){var ids=[val('r1'),val('r2'),val('r3')].filter(Boolean);if(!val('rn')||ids.length<2)return;sendTo('fury','recipe',{ids:ids,n:val('rn'),e:val('re'),k:val('rk')});['rn','re'].forEach(function(i){document.getElementById(i).value='';});}
+var TAM=null,lastAim=null;
+function tamCalc(){
+  var o=document.getElementById('tcalc');if(!TAM){return;}
+  var z=(TAM.zones||[]).filter(function(x){return x.k===document.getElementById('tz').value;})[0];if(!z)return;
+  var d=document.getElementById('td').value;if(d===''){o.innerHTML='Entre le résultat du dé.';return;}
+  var tot=(+d)+(+document.getElementById('tb').value||0),dmg=Math.max(0,Math.round(tot*z.x)),after=Math.max(0,TAM.hp-dmg),brk=z.d+dmg>=z.max;
+  o.innerHTML='<b style="color:#fff;font-size:13px">'+dmg+' dégâts</b> <span style="opacity:.6">(('+tot+') × '+z.x+' · '+esc(z.n)+')</span><br>PV : '+TAM.hp+' → <b>'+after+'</b> / '+TAM.max+'<br>'+(dmg>=TAM.hp&&TAM.hp>0?'<b style="color:#ff2040;font-size:13px">☠ LE TIR TUE LA CIBLE</b>':(TAM.hp<=0?'<b style="color:#ff6080">La cible est déjà neutralisée.</b>':'<span style="color:#00ff88">La cible survit</span> (il lui reste '+after+' PV)'))+'<br>'+(brk?'<b style="color:#ffaa00">⚠ Zone brisée : '+esc(z.eff||'')+'</b>':'<span style="opacity:.6">Zone : '+(z.d+dmg)+' / '+z.max+' — non brisée</span>');
+}
+function tamApply(){var z=val('tz'),d=val('td');if(!TAM||d==='')return;var tot=(+d)+(+val('tb')||0),zz=TAM.zones.filter(function(x){return x.k===z;})[0];sendTo('tamuro','hit',{z:z,dmg:Math.max(0,Math.round(tot*zz.x))});document.getElementById('td').value='';tamCalc();}
+function tamMiss(){if(!TAM)return;sendTo('tamuro','miss',{z:val('tz')});document.getElementById('td').value='';}
+function tamSetHp(){sendTo('tamuro','setHp',{hp:val('thp')===''?null:+val('thp'),max:+val('tmx')||undefined});}
+function tamAdd(n){if(TAM)sendTo('tamuro','setHp',{hp:TAM.hp+n});}
+function tamFull(){if(TAM)sendTo('tamuro','setHp',{hp:TAM.max});}
+function tamDyn(){
+  var d=data.tamuro;if(!d)return;var s=d.state||{};TAM=s;
+  var sel=document.getElementById('tz');
+  if(!sel.options.length)sel.innerHTML=(s.zones||[]).map(function(z){return '<option value="'+z.k+'">'+esc(z.n)+' (×'+z.x+')</option>';}).join('');
+  if(s.aim&&s.aim!==lastAim){sel.value=s.aim;lastAim=s.aim;}
+  document.getElementById('tam-dyn').innerHTML='<div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040')+'<div class="kv"><span>Zone visée par le joueur</span><b>'+esc(((s.zones||[]).filter(function(z){return z.k===s.aim;})[0]||{n:'— (aucune)'}).n)+'</b></div>';
+  var a=document.activeElement.id;if(a!=='thp')document.getElementById('thp').value=s.hp;if(a!=='tmx')document.getElementById('tmx').value=s.max;
+  document.getElementById('tsh').style.setProperty('--c',s.sex!=='f'?'#00ccff':'#555');document.getElementById('tsf').style.setProperty('--c',s.sex==='f'?'#ff66cc':'#555');
+  tamCalc();
+}
 function labDyn(){
   var d=data.fury,box=document.getElementById('lab-dyn');if(!d){return;}
   var s=d.state||{},h='<div class="hint" style="margin:0 0 8px;text-align:left">📦 <b>Produits :</b> ils se gèrent dans l\'<b>inventaire de Fury</b> (Outil de jeu → Inventaire → cocher « ⚗ Utilisable au labo »). Fury les glisse ensuite sur la table de mélange ; ce qu\'elle utilise est retiré de son inventaire.</div>';
@@ -156,7 +197,7 @@ function paint(){
     h+='<div class="card '+(d?'':'off')+'" style="--c:'+m.c+'"><h3><span>'+m.ico+' '+m.n+' — '+m.t.toUpperCase()+'</span><small>'+(d?'● '+ago(d.t):'hors ligne')+'</small></h3>'+(d?body(role,d):'<div style="color:rgba(255,255,255,.4);font-size:11px">Pas encore de signal. '+m.n+' n\'a pas ouvert son outil.</div>')+'</div>';
   });
   document.getElementById('cards').innerHTML=h;
-  labDyn();
+  labDyn();tamDyn();
 }
 function addEv(ev){
   var k=ev.t+'|'+ev.role+'|'+ev.txt;if(seen[k])return;seen[k]=1;feed.push(ev);feed.sort(function(a,b){return b.t-a.t;});if(feed.length>120)feed.length=120;

@@ -38,6 +38,8 @@ label{display:block;font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.4);
 .log{font-size:10px;line-height:1.7;color:rgba(255,255,255,.6);max-height:170px;overflow:auto;border-top:1px solid rgba(255,255,255,.08);margin-top:10px;padding-top:6px;}
 .log b.h{color:#00ff88}.log b.m{color:#ff6080}.log b.c{color:#ffc83c}
 .zl{font-size:10px;display:flex;justify-content:space-between;margin:2px 0;}
+.aim{margin-top:12px;border:1px dashed rgba(255,32,64,.4);padding:9px 10px;font-size:11px;letter-spacing:2px;color:#ffd0d6;line-height:1.7;}
+.aim b{color:#fff;}.aim small{letter-spacing:0;color:rgba(255,255,255,.45);}
 .small{font-size:9px;color:rgba(255,255,255,.35);line-height:1.6;margin-top:8px;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
@@ -46,30 +48,15 @@ label{display:block;font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.4);
 <body>
 <a class="back" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{window.close();}">← RETOUR</a>
 <div id="app">
- <div id="view"><div id="hud">VISEUR TACTIQUE 3D // TAMURO</div><div id="hit"></div><div id="zl"></div><div id="tip">GLISSE POUR TOURNER · MOLETTE / PINCE POUR ZOOMER · CLIQUE UNE ZONE POUR TIRER</div></div>
+ <div id="view"><div id="hud">VISEUR TACTIQUE 3D // TAMURO</div><div id="hit"></div><div id="zl"></div><div id="tip">GLISSE POUR TOURNER · MOLETTE / PINCE POUR ZOOMER · CLIQUE UNE ZONE POUR LA VISER</div></div>
  <div id="side">
-  <h1>VISEUR 3D</h1><div class="sub">CLIQUE SUR LA ZONE À FRAPPER</div>
-  <label>CIBLE</label><div class="en" id="en"></div>
+  <h1>VISEUR 3D</h1><div class="sub">CLIQUE SUR LA ZONE À VISER</div>
   <div id="hpb"></div>
-  <label>ARME</label><div class="seg" id="wp"></div>
-  <label>DISTANCE</label><div class="seg" id="ds"></div>
-  <label>COUVERT DE LA CIBLE</label><div class="seg" id="cv"></div>
-  <div class="zl" style="margin-top:10px"><span>Ton bonus d'attaque</span><span><button id="bm" style="background:none;border:1px solid #ff2040;color:#ff2040;cursor:pointer;border-radius:3px">−</button> <b id="bn">+3</b> <button id="bp" style="background:none;border:1px solid #ff2040;color:#ff2040;cursor:pointer;border-radius:3px">+</button></span></div>
+  <div id="aim" class="aim"></div>
   <div class="log" id="log"></div>
-  <div class="small">Difficulté = 10 + zone + distance + couvert. Tête +4, torse +0, bras +2, avant-bras +3, mains +5, cuisses +2, jambes +3. Critique sur 20 naturel (dégâts x2), maladresse sur 1.</div>
-  <div style="margin-top:10px"><button id="rs" style="font-family:inherit;font-size:10px;letter-spacing:2px;padding:8px 12px;border:1px solid #ff2040;background:transparent;color:#ff2040;border-radius:4px;cursor:pointer">RÉINITIALISER LA CIBLE</button></div>
  </div>
 </div>
 <script>
-var ENEMIES=[
- {n:'Garde Arasaka',hp:30,col:0x888899,h:1,w:1},
- {n:'Gangster',hp:22,col:0xaa6633,h:1,w:1.05},
- {n:'Cyberpsycho',hp:45,col:0xcc2244,h:1.12,w:1.2},
- {n:'Cadre corpo',hp:16,col:0x4466aa,h:1,w:.95}
-];
-var WEAPONS=[{n:'Pistolet',d:'1d6+2',mod:0,dmg:[1,6,2]},{n:'Fusil',d:'2d6',mod:-1,dmg:[2,6,0]},{n:'Katana',d:'1d8+3',mod:-3,dmg:[1,8,3],melee:true},{n:'Shotgun',d:'3d6',mod:-2,dmg:[3,6,0]}];
-var DIST=[{n:'CORPS À CORPS',m:-2},{n:'COURTE',m:0},{n:'MOYENNE',m:2},{n:'LONGUE',m:5}];
-var COVER=[{n:'AUCUN',m:0},{n:'LÉGER',m:2},{n:'LOURD',m:5}];
 var ZONES={
   head:{n:'Tête',m:4,x:2,hp:.15},torso:{n:'Torse',m:0,x:1,hp:.26},
   armL:{n:'Bras gauche',m:2,x:.7,hp:.06},armR:{n:'Bras droit',m:2,x:.7,hp:.06},
@@ -78,19 +65,21 @@ var ZONES={
   thighL:{n:'Cuisse gauche',m:2,x:.7,hp:.07},thighR:{n:'Cuisse droite',m:2,x:.7,hp:.07},
   legL:{n:'Jambe gauche',m:3,x:.7,hp:.06},legR:{n:'Jambe droite',m:3,x:.7,hp:.06},
   fesses:{n:'Fesses',m:1,x:.7,hp:.04},
-  groin:{get n(){return 'Appareil génital '+(st.sex[st.en]==='f'?'♀':'♂');},m:6,x:1.5,hp:.03}};
+  groin:{get n(){return 'Appareil génital '+(st.sex==='f'?'♀':'♂');},m:6,x:1.5,hp:.03}};
 var EFFG={h:'Aïe… sonné : perd son prochain tour et voix de soprano pour la journée.',f:'Coup bas : plié en deux, perd son prochain tour.'};
-var EFF={get groin(){return EFFG[st.sex[st.en]==='f'?'f':'h'];},fesses:'Fessée magistrale : ne peut plus s\'asseoir, -1 à tout.',head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',
+var EFF={get groin(){return EFFG[st.sex==='f'?'f':'h'];},fesses:'Fessée magistrale : ne peut plus s\'asseoir, -1 à tout.',head:'Étourdi : -2 à tout au prochain tour.',torso:'Souffle coupé.',
   armL:'Bras gauche hors d\'usage : lâche ce qu\'il tient.',armR:'Bras droit hors d\'usage : lâche son arme.',
   foreL:'Avant-bras gauche brisé : -2 en attaque.',foreR:'Avant-bras droit brisé : -2 en attaque.',
   handL:'Main gauche écrasée : lâche ce qu\'il tient.',handR:'Main droite écrasée : lâche son arme.',
   thighL:'Cuisse gauche touchée : vitesse réduite de moitié.',thighR:'Cuisse droite touchée : vitesse réduite de moitié.',
   legL:'Jambe gauche brisée : ne peut plus courir.',legR:'Jambe droite brisée : ne peut plus courir.'};
-var st={sex:(function(){try{var v=JSON.parse(localStorage.getItem('tam_sex'));if(v&&v.length)return v;}catch(e){}return [];})(),en:0,wp:0,ds:1,cv:0,bonus:3,hp:{},zd:{}};
-for(var _i=0;_i<8;_i++)if(st.sex[_i]!=='f')st.sex[_i]='h';
+var SAVEK='tam_state_'+(new URLSearchParams(location.search).get('code')||'');
+var st={sex:'h',hp:30,max:30,aim:null,zd:{}};
+Object.keys(ZONES).forEach(function(k){st.zd[k]=0;});
+try{var _v=JSON.parse(localStorage.getItem(SAVEK));if(_v&&_v.max){st.sex=_v.sex==='f'?'f':'h';st.hp=_v.hp;st.max=_v.max;Object.keys(ZONES).forEach(function(k){st.zd[k]=(_v.zd&&_v.zd[k])||0;});}}catch(e){}
+function saveSt(){try{localStorage.setItem(SAVEK,JSON.stringify({sex:st.sex,hp:st.hp,max:st.max,zd:st.zd}));}catch(e){}}
 function r(n){return 1+Math.floor(Math.random()*n);}
-function reset(){var e=ENEMIES[st.en];st.hp[st.en]=e.hp;st.zd[st.en]={};Object.keys(ZONES).forEach(function(k){st.zd[st.en][k]=0;});}
-ENEMIES.forEach(function(_,i){st.en=i;reset();});st.en=0;
+function zmax(k){return Math.max(1,Math.round(st.max*ZONES[k].hp));}
 
 /* ───────── 3D ───────── */
 var view=document.getElementById('view');
@@ -156,10 +145,8 @@ function resize(){var w=view.clientWidth,h=view.clientHeight;rend.setSize(w,h);c
 window.addEventListener('resize',resize);resize();
 var modelOn=false,hover=null,hv={};
 function paintEnemy(){
-  var e=ENEMIES[st.en];
-  body.scale.set(e.w,e.h,e.w);
   for(var k in mats){
-    var d=st.zd[st.en][k],mx=Math.max(1,e.hp*ZONES[k].hp),f=Math.min(1,d/mx);
+    var d=st.zd[k],mx=zmax(k),f=Math.min(1,d/mx);
     if(modelOn){
       mats[k].uniforms.uColor.value.copy(new THREE.Color(HOLO).lerp(new THREE.Color(0xff1030),f));
       mats[k].uniforms.uAlpha.value=f>=1?.25:1;
@@ -298,7 +285,7 @@ function loop(){
   cam.lookAt(0,-.15,0);
   ring.rotation.z+=.01;
   reticle.rotation.y+=.05;
-  for(var hk in mats){var tg=(hk===hover)?1:0;hv[hk]=(hv[hk]||0)+(tg-(hv[hk]||0))*.25;
+  for(var hk in mats){var tg=(hk===hover||hk===st.aim)?1:0;hv[hk]=(hv[hk]||0)+(tg-(hv[hk]||0))*.25;
     if(modelOn)mats[hk].uniforms.uHover.value=hv[hk];else mats[hk].opacity=Math.max(mats[hk].opacity,.3+.4*hv[hk]);}
   var tt=performance.now()/1000;for(var q=0;q<fxT.length;q++)fxT[q](tt);
   rend.render(scene,cam);
@@ -320,15 +307,15 @@ cv.addEventListener('pointermove',function(e){
 function setHover(z,e){
   hover=z;var tip=document.getElementById('zl');
   if(!z){tip.style.display='none';return;}
-  var zz=ZONES[z],diff=10+zz.m+DIST[st.ds].m+COVER[st.cv].m,brk=st.zd[st.en][z]>=Math.max(1,ENEMIES[st.en].hp*zz.hp);
+  var zz=ZONES[z],brk=st.zd[z]>=zmax(z);
   var r0=view.getBoundingClientRect();
-  tip.innerHTML='<b>'+zz.n.toUpperCase()+'</b><br>Difficulté '+diff+(zz.x!==1?' · dégâts ×'+zz.x:'')+(brk?' · <span style="color:#ff6080">brisée</span>':'');
+  tip.innerHTML='<b>'+zz.n.toUpperCase()+'</b>'+(brk?'<br><span style="color:#ff6080">brisée</span>':'');
   tip.style.display='block';tip.style.left=Math.min(e.clientX-r0.left+16,r0.width-190)+'px';tip.style.top=(e.clientY-r0.top+16)+'px';
 }
 cv.addEventListener('pointerleave',function(){setHover(null);});
 cv.addEventListener('pointerup',function(e){
   delete pts[e.pointerId];drag=null;
-  if(!moved){var h=pickZone(e);if(h)shoot(h.object.userData.zone,h.point);}
+  if(!moved){var h=pickZone(e);if(h)aimAt(h.object.userData.zone,h.point);}
 });
 cv.addEventListener('wheel',function(e){e.preventDefault();dist=Math.max(2.8,Math.min(9,dist+e.deltaY*.004));},{passive:false});
 /* pincement */
@@ -345,57 +332,43 @@ var JOKES={
           miss:['Raté ! Elle te remercierait bien, mais elle est trop occupée à rigoler.','Tu as visé bas et tu as quand même tout loupé. Bravo.','Elle a croisé les jambes à temps, la maligne.']}
 };
 function joke(zone,ok){
-  var j=zone==='fesses'?JOKES.fesses:(zone==='groin'?(st.sex[st.en]==='f'?JOKES.groin_f:JOKES.groin_h):null);
+  var j=zone==='fesses'?JOKES.fesses:(zone==='groin'?(st.sex==='f'?JOKES.groin_f:JOKES.groin_h):null);
   if(!j)return '';var a=ok?j.hit:j.miss;return '<br><i style="color:#ffc83c">« '+a[Math.floor(Math.random()*a.length)]+' »</i>';
 }
-/* ───────── règles ───────── */
-function shoot(zone,point){
-  var e=ENEMIES[st.en],w=WEAPONS[st.wp],z=ZONES[zone];
-  if(st.hp[st.en]<=0){log('<b class="m">Cible neutralisée.</b> Réinitialise ou choisis-en une autre.');return;}
-  if(w.melee&&st.ds>0){log('<b class="m">'+w.n+'</b> : corps à corps uniquement.');return;}
-  var diff=10+z.m+DIST[st.ds].m+COVER[st.cv].m;
-  var dr=r(20),tot=dr+st.bonus+w.mod,ok=dr!==1&&(dr===20||tot>=diff);
-  reticle.position.copy(point);reticle.visible=true;setTimeout(function(){reticle.visible=false;},900);
-  var hit=document.getElementById('hit');hit.classList.remove('on');void hit.offsetWidth;
-  if(!ok){
-    hit.textContent=dr===1?'MALADRESSE':'RATÉ';hit.style.color='#ff6080';hit.classList.add('on');
-    rec((dr===1?'MALADRESSE':'rate')+' '+z.n+' de '+e.n+' (d20 '+dr+' → '+tot+' vs '+diff+')');
-    log('<b class="m">RATÉ</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+(dr===1?' (maladresse : l\'arme s\'enraye)':'')+'.'+joke(zone,false));return;
-  }
-  var crit=dr===20,dmg=w.dmg[2];for(var i=0;i<w.dmg[0];i++)dmg+=r(w.dmg[1]);
-  dmg=Math.round(dmg*z.x*(crit?2:1));
-  st.hp[st.en]=Math.max(0,st.hp[st.en]-dmg);
-  var zd=st.zd[st.en];zd[zone]+=dmg;
-  var brk=zd[zone]>=Math.max(1,e.hp*z.hp);
-  hit.textContent=(crit?'CRITIQUE ':'TOUCHÉ ')+dmg;hit.style.color=crit?'#ffc83c':'#00ff88';hit.classList.add('on');
-  log('<b class="'+(crit?'c':'h')+'">'+(crit?'CRITIQUE':'TOUCHÉ')+'</b> '+z.n+' — d20 '+dr+' '+sg(st.bonus+w.mod)+' = '+tot+' contre '+diff+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(st.hp[st.en]<=0?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':'')+joke(zone,true));
-  rec((crit?'CRITIQUE ':'touche ')+z.n+' de '+e.n+' : '+dmg+' dégâts ('+w.n+', d20 '+dr+')'+(brk?' — zone brisée':'')+(st.hp[st.en]<=0?' — CIBLE NEUTRALISÉE':''));
-  paintEnemy();ui();
+/* ───────── visée & résolution (le MJ lance la résolution depuis son suivi) ───────── */
+function aimAt(zone,point){
+  st.aim=zone;reticle.position.copy(point);reticle.visible=true;setTimeout(function(){reticle.visible=false;},900);
+  document.getElementById('aim').innerHTML='ZONE VISÉE : <b>'+ZONES[zone].n.toUpperCase()+'</b><br><small>Annonce-la au MJ et lance ton dé.</small>';
+  rec('vise : '+ZONES[zone].n);paintEnemy();
 }
-function sg(n){return (n>=0?'+':'')+n;}
 function log(h){var l=document.getElementById('log');l.innerHTML='<div>'+h+'</div>'+l.innerHTML;}
-function seg(id,list,key,fn){
-  var el=document.getElementById(id);
-  el.innerHTML=list.map(function(x,i){return '<button class="'+(st[key]===i?'on':'')+'" data-i="'+i+'">'+x.n+(x.d?' <small>'+x.d+'</small>':'')+'</button>';}).join('');
-  Array.prototype.forEach.call(el.querySelectorAll('button'),function(b){b.onclick=function(){st[key]=+b.getAttribute('data-i');ui();};});
-}
+function popup(txt,col){var hit=document.getElementById('hit');hit.classList.remove('on');void hit.offsetWidth;hit.textContent=txt;hit.style.color=col;hit.classList.add('on');}
 function ui(){
-  var e=ENEMIES[st.en];
-  var en=document.getElementById('en');
-  en.innerHTML=ENEMIES.map(function(x,i){return '<button class="'+(i===st.en?'on':'')+'" data-i="'+i+'">'+x.n+(st.hp[i]<=0?' ✖':'')+'</button>';}).join('');
-  Array.prototype.forEach.call(en.querySelectorAll('button'),function(b){b.onclick=function(){st.en=+b.getAttribute('data-i');paintEnemy();ui();if(window.playScan)playScan();};});
-  document.getElementById('hpb').innerHTML='<div class="zl"><span>PV</span><span>'+st.hp[st.en]+' / '+e.hp+'</span></div><div class="bar"><i style="width:'+(st.hp[st.en]/e.hp*100)+'%"></i></div>';
-  seg('wp',WEAPONS,'wp');seg('ds',DIST,'ds');seg('cv',COVER,'cv');
-  document.getElementById('bn').textContent=sg(st.bonus);
+  var pct=Math.max(0,Math.min(100,st.hp/st.max*100));
+  document.getElementById('hpb').innerHTML='<div class="zl"><span>POINTS DE VIE</span><span>'+st.hp+' / '+st.max+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div>'+(st.hp<=0?'<div style="color:#ff6080;letter-spacing:3px;font-size:11px;margin-top:4px">✖ CIBLE NEUTRALISÉE</div>':'');
+  if(!st.aim)document.getElementById('aim').innerHTML='CLIQUE SUR LA ZONE À VISER<br><small>Le MJ résout ton tir avec ton jet de dé.</small>';
 }
-document.getElementById('bm').onclick=function(){st.bonus=Math.max(-5,st.bonus-1);ui();};
-document.getElementById('bp').onclick=function(){st.bonus=Math.min(15,st.bonus+1);ui();};
-document.getElementById('rs').onclick=function(){reset();paintEnemy();ui();log('Cible réinitialisée.');};
-function tamState(){var e=ENEMIES[st.en];return {target:e.n,hp:st.hp[st.en],max:e.hp,zones:Object.keys(ZONES).map(function(k){return {n:ZONES[k].n,d:st.zd[st.en][k],max:Math.max(1,Math.round(e.hp*ZONES[k].hp))};}),weapon:WEAPONS[st.wp].n,dist:DIST[st.ds].n,cover:COVER[st.cv].n,bonus:st.bonus,sex:st.sex[st.en],all:ENEMIES.map(function(x,i){return {n:x.n,hp:st.hp[i],max:x.hp,sex:st.sex[i]};}),shots:shots.slice(0,10)};}
+function applyHit(zone,dmg){
+  var z=ZONES[zone];if(!z)return;dmg=Math.max(0,Math.round(dmg));
+  st.hp=Math.max(0,st.hp-dmg);st.zd[zone]+=dmg;var brk=st.zd[zone]>=zmax(zone);
+  popup('TOUCHÉ '+dmg,'#00ff88');
+  log('<b class="h">TOUCHÉ</b> '+z.n+' → <b>'+dmg+' dégâts</b>'+(brk?'<br>▸ Zone brisée : '+EFF[zone]:'')+(st.hp<=0?'<br>▸ <b class="h">CIBLE NEUTRALISÉE</b>':'')+joke(zone,true));
+  rec('touche '+z.n+' : '+dmg+' dégâts'+(brk?' — zone brisée':'')+(st.hp<=0?' — CIBLE NEUTRALISÉE':''));
+  saveSt();paintEnemy();ui();
+}
+function applyMiss(zone){
+  var z=ZONES[zone];if(!z)return;popup('RATÉ','#ff6080');
+  log('<b class="m">RATÉ</b> '+z.n+'.'+joke(zone,false));rec('rate '+z.n);
+}
+function tamState(){return {hp:st.hp,max:st.max,sex:st.sex,aim:st.aim,zones:Object.keys(ZONES).map(function(k){return {k:k,n:ZONES[k].n,x:ZONES[k].x,d:st.zd[k],max:zmax(k),eff:EFF[k]};}),shots:shots.slice(0,10)};}
 var shots=[];
-function rec(t){shots.unshift(t);if(shots.length>20)shots.pop();if(window.NPTools)NPTools.event(t);}
-if(window.NPTools)function tamCmd(d){
-  if(d.type==='sex'&&d.i>=0&&d.i<ENEMIES.length){st.sex[d.i]=d.v==='f'?'f':'h';try{localStorage.setItem('tam_sex',JSON.stringify(st.sex));}catch(e){}ui();NPTools.pub();}
+function rec(t){shots.unshift(t);if(shots.length>20)shots.pop();if(window.NPTools){NPTools.event(t);NPTools.pub();}}
+function tamCmd(d){
+  if(d.type==='sex'){st.sex=d.v==='f'?'f':'h';saveSt();ui();paintEnemy();NPTools.pub();}
+  else if(d.type==='setHp'){if(d.max>0)st.max=Math.round(d.max);if(d.hp!=null)st.hp=Math.max(0,Math.min(st.max,Math.round(d.hp)));saveSt();paintEnemy();ui();NPTools.pub();NPTools.event('PV : '+st.hp+' / '+st.max);}
+  else if(d.type==='hit')applyHit(d.z,d.dmg);
+  else if(d.type==='miss')applyMiss(d.z);
+  else if(d.type==='resetZones'){Object.keys(ZONES).forEach(function(k){st.zd[k]=0;});st.aim=null;saveSt();paintEnemy();ui();NPTools.pub();NPTools.event('zones réinitialisées');}
 }
 if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState,onCmd:tamCmd});
 ui();paintEnemy();loop();loadModel();
