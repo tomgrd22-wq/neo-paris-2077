@@ -311,6 +311,18 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 .evt-tm{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-right:8px;}
 
 /* MJ Van controls */
+.garage{margin:18px 0;border:1px solid rgba(255,170,0,.3);border-radius:8px;padding:14px;background:rgba(255,170,0,.03)}
+.gar-head{display:flex;justify-content:space-between;align-items:center;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:#ffaa00;margin-bottom:10px}
+.gar-cash{color:#fff;font-size:14px}
+.gar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.gar-card{border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px;background:rgba(0,0,0,.25);font-size:11px;line-height:1.6}
+.gar-card.on{border-color:rgba(0,255,136,.5)}
+.gar-card h4{margin:0 0 4px;font-family:'Rajdhani',sans-serif;font-size:14px;letter-spacing:2px;color:#fff}
+.gar-lv{display:flex;gap:4px;margin:4px 0}.gar-lv i{flex:1;height:5px;border-radius:2px;background:rgba(255,255,255,.12)}.gar-lv i.f{background:#ffaa00}
+.gar-card small{display:block;color:rgba(255,255,255,.5)}
+.gar-btn{margin-top:6px;margin-right:4px;background:transparent;border:1px solid #ffaa00;color:#ffaa00;border-radius:4px;padding:5px 9px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer}
+.gar-btn:disabled{opacity:.3;cursor:default}.gar-btn.g{border-color:#00ff88;color:#00ff88}.gar-btn.r{border-color:#ff4060;color:#ff4060}
+.gar-mj{display:none;margin-bottom:10px;padding:8px;border:1px dashed rgba(255,32,64,.4);border-radius:6px;font-size:10px;letter-spacing:1px;color:rgba(255,32,64,.8)}.is-mj .gar-mj{display:block}
 .mj-van-panel{display:none;margin-top:16px;padding:16px;border:1px solid rgba(255,32,64,.25);border-radius:6px;background:rgba(40,0,10,.3);flex-direction:column;gap:12px;}
 .mj-van-panel.on{display:flex;}
 .mv-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:#ff4060;padding-bottom:8px;border-bottom:1px solid rgba(255,32,64,.15);}
@@ -634,6 +646,12 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 
         <div class="sys-grid" id="sys-grid"></div>
 
+        <div class="garage" id="garage">
+          <div class="gar-head"><span>🔧 GARAGE — TUNING DU VAN</span><span class="gar-cash" id="gar-cash">0 ¢</span></div>
+          <div class="gar-mj" id="gar-mj"></div>
+          <div class="gar-grid" id="gar-grid"></div>
+        </div>
+
         <div class="van-events">
           <div class="evt-head">📋 JOURNAL D'ÉVÉNEMENTS</div>
           <div class="evt-list" id="evt-list"></div>
@@ -850,6 +868,7 @@ function handleMsg(topic,d){
     if(d.type==='state'){vanState=Object.assign(vanState,d.state);renderVanState();}
     else if(d.type==='event'){addEvent(d.evt);}
     else if(d.type==='sysToggle'){vanSys[d.sys]=d.state;renderSystems();}
+    else if(d.type==='garage'){vanState.mods=d.mods||{};vanState.cash=d.cash;saveVan();renderGarage();renderVanState();}
     else if(d.type==='netStatus'){if(role!=='mj')applyNetStatus(d.status,true);}
     else if(d.type==='netErr'){if(role!=='mj')spawnFakeErr(d.txt);}
     else if(d.type==='tabVis'){hiddenTabs=new Set(d.hidden||[]);applyTabVisibility();}
@@ -887,7 +906,7 @@ function initAll(){
   updateHUD();
   updateDriveView();
   renderChanList();
-  renderVanState();
+  renderVanState();renderGarage();
   renderSystems();
   renderInv();
   renderInvLib();
@@ -905,7 +924,7 @@ function enableMJ(){
   var mh=document.getElementById('map-hint');if(mh)mh.classList.add('on');
   var mctrls=document.getElementById('map-mj-ctrls');if(mctrls)mctrls.classList.add('on');
   document.querySelectorAll('.wp-del,.chan-del,.inv-del').forEach(function(e){e.classList.add('mj-on');});
-  buildMJSysBtns();
+  buildMJSysBtns();renderGarage();
   document.getElementById('net-ctrl').style.display='block';
   document.getElementById('tabs-ctrl').style.display='block';
   buildTabsMenu();
@@ -1615,7 +1634,7 @@ function renderVanState(){
     f.style.width=pct+'%';f.style.background=col;
   }
   setG('fuel','%');setG('batt','%');setG('temp','°C',true);setG('hull','%');
-  document.getElementById('g-fuel-sub').textContent='~'+Math.round(vanState.fuel*4.8)+' km';
+  document.getElementById('g-fuel-sub').textContent='~'+Math.round(vanState.fuel*4.8*TANKX[Math.min(3,(vanState.mods&&vanState.mods.tank)||0)])+' km';
   document.getElementById('g-batt-sub').textContent=vanState.batt<20?'⚠ FAIBLE':'OK';
   document.getElementById('g-hull-sub').textContent=vanState.hull>75?'Intact':vanState.hull>40?'Endommagé':'Critique';
   // Van crit visual state
@@ -1656,6 +1675,53 @@ function buildMJSysBtns(){
     b.onclick=function(){vanSys[k]=!vanSys[k];renderSystems();saveVan();pub(topics.van,{type:'sysToggle',sys:k,state:vanSys[k]});};
     c.appendChild(b);
   });
+}
+
+
+/* ═════ GARAGE / TUNING ═════ */
+var MODS=[
+ {id:'armor',ic:'🛡',n:'Blindage renforcé',lv:[{c:300,e:'Plaques légères : −1 dégât par impact'},{c:500,e:'Acier composite : −2 dégâts par impact'},{c:800,e:'Blindage militaire : −3 dégâts, résiste aux balles légères'}]},
+ {id:'engine',ic:'⚙',n:'Moteur gonflé',lv:[{c:300,e:'+1 aux jets de conduite et de fuite'},{c:550,e:'+2 aux jets de conduite et de fuite'},{c:900,e:'+3 aux jets de conduite et de fuite'}]},
+ {id:'tank',ic:'⛽',n:'Réservoir longue distance',lv:[{c:200,e:'Autonomie +25 %'},{c:350,e:'Autonomie +50 %'},{c:600,e:'Autonomie ×2'}]},
+ {id:'ecm',ic:'📡',n:'Brouilleur ECM',lv:[{c:250,e:'Brouille les caméras proches'},{c:450,e:'Brouille drones et scans de plaque'},{c:700,e:'Invisible aux détections corpo à courte portée'}]},
+ {id:'stash',ic:'📦',n:'Planque secrète',lv:[{c:200,e:'Cache 1 objet aux fouilles'},{c:400,e:'Cache jusqu\'à 3 objets aux fouilles'}]},
+ {id:'lights',ic:'🔦',n:'Projecteurs & vision nocturne',lv:[{c:200,e:'Aucun malus de nuit ou de brouillard'}]},
+ {id:'nitro',ic:'🚀',n:'Nitro',cons:1,c:150,max:3,e:'Un boost d\'accélération (auto-réussite d\'un jet de fuite)'},
+ {id:'smoke',ic:'💨',n:'Fumigènes & clous',cons:1,c:100,max:4,e:'Coupe la poursuite d\'un véhicule derrière toi'}
+];
+var TANKX=[1,1.25,1.5,2];
+function gmods(){if(!vanState.mods)vanState.mods={};return vanState.mods;}
+function gcash(){return typeof vanState.cash==='number'?vanState.cash:400;}
+function garSync(txt){
+  saveVan();pub(topics.van,{type:'garage',mods:vanState.mods,cash:vanState.cash});
+  if(txt){var e={type:'info',text:txt,time:nowT()};addEvent(e);pub(topics.van,{type:'event',evt:e});}
+  renderGarage();renderVanState();
+}
+function garBuy(id){
+  var m=MODS.filter(function(x){return x.id===id;})[0],mods=gmods(),cur=mods[id]||0,cost,lab;
+  if(m.cons){if(cur>=m.max)return;cost=m.c;lab=m.n+' ×'+(cur+1);}
+  else{if(cur>=m.lv.length)return;cost=m.lv[cur].c;lab=m.n+' niv.'+(cur+1);}
+  if(gcash()<cost)return;
+  vanState.cash=gcash()-cost;mods[id]=cur+1;garSync('🔧 Garage : installe '+lab+' (−'+cost+' ¢)');
+}
+function garUse(id){var m=MODS.filter(function(x){return x.id===id;})[0],mods=gmods();if(!mods[id])return;mods[id]--;garSync('🔧 Utilise : '+m.n+' ('+mods[id]+' restant'+(mods[id]>1?'s':'')+')');}
+function garMJ(id,d){var m=MODS.filter(function(x){return x.id===id;})[0],mods=gmods(),mx=m.cons?m.max:m.lv.length;mods[id]=Math.max(0,Math.min(mx,(mods[id]||0)+d));garSync('🔧 Le MJ ajuste : '+m.n+' → '+mods[id]);}
+function garCash(d){vanState.cash=Math.max(0,gcash()+d);garSync();}
+function renderGarage(){
+  var g=document.getElementById('gar-grid');if(!g)return;
+  document.getElementById('gar-cash').textContent=gcash()+' ¢';
+  document.getElementById('gar-mj').innerHTML='CONTRÔLE MJ — crédits : <button class="gar-btn" onclick="garCash(-100)">−100</button><button class="gar-btn" onclick="garCash(100)">+100</button><button class="gar-btn" onclick="garCash(500)">+500</button><button class="gar-btn" onclick="var v=prompt(\'Crédits de Kiki :\',gcash());if(v!==null){vanState.cash=Math.max(0,+v||0);garSync();}">FIXER…</button>';
+  var mods=gmods(),h='';
+  MODS.forEach(function(m){
+    var cur=mods[m.id]||0,mx=m.cons?m.max:m.lv.length,done=!m.cons&&cur>=mx,cost=m.cons?m.c:(done?0:m.lv[cur].c);
+    var bars='<div class="gar-lv">'+Array.apply(null,Array(mx)).map(function(_,i){return '<i class="'+(i<cur?'f':'')+'"></i>';}).join('')+'</div>';
+    var eff=m.cons?m.e+'<small>En stock : '+cur+' / '+mx+'</small>':(cur?'<b style="color:#00ff88">'+m.lv[cur-1].e+'</b>':'<span style="opacity:.5">Non installé</span>')+(done?'':'<small>Prochain : '+m.lv[cur].e+'</small>');
+    var btn=done?'<span style="color:#00ff88;font-size:10px;letter-spacing:2px">✔ NIVEAU MAX</span>':'<button class="gar-btn" '+(gcash()<cost||(m.cons&&cur>=mx)?'disabled':'')+' onclick="garBuy(\''+m.id+'\')">'+(m.cons?'ACHETER':'AMÉLIORER')+' — '+cost+' ¢</button>';
+    if(m.cons&&cur)btn+='<button class="gar-btn g" onclick="garUse(\''+m.id+'\')">UTILISER</button>';
+    if(role==='mj')btn+='<br><button class="gar-btn r" onclick="garMJ(\''+m.id+'\',-1)">− MJ</button><button class="gar-btn g" onclick="garMJ(\''+m.id+'\',1)">+ MJ</button>';
+    h+='<div class="gar-card '+(cur?'on':'')+'"><h4>'+m.ic+' '+m.n.toUpperCase()+'</h4>'+bars+eff+'<div>'+btn+'</div></div>';
+  });
+  g.innerHTML=h;
 }
 
 /* ═════ INVENTAIRE ═════ */
