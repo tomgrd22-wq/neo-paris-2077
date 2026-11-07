@@ -67,8 +67,8 @@ select{background:#0c0c18;color:#fff;border:1px solid rgba(255,255,255,.25);bord
    <div class="r"><label>Dé du joueur <input id="td" type="number" min="0" style="width:70px" oninput="tamCalc()" placeholder="ex : 14"></label>
    <label>Bonus <input id="tb" type="number" value="0" style="width:60px" oninput="tamCalc()"></label></div>
    <div id="tcalc" class="hint" style="text-align:left;margin:8px 0">Entre le résultat du dé.</div>
-   <div class="r"><button class="btn" style="--c:#00ff88" onclick="tamApply()">✔ APPLIQUER LES DÉGÂTS</button><button class="btn" style="--c:#ff4060" onclick="tamMiss()">✖ RATÉ</button></div>
-   <div class="hint" style="text-align:left;margin:6px 0 0">Dégâts = (dé + bonus) × multiplicateur de la zone.</div></div>
+   <div class="r"><button class="btn" style="--c:#00ff88" onclick="tamApply()">✔ RÉUSSI (dégâts)</button><button class="btn" style="--c:#ff4060" onclick="tamMiss()">✖ ÉCHEC</button></div>
+   <div class="hint" style="text-align:left;margin:6px 0 0">Dégâts = (dé + bonus) × multiplicateur de la zone. Le joueur voit une animation d'impact (réussi) ou de tir manqué (échec) sur sa silhouette.</div></div>
   <div class="fm"><h4>Cible</h4>
    <div class="r">PV : <input id="thp" type="number" style="width:70px"> / <input id="tmx" type="number" style="width:70px"> <button class="btn" onclick="tamSetHp()">OK</button></div>
    <div class="r" style="margin-top:6px"><button class="btn" onclick="tamAdd(-5)">−5</button><button class="btn" onclick="tamAdd(-1)">−1</button><button class="btn" onclick="tamAdd(1)">+1</button><button class="btn" onclick="tamAdd(5)">+5</button><button class="btn" style="--c:#00ff88" onclick="tamFull()">PV AU MAX</button></div>
