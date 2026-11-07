@@ -200,8 +200,10 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 
 /* Selected target detail */
 .sil-head{display:flex;justify-content:space-between;font-size:10px;letter-spacing:2px;color:#2a9bff;padding:6px 10px;border-bottom:1px solid rgba(42,155,255,.25);}.sil-head b{color:#fff;}
-#sil-box{display:none;border:1px solid rgba(42,155,255,.35);border-radius:6px;overflow:hidden;margin-bottom:14px;background:#020812;box-shadow:0 0 18px rgba(42,155,255,.18);}
-#sil-frame{display:block;width:100%;height:min(58vh,460px);border:0;}
+#sil-box{display:none;position:fixed;left:14px;bottom:14px;z-index:60;width:min(360px,92vw);border:1px solid rgba(42,155,255,.55);border-radius:8px;overflow:hidden;background:#020812;box-shadow:0 0 28px rgba(42,155,255,.35);}
+#sil-frame{display:block;width:100%;height:min(62vh,500px);border:0;}
+#sil-x{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:4px;cursor:pointer;font-size:11px;padding:0 7px;margin-left:8px;}
+.sil-head{align-items:center;}.sil-head b{flex:1;text-align:right;}
 .sel-detail{padding:12px;border:1px solid rgba(255,32,64,.2);border-radius:5px;background:rgba(255,32,64,.04);margin-bottom:14px;}
 .sd-empty{text-align:center;padding:24px 10px;color:rgba(255,255,255,.25);font-size:11px;letter-spacing:2px;}
 .sd-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#ff2040;letter-spacing:2px;margin-bottom:8px;}
@@ -401,6 +403,7 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
   <div class="content">
     <!-- ═══ VISEUR TAB ═══ -->
     <div class="tab-screen on" id="tab-hud">
+      <div id="sil-box"><div class="sil-head"><span>🧍 SILHOUETTE TACTIQUE</span><b id="sil-name"></b><button id="sil-x" onclick="silClose()" title="Fermer">✕</button></div><iframe id="sil-frame" title="Silhouette 3D" allow="fullscreen"></iframe></div>
       <div class="hud-layout">
         <div class="scope-view" id="scope-view">
           <div id="alert-banner"></div>
@@ -436,7 +439,6 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
             <div class="hs-sub" id="hs-sub">Aucune cible verrouillée</div>
           </div>
           <div class="hs-body">
-            <div id="sil-box"><div class="sil-head"><span>🧍 SILHOUETTE TACTIQUE</span><b id="sil-name"></b></div><iframe id="sil-frame" title="Silhouette 3D" allow="fullscreen"></iframe></div>
             <div class="sel-detail" id="sel-detail"><div class="sd-empty">Sélectionne une cible pour l'analyser</div></div>
             <div id="target-list"></div>
           </div>
@@ -835,7 +837,7 @@ function applyAim(){
 }
 
 function lockTarget(id){
-  lockedTarget=id;
+  lockedTarget=id;silClosed=false;
   triggerSweep();
   renderTargetMarkers();
   renderTargets();
@@ -864,13 +866,15 @@ function renderTargets(){
 }
 
 /* ── silhouette 3D liée à la cible verrouillée ── */
-var silLoaded=false,silLast=null;
+var silLoaded=false,silLast=null,silClosed=false;
+function silClose(){silClosed=true;document.getElementById('sil-box').style.display='none';}
 function silPost(m){var fr=document.getElementById('sil-frame');if(fr&&fr.contentWindow){m.np='sil';fr.contentWindow.postMessage(m,'*');}}
 function syncSil(t){
   var box=document.getElementById('sil-box'),fr=document.getElementById('sil-frame');
-  if(!t){box.style.display='none';silLast=null;return;}
+  if(!t){box.style.display='none';silLast=null;silClosed=false;return;}
+  if(silClosed&&silLast===t.id){silSend=null;return;}
   if(!silLoaded){silLoaded=true;fr.src='tamuro-viseur-3d.html?embed=1&code='+encodeURIComponent(sCode||'')+'&role='+(role==='mj'?'mj':'tamuro');}
-  var wasHidden=box.style.display!=='block';box.style.display='block';
+  silClosed=false;var wasHidden=box.style.display!=='block';box.style.display='block';
   document.getElementById('sil-name').textContent=t.name.toUpperCase();
   var msg={type:'target',id:t.id,name:t.name,hp:t.hp,max:t.maxHp,zd:t.zd||{},sex:t.sex||'h',fresh:silLast!==t.id};
   silLast=t.id;silSend=msg;silPost(msg);if(wasHidden)setTimeout(function(){silPost({type:'show'});},60);
