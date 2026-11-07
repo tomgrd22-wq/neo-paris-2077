@@ -221,8 +221,11 @@ function holoScene(mdl,geo,sc,cx,cz,y0){
   });
 }
 /* range une pièce (ou un triangle) du modèle dans l'une des 12 zones : cx = décalage latéral, cy = hauteur depuis les pieds */
-function partZone(cx,cy,H){
-  var ax=Math.abs(cx)/H,h=cy/H,R=cx<0;            /* côté +x = côté gauche du personnage */
+function partZone(cx,cy,H,cz){
+  var ax=Math.abs(cx)/H,h=cy/H,R=cx<0,zz=(cz||0)/H;
+  /* pièces dédiées du modèle : appareil génital (devant, au centre) et fesses (derrière, de part et d'autre) */
+  if(ax<.03&&h>.38&&h<.62&&zz>.02)return 'groin';
+  if(ax>=.02&&ax<.09&&h>.4&&h<.66&&zz<-.02)return 'fesses';            /* côté +x = côté gauche du personnage */
   if(ax>.09)return h>.68?(R?'armR':'armL'):(h>.54?(R?'foreR':'foreL'):(R?'handR':'handL'));
   if(ax<.03)return h>.78?'head':'torso';
   return h>.3?(R?'thighR':'thighL'):(R?'legR':'legL');
@@ -243,7 +246,7 @@ function loadModel(){
     src.forEach(function(o){
       var geo=o.geometry,pos=geo.attributes.position;
       if(multi){
-        var c=new THREE.Vector3();geo.boundingBox.getCenter(c);parts.push({geo:geo,k:partZone(c.x-cx,c.y-bb.min.y,H)});
+        var c=new THREE.Vector3();geo.boundingBox.getCenter(c);parts.push({geo:geo,k:partZone(c.x-cx,c.y-bb.min.y,H,c.z-cz)});
       }else{
         var idx=geo.index.array;
         var L={};Object.keys(ZONES).forEach(function(z){L[z]=[];});
@@ -256,8 +259,8 @@ function loadModel(){
       }
     });
     /* fesses (dos du bassin) et appareil génital (devant, entre les cuisses) : découpés dans torse + cuisses */
-    var extra=[];
-    parts.forEach(function(pt){
+    var extra=[],hasOwn=parts.some(function(pt){return pt.k==='groin';})&&parts.some(function(pt){return pt.k==='fesses';});
+    if(!hasOwn)parts.forEach(function(pt){
       if(['torso','thighL','thighR'].indexOf(pt.k)<0||!pt.geo.index)return;
       var pos=pt.geo.attributes.position,idx=pt.geo.index.array,keep=[],fe=[],gr=[];
       for(var i=0;i<idx.length;i+=3){
