@@ -478,11 +478,7 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
               <button class="mhb-alert-btn" onclick="sendAlert()">▶</button>
             </div>
           </div>
-          <div class="combat-log">
-            <div class="cl-title">📋 JOURNAL DE COMBAT</div>
-            <div id="combat-log-list"></div>
-          </div>
-        </div>
+</div>
       </div>
     </div>
 
@@ -983,7 +979,7 @@ function addLog(type,text){
   renderCombatLog();
 }
 function renderCombatLog(){
-  var l=document.getElementById('combat-log-list');l.innerHTML='';
+  var l=document.getElementById('combat-log-list');if(!l)return;l.innerHTML='';
   combatLog.slice(-15).reverse().forEach(function(e){
     var d=document.createElement('div');d.className='cl-line'+(e.type==='kill'?' kill':'');
     d.innerHTML='['+e.time+'] '+e.text;
