@@ -666,6 +666,7 @@ function handleMsg(topic,d){
   if(topic===topics.hud){
     if(d.type==='hudState'){targets=d.targets||[];combatLog=d.log||[];renderTargets();renderCombatLog();updateHudInfo();}
     else if(d.type==='alert'){showAlert(d.text);}
+    else if(d.type==='aim'){if(role==='mj'){showAlert('🎯 Tamuro vise : '+d.zname+(d.tname?' — '+d.tname:''));silPost({type:'aim',zone:d.zone});try{var ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.12);}catch(e){}}}
     else if(d.type==='netStatus'){if(role!=='mj')applyNetStatus(d.status,true);}
     else if(d.type==='netErr'){if(role!=='mj')spawnFakeErr(d.txt);}
     else if(d.type==='tabVis'){hiddenTabs=new Set(d.hidden||[]);applyTabVisibility();}
@@ -909,6 +910,7 @@ var silSend=null;
 window.addEventListener('message',function(e){
   var d=e.data;if(!d||d.np!=='sil')return;
   if(d.type==='ready'&&silSend)silPost(silSend);
+  if(d.type==='aim'&&role!=='mj'){var tt=targets.find(function(x){return x.id===d.id;});pub(topics.hud,{type:'aim',id:d.id,zone:d.zone,zname:d.zname,tname:tt?tt.name:''});}
   if(d.type==='patch'){
     var t=targets.find(function(x){return x.id===d.id;});if(!t)return;
     t.hp=d.hp;t.maxHp=d.max;t.zd=d.zd||{};t.sex=d.sex;

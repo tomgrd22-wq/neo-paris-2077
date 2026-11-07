@@ -346,7 +346,9 @@ function joke(zone,ok){
 function aimAt(zone,point){
   st.aim=zone;reticle.position.copy(point);reticle.visible=true;setTimeout(function(){reticle.visible=false;},900);
   document.getElementById('aim').innerHTML='ZONE VISÉE : <b>'+ZONES[zone].n.toUpperCase()+'</b><br><small>Annonce-la au MJ et lance ton dé.</small>';
-  rec('vise : '+ZONES[zone].n);paintEnemy();
+  rec('vise : '+ZONES[zone].n+(st.tname?' — '+st.tname:''));
+  if(EMB)try{parent.postMessage({np:'sil',type:'aim',id:st.tid,zone:zone,zname:ZONES[zone].n},'*');}catch(e){}
+  paintEnemy();
 }
 function log(h){var l=document.getElementById('log');l.innerHTML='<div>'+h+'</div>'+l.innerHTML;}
 function popup(txt,col){var hit=document.getElementById('hit');hit.classList.remove('on');void hit.offsetWidth;hit.textContent=txt;hit.style.color=col;hit.classList.add('on');}
@@ -381,6 +383,7 @@ if(window.NPTools&&QS.get('role')!=='mj')NPTools.player({role:(new URLSearchPara
 window.addEventListener('message',function(e){
   var d=e.data;if(!d||d.np!=='sil')return;
   if(d.type==='show'){resize();return;}
+  if(d.type==='aim'){st.aim=d.zone;document.getElementById('aim').innerHTML='ZONE VISÉE : <b>'+(ZONES[d.zone]?ZONES[d.zone].n.toUpperCase():'')+'</b>';paintEnemy();return;}
   if(d.type!=='target')return;
   var changed=st.tid!==d.id;
   st.tid=d.id;st.tname=d.name||'';st.hp=d.hp;st.max=d.max;st.sex=d.sex==='f'?'f':'h';
