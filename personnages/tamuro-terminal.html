@@ -873,7 +873,7 @@ function syncSil(t){
   var box=document.getElementById('sil-box'),fr=document.getElementById('sil-frame');
   if(!t){box.style.display='none';silLast=null;silClosed=false;return;}
   if(silClosed&&silLast===t.id){silSend=null;return;}
-  if(!silLoaded){silLoaded=true;fr.src='tamuro-viseur-3d.html?embed=1&code='+encodeURIComponent(sCode||'')+'&role='+(role==='mj'?'mj':'tamuro');}
+  if(!silLoaded){silLoaded=true;fr.src='tamuro-viseur-3d.html?embed=1&code='+encodeURIComponent(sCode||'')+'&role='+(role==='mj'?'mj':'tamuro')+(window.npBust&&npBust()?'&_r='+npBust():'');}
   silClosed=false;var wasHidden=box.style.display!=='block';box.style.display='block';
   document.getElementById('sil-name').textContent=t.name.toUpperCase();
   var msg={type:'target',id:t.id,name:t.name,hp:t.hp,max:t.maxHp,zd:t.zd||{},sex:t.sex||'h',fresh:silLast!==t.id};
