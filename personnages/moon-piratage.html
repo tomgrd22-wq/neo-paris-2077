@@ -237,7 +237,7 @@ function conclude(decFail){
   if(decFail)h+='<div style="color:#ff6080">Le décryptage a échoué : les effets sont obtenus mais le code d\'accès reste verrouillé.</div>';
   if(n===0)h+='<div style="color:#ff6080">Conseil MJ : dégâts de feedback 1d6 sur le netrunner.</div>';
   h+='</div>';
-  if(code)h+='<div style="margin:16px auto;max-width:420px;border:2px solid #00ff88;border-radius:10px;padding:14px;background:rgba(0,255,136,.07)"><div style="font-size:10px;letter-spacing:3px;color:#00ff88">CODE D\'ACCÈS OBTENU — TRANSMETS-LE AU MJ</div><div style="font-family:Orbitron,monospace;font-size:26px;letter-spacing:4px;color:#fff;margin:8px 0;user-select:all" id="cdv">'+code+'</div><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\')">COPIER</button></div>';
+  if(code)h+='<div style="margin:16px auto;max-width:420px;border:2px solid #00ff88;border-radius:10px;padding:14px;background:rgba(0,255,136,.07)"><div style="font-size:10px;letter-spacing:3px;color:#00ff88">CODE D\'ACCÈS OBTENU — DONNE-LE À UN ALLIÉ (ou au MJ) : il pourra ACTIVER / DÉSACTIVER la cible</div><div style="font-family:Orbitron,monospace;font-size:26px;letter-spacing:4px;color:#fff;margin:8px 0;user-select:all" id="cdv">'+code+'</div><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\')">COPIER</button></div>';
   h+='<button class="btn" onclick="start('+TARGETS.indexOf(S.t)+')">REJOUER LA CIBLE</button> <button class="btn" onclick="home()">AUTRE CIBLE</button></div>';
   view(h);
 }
