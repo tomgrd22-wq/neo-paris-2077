@@ -168,7 +168,7 @@ function tamDyn(){
   var sel=document.getElementById('tz');
   if(!sel.options.length)sel.innerHTML=(s.zones||[]).map(function(z){return '<option value="'+z.k+'">'+esc(z.n)+' (×'+z.x+')</option>';}).join('');
   if(s.aim&&s.aim!==lastAim){sel.value=s.aim;lastAim=s.aim;}
-  document.getElementById('tam-dyn').innerHTML='<div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040')+'<div class="kv"><span>Zone visée par le joueur</span><b>'+esc(((s.zones||[]).filter(function(z){return z.k===s.aim;})[0]||{n:'— (aucune)'}).n)+'</b></div>';
+  document.getElementById('tam-dyn').innerHTML='<div class="kv"><span>Cible verrouillée</span><b>'+esc(s.tname||(s.tid?'—':'(outil seul, pas de cible du viseur)'))+'</b></div><div class="kv"><span>PV</span><b>'+s.hp+' / '+s.max+'</b></div>'+bar(s.hp,s.max,'#ff2040')+'<div class="kv"><span>Zone visée par le joueur</span><b>'+esc(((s.zones||[]).filter(function(z){return z.k===s.aim;})[0]||{n:'— (aucune)'}).n)+'</b></div>';
   var a=document.activeElement.id;if(a!=='thp')document.getElementById('thp').value=s.hp;if(a!=='tmx')document.getElementById('tmx').value=s.max;
   document.getElementById('tsh').style.setProperty('--c',s.sex!=='f'?'#00ccff':'#555');document.getElementById('tsf').style.setProperty('--c',s.sex==='f'?'#ff66cc':'#555');
   tamCalc();

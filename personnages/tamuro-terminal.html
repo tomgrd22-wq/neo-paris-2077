@@ -199,6 +199,9 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
 .tc-elim-badge{position:absolute;top:8px;right:8px;font-size:9px;color:rgba(255,32,64,.6);letter-spacing:1px;}
 
 /* Selected target detail */
+.sil-head{display:flex;justify-content:space-between;font-size:10px;letter-spacing:2px;color:#2a9bff;padding:6px 10px;border-bottom:1px solid rgba(42,155,255,.25);}.sil-head b{color:#fff;}
+#sil-box{display:none;border:1px solid rgba(42,155,255,.35);border-radius:6px;overflow:hidden;margin-bottom:14px;background:#020812;box-shadow:0 0 18px rgba(42,155,255,.18);}
+#sil-frame{display:block;width:100%;height:min(58vh,460px);border:0;}
 .sel-detail{padding:12px;border:1px solid rgba(255,32,64,.2);border-radius:5px;background:rgba(255,32,64,.04);margin-bottom:14px;}
 .sd-empty{text-align:center;padding:24px 10px;color:rgba(255,255,255,.25);font-size:11px;letter-spacing:2px;}
 .sd-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#ff2040;letter-spacing:2px;margin-bottom:8px;}
@@ -433,6 +436,7 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
             <div class="hs-sub" id="hs-sub">Aucune cible verrouillée</div>
           </div>
           <div class="hs-body">
+            <div id="sil-box"><div class="sil-head"><span>🧍 SILHOUETTE TACTIQUE</span><b id="sil-name"></b></div><iframe id="sil-frame" title="Silhouette 3D" allow="fullscreen"></iframe></div>
             <div class="sel-detail" id="sel-detail"><div class="sd-empty">Sélectionne une cible pour l'analyser</div></div>
             <div id="target-list"></div>
           </div>
@@ -859,9 +863,33 @@ function renderTargets(){
   renderTargetMarkers();
 }
 
+/* ── silhouette 3D liée à la cible verrouillée ── */
+var silLoaded=false,silLast=null;
+function silPost(m){var fr=document.getElementById('sil-frame');if(fr&&fr.contentWindow){m.np='sil';fr.contentWindow.postMessage(m,'*');}}
+function syncSil(t){
+  var box=document.getElementById('sil-box'),fr=document.getElementById('sil-frame');
+  if(!t){box.style.display='none';silLast=null;return;}
+  if(!silLoaded){silLoaded=true;fr.src='tamuro-viseur-3d.html?embed=1&code='+encodeURIComponent(sCode||'')+'&role='+(role==='mj'?'mj':'tamuro');}
+  var wasHidden=box.style.display!=='block';box.style.display='block';
+  document.getElementById('sil-name').textContent=t.name.toUpperCase();
+  var msg={type:'target',id:t.id,name:t.name,hp:t.hp,max:t.maxHp,zd:t.zd||{},sex:t.sex||'h',fresh:silLast!==t.id};
+  silLast=t.id;silSend=msg;silPost(msg);if(wasHidden)setTimeout(function(){silPost({type:'show'});},60);
+}
+var silSend=null;
+window.addEventListener('message',function(e){
+  var d=e.data;if(!d||d.np!=='sil')return;
+  if(d.type==='ready'&&silSend)silPost(silSend);
+  if(d.type==='patch'){
+    var t=targets.find(function(x){return x.id===d.id;});if(!t)return;
+    t.hp=d.hp;t.maxHp=d.max;t.zd=d.zd||{};t.sex=d.sex;
+    if(t.hp<=0&&!t.eliminated){t.eliminated=true;addLog('kill','<b>'+esc(t.name)+'</b> mis hors combat.');}
+    saveHud();renderTargets();updateHudInfo();renderSelDetail();
+  }
+});
 function renderSelDetail(){
   var d=document.getElementById('sel-detail');
   var t=targets.find(function(x){return x.id===lockedTarget;});
+  syncSil(t);
   if(!t){d.innerHTML='<div class="sd-empty">Sélectionne une cible pour l\'analyser</div>';return;}
   var scanId='scanres_'+t.id;
   var dmgHtml=(role==='mj'&&!t.eliminated)?

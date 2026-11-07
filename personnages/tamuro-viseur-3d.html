@@ -20,6 +20,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
 #hit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:'Orbitron',monospace;font-weight:900;font-size:34px;letter-spacing:5px;pointer-events:none;opacity:0;text-align:center;}
 #zl{position:absolute;display:none;pointer-events:none;z-index:5;background:rgba(2,12,28,.88);border:1px solid #2a9bff;color:#9fdcff;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:6px 9px;line-height:1.5;box-shadow:0 0 12px rgba(42,155,255,.4);}
 #zl b{color:#fff;letter-spacing:2px;}
+html.emb #side{padding:8px 10px;border:0;border-top:1px solid rgba(255,32,64,.25);}
+html.emb #app{grid-template-columns:1fr !important;grid-template-rows:1fr auto !important;}
+html.emb .back,html.emb h1,html.emb .sub,html.emb #tip,html.emb #hud,html.emb #log,html.emb #np-refresh{display:none !important;}
+html.emb .aim{margin-top:6px;padding:6px 8px;font-size:10px;}
 #hit.on{animation:pop 1.1s ease;}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
 #side{background:rgba(20,4,8,.95);border-left:1px solid rgba(255,32,64,.25);padding:54px 14px 14px;overflow:auto;}
@@ -73,11 +77,14 @@ var EFF={get groin(){return EFFG[st.sex==='f'?'f':'h'];},fesses:'Fessée magistr
   handL:'Main gauche écrasée : lâche ce qu\'il tient.',handR:'Main droite écrasée : lâche son arme.',
   thighL:'Cuisse gauche touchée : vitesse réduite de moitié.',thighR:'Cuisse droite touchée : vitesse réduite de moitié.',
   legL:'Jambe gauche brisée : ne peut plus courir.',legR:'Jambe droite brisée : ne peut plus courir.'};
+var QS=new URLSearchParams(location.search),EMB=QS.get('embed')==='1';
+if(EMB)document.documentElement.classList.add('emb');
 var SAVEK='tam_state_'+(new URLSearchParams(location.search).get('code')||'');
-var st={sex:'h',hp:30,max:30,aim:null,zd:{}};
+var st={sex:'h',hp:30,max:30,aim:null,zd:{},tid:null,tname:''};
 Object.keys(ZONES).forEach(function(k){st.zd[k]=0;});
-try{var _v=JSON.parse(localStorage.getItem(SAVEK));if(_v&&_v.max){st.sex=_v.sex==='f'?'f':'h';st.hp=_v.hp;st.max=_v.max;Object.keys(ZONES).forEach(function(k){st.zd[k]=(_v.zd&&_v.zd[k])||0;});}}catch(e){}
-function saveSt(){try{localStorage.setItem(SAVEK,JSON.stringify({sex:st.sex,hp:st.hp,max:st.max,zd:st.zd}));}catch(e){}}
+if(!EMB)try{var _v=JSON.parse(localStorage.getItem(SAVEK));if(_v&&_v.max){st.sex=_v.sex==='f'?'f':'h';st.hp=_v.hp;st.max=_v.max;Object.keys(ZONES).forEach(function(k){st.zd[k]=(_v.zd&&_v.zd[k])||0;});}}catch(e){}
+function emitPatch(){if(EMB&&st.tid)parent.postMessage({np:'sil',type:'patch',id:st.tid,hp:st.hp,max:st.max,zd:st.zd,sex:st.sex},'*');}
+function saveSt(){emitPatch();if(EMB)return;try{localStorage.setItem(SAVEK,JSON.stringify({sex:st.sex,hp:st.hp,max:st.max,zd:st.zd}));}catch(e){}}
 function r(n){return 1+Math.floor(Math.random()*n);}
 function zmax(k){return Math.max(1,Math.round(st.max*ZONES[k].hp));}
 
@@ -360,7 +367,7 @@ function applyMiss(zone){
   var z=ZONES[zone];if(!z)return;popup('RATÉ','#ff6080');
   log('<b class="m">RATÉ</b> '+z.n+'.'+joke(zone,false));rec('rate '+z.n);
 }
-function tamState(){return {hp:st.hp,max:st.max,sex:st.sex,aim:st.aim,zones:Object.keys(ZONES).map(function(k){return {k:k,n:ZONES[k].n,x:ZONES[k].x,d:st.zd[k],max:zmax(k),eff:EFF[k]};}),shots:shots.slice(0,10)};}
+function tamState(){return {tid:st.tid,tname:st.tname,hp:st.hp,max:st.max,sex:st.sex,aim:st.aim,zones:Object.keys(ZONES).map(function(k){return {k:k,n:ZONES[k].n,x:ZONES[k].x,d:st.zd[k],max:zmax(k),eff:EFF[k]};}),shots:shots.slice(0,10)};}
 var shots=[];
 function rec(t){shots.unshift(t);if(shots.length>20)shots.pop();if(window.NPTools){NPTools.event(t);NPTools.pub();}}
 function tamCmd(d){
@@ -370,7 +377,19 @@ function tamCmd(d){
   else if(d.type==='miss')applyMiss(d.z);
   else if(d.type==='resetZones'){Object.keys(ZONES).forEach(function(k){st.zd[k]=0;});st.aim=null;saveSt();paintEnemy();ui();NPTools.pub();NPTools.event('zones réinitialisées');}
 }
-if(window.NPTools)NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState,onCmd:tamCmd});
+if(window.NPTools&&QS.get('role')!=='mj')NPTools.player({role:(new URLSearchParams(location.search).get('role'))||'tamuro',getState:tamState,onCmd:tamCmd});
+window.addEventListener('message',function(e){
+  var d=e.data;if(!d||d.np!=='sil')return;
+  if(d.type==='show'){resize();return;}
+  if(d.type!=='target')return;
+  var changed=st.tid!==d.id;
+  st.tid=d.id;st.tname=d.name||'';st.hp=d.hp;st.max=d.max;st.sex=d.sex==='f'?'f':'h';
+  Object.keys(ZONES).forEach(function(k){st.zd[k]=(d.zd&&d.zd[k])||0;});
+  if(changed){st.aim=null;if(window.playScan)playScan();}
+  paintEnemy();ui();
+  if(window.NPTools&&QS.get('role')!=='mj')NPTools.pub();
+});
+if(EMB)try{parent.postMessage({np:'sil',type:'ready'},'*');}catch(e){}
 ui();paintEnemy();loop();loadModel();
 </script>
 <script defer src="../assets/refresh.js"></script>
