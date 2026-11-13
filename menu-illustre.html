@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neo-Paris 2077 — Menu illustré</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#efe3c6;--paper2:#e6d6b0;--ink:#3b2a22;--rust:#d9684a;--blue:#6188a8;--green:#7fa27b;--mustard:#e0a83e;--teal:#4f918b;--sky:#bcd1dc;--red:#b8412e}
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%;background:var(--paper);color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif}
+body{background:
+ radial-gradient(ellipse at 20% 0,rgba(255,255,255,.35),transparent 55%),
+ radial-gradient(ellipse at 90% 100%,rgba(150,110,60,.18),transparent 60%),var(--paper);
+ background-attachment:fixed}
+.grain{position:fixed;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .3 0 0 0 0 .2 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.stage{position:relative;max-width:1180px;margin:0 auto;padding:22px 18px 28px;min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;gap:18px}
+.bgshape{position:absolute;z-index:0;opacity:.85}
+.s1{left:2%;top:8%;width:34%;height:32%;background:var(--sky);clip-path:polygon(0 8%,88% 0,100% 85%,10% 100%)}
+.s2{right:3%;top:2%;width:30%;height:34%;background:var(--sky);clip-path:polygon(8% 0,100% 12%,92% 100%,0 90%);opacity:.7}
+.cross{position:absolute;z-index:0;width:18px;height:18px;opacity:.55}
+.cross:before,.cross:after{content:'';position:absolute;background:var(--ink)}.cross:before{left:8px;top:0;width:1.5px;height:18px}.cross:after{top:8px;left:0;height:1.5px;width:18px}
+header{position:relative;z-index:2;text-align:center;padding-top:6px}
+.orn{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--rust);font-size:14px;letter-spacing:6px}
+.orn:before,.orn:after{content:'';height:1.5px;width:70px;background:var(--rust);opacity:.7}
+h1{font-family:'Cinzel',serif;font-weight:800;font-size:clamp(34px,7.4vw,84px);letter-spacing:.08em;color:var(--red);line-height:1.05;text-shadow:2px 2px 0 rgba(59,42,34,.12)}
+h1 small{font-size:.5em;letter-spacing:.3em;color:var(--ink);margin-left:.2em}
+.tag{font-weight:600;font-size:clamp(14px,2.3vw,20px);letter-spacing:.35em;text-transform:uppercase;opacity:.7;margin-top:2px}
+.row{position:relative;z-index:2;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:end;flex:1;padding:14px 0}
+.card{position:relative;display:block;text-decoration:none;color:inherit;transition:transform .25s}
+.card:hover{transform:translateY(-8px)}
+.frame{position:relative;width:100%;aspect-ratio:3/4.3;background:var(--bg);overflow:hidden;box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--ink)}
+.f-arch{border-radius:999px 999px 6px 6px}.f-rect{border-radius:4px}
+.f-tri{clip-path:polygon(50% 0,100% 100%,0 100%);box-shadow:none;aspect-ratio:3/4.5}
+.f-dia{clip-path:polygon(50% 0,100% 28%,100% 100%,0 100%,0 28%);box-shadow:none}
+.frame svg{position:absolute;inset:0;width:100%;height:100%}
+.badge{position:absolute;z-index:3;top:-12px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--paper);border:1.5px solid var(--ink);display:grid;place-items:center;font-size:18px}
+.name{font-family:'Cinzel',serif;font-weight:800;letter-spacing:.18em;text-align:center;margin-top:12px;font-size:clamp(12px,1.7vw,17px)}
+.role{text-align:center;font-style:italic;font-size:clamp(11px,1.4vw,14px);opacity:.7}
+.play{position:relative;z-index:2;align-self:center}
+.play a,.nav a{font-family:'Cinzel',serif;font-weight:800;letter-spacing:.3em;text-decoration:none;color:var(--red);background:var(--paper);border:2px solid var(--ink);border-radius:10px;display:block;text-align:center;box-shadow:0 0 0 4px var(--paper),0 0 0 5.5px var(--ink);transition:.2s}
+.play a{font-size:clamp(22px,4vw,38px);padding:12px clamp(60px,14vw,170px)}
+.play a:hover,.nav a:hover{background:var(--mustard);color:var(--ink)}
+.nav{position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:6px}
+.nav a{font-size:clamp(10px,1.7vw,15px);letter-spacing:.2em;padding:12px 6px;color:var(--ink);font-size:clamp(10px,1.6vw,14px)}
+@media(max-width:760px){.row{grid-template-columns:repeat(3,1fr);row-gap:26px}.nav{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="stage">
+ <div class="bgshape s1"></div><div class="bgshape s2"></div>
+ <i class="cross" style="left:44%;top:6%"></i><i class="cross" style="right:8%;top:42%"></i><i class="cross" style="left:6%;top:50%"></i>
+ <header>
+  <div class="orn">◆ SPECTRE ◆</div>
+  <h1>NEO-PARIS <small>2077</small></h1>
+  <div class="tag">Cinq edgerunners · une ville à genoux</div>
+ </header>
+ <div class="row" id="row"></div>
+ <div class="play"><a href="index.html">JOUER</a></div>
+ <div class="nav">
+  <a href="index.html">👥 PERSONNAGES</a>
+  <a href="lore/spectre-canal-chiffre.html">📜 LORE</a>
+  <a href="guide-joueur.html">📖 GUIDE</a>
+  <a href="index.html">⚙ OUTILS</a>
+ </div>
+</div>
+<script>
+var INK='#3b2a22';
+/* Cinq personnages originaux, dessinés à plat façon affiche vintage */
+var CH=[
+ {n:'TAMURO',r:'La Vipère Rouge',ico:'⚔',frame:'arch',bg:'#d9684a',href:'dossiers/dossier-tamuro.html',skin:'#e8b894',hair:'#a3281c',coat:'#2f3e56',acc:'#d9684a',
+  hairSvg:'<path d="M58 78 Q52 30 100 28 Q150 30 142 78 Q128 52 100 52 Q72 52 58 78Z" fill="HAIR"/><path d="M62 70 L50 44 L74 56 L80 30 L98 52 L112 26 L122 54 L146 40 L140 72Z" fill="HAIR"/>',
+  extra:'<rect x="150" y="110" width="9" height="150" fill="#3b2a22" transform="rotate(8 150 110)"/><rect x="146" y="104" width="17" height="14" rx="3" fill="#3b2a22" transform="rotate(8 150 110)"/>'},
+ {n:'KIKI',r:'Kirikou · Nomade',ico:'🚐',frame:'rect',bg:'#6188a8',href:'dossiers/dossier-kiki.html',skin:'#a9744e',hair:'#2a1c16',coat:'#c98b2e',acc:'#efe3c6',
+  hairSvg:'<path d="M60 76 Q56 34 100 32 Q144 34 140 76 L140 62 Q100 44 60 62Z" fill="HAIR"/><path d="M52 62 Q100 22 148 62 L148 70 Q100 50 52 70Z" fill="#efe3c6"/><rect x="62" y="64" width="76" height="10" rx="5" fill="#3b2a22"/><circle cx="82" cy="69" r="7" fill="#bcd1dc" stroke="#3b2a22" stroke-width="2"/><circle cx="118" cy="69" r="7" fill="#bcd1dc" stroke="#3b2a22" stroke-width="2"/>',
+  extra:'<circle cx="38" cy="236" r="26" fill="#3b2a22"/><circle cx="38" cy="236" r="12" fill="#e0a83e"/>'},
+ {n:'KEIYO',r:'Star de Neogram',ico:'🎤',frame:'tri',bg:'#7fa27b',href:'dossiers/dossier-keiyo.html',skin:'#f0cfb4',hair:'#1f1a2c',coat:'#b0457f',acc:'#ff9ad0',
+  hairSvg:'<path d="M54 86 Q46 24 100 24 Q154 24 146 86 L150 190 Q128 170 132 96 Q100 70 68 96 Q72 170 50 190Z" fill="HAIR"/><path d="M62 74 Q100 40 138 74 Q100 58 62 74Z" fill="#ff9ad0"/>',
+  extra:'<rect x="146" y="150" width="30" height="52" rx="6" fill="#3b2a22"/><rect x="150" y="155" width="22" height="38" rx="3" fill="#bcd1dc"/>'},
+ {n:'FURY',r:'Frostpunk · CharcuDoc',ico:'💊',frame:'dia',bg:'#e0a83e',href:'dossiers/dossier-fury.html',skin:'#ecc7a8',hair:'#eeeeee',coat:'#4f918b',acc:'#efe3c6',
+  hairSvg:'<path d="M56 84 Q50 28 100 28 Q150 28 144 84 Q140 52 100 50 Q60 52 56 84Z" fill="HAIR"/><path d="M144 84 Q160 120 140 150 Q148 110 138 92Z" fill="HAIR"/>',
+  extra:'<rect x="76" y="100" width="48" height="26" rx="10" fill="#efe3c6" stroke="#3b2a22" stroke-width="2.5"/><path d="M88 108 h24 M88 114 h24 M88 120 h24" stroke="#3b2a22" stroke-width="1.5"/><path d="M40 190 h20 M50 180 v20" stroke="#b8412e" stroke-width="7" stroke-linecap="round"/>'},
+ {n:'MOON',r:'Echo-9 · Netrunner',ico:'💻',frame:'arch',bg:'#4f918b',href:'dossiers/dossier-hunter.html',skin:'#d9a883',hair:'#2a2f4a',coat:'#3b2a22',acc:'#bcd1dc',
+  hairSvg:'<path d="M48 120 Q40 22 100 20 Q160 22 152 120 Q148 70 100 62 Q52 70 48 120Z" fill="#2c3a4a"/><path d="M46 124 Q100 -2 154 124 L150 150 L50 150Z" fill="none"/>',
+  extra:'<rect x="60" y="76" width="80" height="16" rx="8" fill="#bcd1dc" stroke="#3b2a22" stroke-width="2.5" opacity=".95"/><path d="M66 84 h68" stroke="#4f918b" stroke-width="2.5"/><path d="M158 182 l10 -22 l10 22 z" fill="#e0a83e"/>'}
+];
+function fig(c){
+  var hs=c.hairSvg.replace(/HAIR/g,c.hair);
+  return '<svg viewBox="0 0 200 288" preserveAspectRatio="xMidYMax slice">'
+   +'<circle cx="150" cy="60" r="34" fill="#fff" opacity=".12"/><circle cx="40" cy="120" r="2" fill="#fff" opacity=".6"/><circle cx="170" cy="150" r="2" fill="#fff" opacity=".5"/>'
+   +'<path d="M12 288 Q14 190 70 172 L130 172 Q186 190 188 288Z" fill="'+c.coat+'" stroke="'+INK+'" stroke-width="3"/>'
+   +'<path d="M70 172 L100 214 L130 172" fill="'+c.acc+'" stroke="'+INK+'" stroke-width="3"/>'
+   +'<rect x="88" y="136" width="24" height="42" rx="8" fill="'+c.skin+'" stroke="'+INK+'" stroke-width="3"/>'
+   +(c.n==='MOON'?'<path d="M48 120 Q100 -2 152 120 L152 176 L48 176Z" fill="#2c3a4a" stroke="'+INK+'" stroke-width="3"/>':'')
+   +'<ellipse cx="100" cy="98" rx="38" ry="46" fill="'+c.skin+'" stroke="'+INK+'" stroke-width="3"/>'
+   +hs
+   +'<path d="M78 98 q6 -5 12 0 M110 98 q6 -5 12 0" stroke="'+INK+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+   +'<circle cx="84" cy="104" r="3" fill="'+INK+'"/><circle cx="116" cy="104" r="3" fill="'+INK+'"/>'
+   +'<path d="M100 104 q-3 12 3 14" stroke="'+INK+'" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+   +'<path d="M88 124 q12 8 24 0" stroke="'+INK+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+   +(c.n==='FURY'?'':'')+c.extra+'</svg>';
+}
+document.getElementById('row').innerHTML=CH.map(function(c,i){
+  return '<a class="card" href="'+c.href+'" style="--bg:'+c.bg+(i%2?';margin-bottom:0':'')+'"><div class="badge">'+c.ico+'</div><div class="frame f-'+c.frame+'">'+fig(c)+'</div><div class="name">'+c.n+'</div><div class="role">'+c.r+'</div></a>';
+}).join('');
+</script>
+</body>
+</html>
