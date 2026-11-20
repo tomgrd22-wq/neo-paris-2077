@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neo-Paris 2077 — Fichier des personnages</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#2b2b2d}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:#e8e8e8;font-family:'Barlow Condensed',sans-serif}
+body{background:
+ repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 2px,transparent 2px 9px),
+ radial-gradient(ellipse at 30% 0,#4a4a4e,transparent 60%),radial-gradient(ellipse at 80% 100%,#1b1b1d,transparent 55%),var(--bg);background-attachment:fixed}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px;position:relative}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.top .logo{width:34px;height:34px;border:3px solid #ddd;border-radius:50%;position:relative}.top .logo:after{content:'';position:absolute;left:50%;top:-4px;bottom:-4px;width:3px;background:#ddd;transform:rotate(40deg)}
+.top b{font-family:'Anton',sans-serif;font-weight:400;font-size:18px;letter-spacing:1px;display:block;line-height:1.1}.top small{font-family:'Share Tech Mono',monospace;font-size:11px;color:#aaa;letter-spacing:2px}
+.side-title{position:absolute;right:-4px;top:80px;bottom:60px;width:70px;writing-mode:vertical-rl;font-family:'Anton',sans-serif;font-size:62px;letter-spacing:4px;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.2);white-space:nowrap;overflow:hidden;pointer-events:none}
+.entry{display:grid;grid-template-columns:130px 1fr;gap:14px;margin-bottom:26px;margin-right:60px;text-decoration:none;color:inherit}
+.info{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.04);padding:12px;position:relative}
+.info:before{content:'';position:absolute;left:-1px;top:-1px;width:9px;height:9px;border-left:2px solid #fff;border-top:2px solid #fff}
+.num{font-family:'Anton',sans-serif;font-size:34px;line-height:1;margin-bottom:8px}
+.info dl{font-size:14px;line-height:1.15}.info dt{font-family:'Share Tech Mono',monospace;font-size:9px;color:#8d8d92;letter-spacing:1px;margin-top:8px}.info dd{font-weight:700;font-size:17px}
+.mini{margin-top:10px;width:100%;aspect-ratio:1;background-size:cover;background-position:50% 18%;border:1px solid rgba(255,255,255,.35)}
+.banner{position:relative;aspect-ratio:2.35/1;background:#d4d4d6;overflow:hidden;border:1px solid rgba(255,255,255,.3);transition:.25s}
+.entry:hover .banner{transform:translateX(6px);box-shadow:-6px 0 0 var(--c)}
+.banner .col{position:absolute;right:0;top:0;bottom:0;width:62%;background:linear-gradient(120deg,var(--c),var(--c2))}
+.banner .big{position:absolute;left:3%;top:2%;bottom:6%;font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-stretch:condensed;font-size:min(30vw,300px);line-height:.92;color:var(--c);letter-spacing:-.01em;display:flex;align-items:center;white-space:nowrap;z-index:1;font-size:clamp(70px,20vw,205px);transform-origin:left;}
+.banner .ph{position:absolute;right:0;top:0;bottom:0;width:58%;background-size:cover;background-position:50% 22%;mix-blend-mode:multiply;filter:contrast(1.1);z-index:2;-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%);mask-image:linear-gradient(90deg,transparent,#000 22%)}
+.banner .tag{position:absolute;right:12px;top:8px;z-index:3;font-family:'Anton',sans-serif;font-size:clamp(14px,2.6vw,22px);color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);text-align:right;line-height:1}
+.banner .tag small{display:block;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;opacity:.8}
+.rail{position:absolute;left:0;right:0;height:9px;z-index:4;background:#e9e9ea;border-top:1px solid #555;border-bottom:1px solid #555;font-family:'Share Tech Mono',monospace;font-size:6px;color:#444;display:flex;align-items:center;padding-left:8px;letter-spacing:1px}
+.rail.t{top:0}.rail.b{bottom:0}
+@media(max-width:700px){.entry{grid-template-columns:1fr;margin-right:0}.side-title{display:none}.info{display:grid;grid-template-columns:auto 1fr 90px;gap:10px;align-items:center}.mini{margin:0}.num{margin:0}.info dl{display:flex;gap:16px}.info dt{margin-top:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><div class="logo"></div><div><b>FICHIER DES PERSONNAGES</b><small>#SPECTRE · NEO-PARIS 2077</small></div></div>
+ <div class="side-title">TAMURO KIKI KEIYO FURY MOON</div>
+ <div id="list"></div>
+</div>
+<script>
+var P=[
+ {id:'tamuro',big:'TAMURO',name:'Tamuro Ayashi',role:'Edgerunner',alias:'La Vipère Rouge',c:'#c4201f',c2:'#8a1214',href:'dossiers/dossier-tamuro.html'},
+ {id:'kiki',big:'KIKI',name:'Kirikou',role:'Nomade',alias:'Kiki',c:'#c98a14',c2:'#8f5c0a',href:'dossiers/dossier-kiki.html'},
+ {id:'keiyo',big:'KEIYO',name:'Keiyori Murasaki',role:'Star',alias:'Keiyo',c:'#a2208a',c2:'#5c1359',href:'dossiers/dossier-keiyo.html'},
+ {id:'fury',big:'FURY',name:'Frostpunk',role:'CharcuDoc',alias:'Fury',c:'#2f9a5c',c2:'#17623a',href:'dossiers/dossier-fury.html'},
+ {id:'moon',big:'MOON',name:'Echo-9',role:'Netrunner',alias:'Moon',c:'#1d86b0',c2:'#0f4f70',href:'dossiers/dossier-hunter.html'}
+];
+document.getElementById('list').innerHTML=P.map(function(p,i){
+ var n='#00'+(i+1),img="url('assets/portraits/"+p.id+".jpg')";
+ return '<a class="entry" href="'+p.href+'" style="--c:'+p.c+';--c2:'+p.c2+'">'
+  +'<div class="info"><div class="num">'+n+'</div><dl><dt>NOM</dt><dd>'+p.name+'</dd><dt>RÔLE</dt><dd>'+p.role+'</dd><dt>ALIAS</dt><dd>'+p.alias+'</dd></dl><div class="mini" style="background-image:'+img+'"></div></div>'
+  +'<div class="banner"><div class="rail t">◢◢ NEO-PARIS RECORDS ◢◢ DOSSIER CONFIDENTIEL</div><div class="col"></div><div class="big">'+p.big+'</div><div class="ph" style="background-image:'+img+'"></div><div class="tag">'+p.alias+'<small>'+p.role.toUpperCase()+'</small></div><div class="rail b">ÉQUIPE SPECTRE ◆ '+n+'</div></div></a>';
+}).join('');
+</script>
+</body>
+</html>
